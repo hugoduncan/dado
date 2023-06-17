@@ -1,0 +1,12 @@
+{:deps    {net.clojars.wkok/openai-clojure {:mvn/version "0.6.1"}}
+ :aliases {:dev {:extra-paths ["development/src"]
+                 :extra-deps  {org.clojure/clojure {:mvn/version "1.11.1"}}}
+
+           :test {:extra-paths []}
+
+           :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
+                  :extra-deps
+                  {polyfy/polylith
+                   {:git/url   "https://github.com/polyfy/polylith"
+                    :sha       "928e9ddce6c08889ce36e6b8367b57a6993295c6"
+                    :deps/root "projects/poly"}}}}}
