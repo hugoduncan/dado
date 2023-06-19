@@ -1,0 +1,4 @@
+{:paths   ["src" "resources"]
+ :deps    {org.hugoduncan/dado.operation {:local/root "../operation"}}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps  {}}}}

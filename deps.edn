@@ -1,4 +1,13 @@
-{:deps    {net.clojars.wkok/openai-clojure {:mvn/version "0.6.1"}}
+{:deps
+ {org.hugoduncan/dado.chat-gpt         {:local/root "components/chat-gpt"}
+  org.hugoduncan/dado.clojure-target   {:local/root "components/clojure-target"}
+  org.hugoduncan/dado.clojure-fns      {:local/root "components/clojure-fns"}
+  org.hugoduncan/dado.elisp-target     {:local/root "components/elisp-target"}
+  org.hugoduncan/dado.elisp-funs       {:local/root "components/elisp-funs"}
+  org.hugoduncan/dado.emacs-core       {:local/root "components/emacs-core"}
+  org.hugoduncan/dado.nrepl-middleware {:local/root "components/nrepl-middleware"}
+  org.hugoduncan/dado.operation        {:local/root "components/operation"}
+  org.hugoduncan/dado.util             {:local/root "components/util"}}
  :aliases {:dev {:extra-paths ["development/src"]
                  :extra-deps  {org.clojure/clojure {:mvn/version "1.11.1"}}}
 

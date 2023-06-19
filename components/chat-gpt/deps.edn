@@ -1,0 +1,4 @@
+{:paths   ["src"]
+ :deps    {net.clojars.wkok/openai-clojure {:mvn/version "0.6.1"}}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps  {}}}}
