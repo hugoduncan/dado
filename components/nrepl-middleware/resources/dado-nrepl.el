@@ -31,15 +31,6 @@
 
 (defun dado--elisp-function-source-for-symbol (function-symbol)
   "Return the source code for FUNCTION-SYMBOL that refers to a function.
-When no function definition is found, return NIL."
-  (when (fboundp function-symbol)
-    (let ((referenced-function (symbol-function function-symbol)))
-      ;; TODO reconstruct the defun form from the referenced-function, which is
-      ;; a closure.
-      (prin1-to-string referenced-function))))
-
-(defun dado--elisp-function-source-for-symbol (function-symbol)
-  "Return the source code for FUNCTION-SYMBOL that refers to a function.
 When no function definition is found, return NIL.
 
 Obtains the function's definition as a closure, converts to a
