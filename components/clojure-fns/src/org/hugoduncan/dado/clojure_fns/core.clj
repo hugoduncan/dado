@@ -77,7 +77,7 @@ Generate clojure code as described by the user.")
      completion
      (clojure-target/format-parsed-completion-as-code))))
 
-(defmethod operation/op "implement-fn"
+(defmethod operation/op ["clojure" "implement-fn"]
   [_language _action args ns]
   {"suggestion" (implement-fn ns (symbol (:fn-name args)))})
 
@@ -111,7 +111,7 @@ Generate clojure test code to test the function given by the user.")
          (chat-gpt/generate-completion implement-fn-test-system)
          clojure-target/format-parsed-completion-as-code)))
 
-(defmethod operation/op "implement-fn-test"
+(defmethod operation/op ["clojure" "implement-fn-test"]
   [_language _action args ns]
   {"suggestion" (implement-fn-test ns (symbol (:fn-name args)))})
 
@@ -143,7 +143,7 @@ Critique the function given by the user.")
          (chat-gpt/generate-completion critique-fn-system)
          clojure-target/format-parsed-completion-as-code)))
 
-(defmethod operation/op "critique-fn"
+(defmethod operation/op ["clojure" "critique-fn"]
   [_language _action args ns]
   {"suggestion" (critique-fn ns (symbol (:fn-name args)))})
 
@@ -169,6 +169,6 @@ Write a doc string for function given by the user.")
          (chat-gpt/generate-completion generate-fn-docstring-system)
          clojure-target/format-parsed-completion-as-code)))
 
-(defmethod operation/op "generate-fn-docstring"
+(defmethod operation/op ["clojure" "generate-fn-docstring"]
   [_language _action args ns]
   {"suggestion" (generate-fn-docstring ns (symbol (:fn-name args)))})

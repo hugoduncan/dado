@@ -1,4 +1,4 @@
-;;; /Users/duncan/projects/hugoduncan/dado/components/nrepl-middleware/resources/dado-nrepl.el ---           -*- lexical-binding: t; -*-
+;;; dado-nrepl.el --- -*- lexical-binding: t; -*-
 
 (require 'cider)
 
@@ -259,12 +259,23 @@ at point."
 	    "fn-definition" ,(dado--elisp-function-source-for-symbol symbol)))))
 
 
-(defconst dado-middleware-name "org.hugoduncan.dado.nrepl-middleware.interface/dado-middleware")
+(defconst dado-middleware-name
+  "org.hugoduncan.dado.nrepl-middleware.interface/dado-middleware")
 
-(add-to-list 'cider-jack-in-nrepl-middlewares dado-middleware-name)
+(defmacro dado--cider-alias-pred (alias)
+  "Return a predicate for ALIAS being in use."
+  `(lambda (&rest _)
+     (or
+      (and cider-clojure-cli-aliases
+           (s-contains? ,alias cider-clojure-cli-aliases))
+      (and cider-clojure-cli-global-options
+           (s-contains? ,alias cider-clojure-cli-global-options)))))
 
-;; (setq cider-jack-in-nrepl-middlewares (delete dado-middleware-name 'cider-jack-in-nrepl-middlewares))
+;; Inject dado middleware when using the `:dado' alias
+(add-to-list
+ 'cider-jack-in-nrepl-middlewares
+ `(,dado-middleware-name :predicate ,(dado--cider-alias-pred ":dado")))
 
-;; (setq cider-jack-in-nrepl-middlewares '("cider.nrepl/cider-middleware"))
+(provide 'dado-nrepl)
 
-;;; /Users/duncan/projects/hugoduncan/dado/components/nrepl-middleware/resources/dado-nrepl.el ends here
+;;; dado-nrepl.el ends here

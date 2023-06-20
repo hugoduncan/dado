@@ -1,0 +1,5 @@
+{:deps {org.hugoduncan/dado.middleware {:local/root "../../bases/middleware"}}
+
+ :aliases {:test {:extra-paths []
+                  :extra-deps  {}}
+           :jar  {:lib org.hugoduncan/dado-middleware}}}

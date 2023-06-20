@@ -4,6 +4,8 @@ A dev assistant for clojure and emacs lisp.
 
 Dado - dev assistant with dubious opinions
 
+Requires jdk 11 or higher.
+
 ** Features
 
  Support the following on clojure and elisp functions:
@@ -21,13 +23,20 @@ Dado - dev assistant with dubious opinions
 
 ** Install
 
-Evaluate `dado-nrepl`.  Note that this will break cider-jack-in if dado
-middleware is not on the path.
 
-Put dado's clojure code on the classpath.
+```
+clojure -T:build jar :project middleware
+clojure -T:build install :project middleware
+```
 
-At this point it is probably easiest to try this by running a repl from
-dado's top level `deps.edn`.
+Add dado to `deps.edn`'s `:aliases`.
+
+```
+:dado {:extra-deps
+        {org.hugoduncan/dado-middleware {:mvn/version "0.1.2"}}}
+```
+
+Evaluate `dado-nrepl.el`.
 
 ** OpenAI credentials
 

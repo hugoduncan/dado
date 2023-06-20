@@ -2,6 +2,8 @@
   "Middleware of using dado code assistant."
   (:require
    [org.hugoduncan.dado.nrepl-middleware.core :as nrepl-midleware-core]
+   [org.hugoduncan.dado.clojure-fns.interface]
+   [org.hugoduncan.dado.elisp-funs.interface]
    [nrepl.middleware :as middleware :refer [set-descriptor!]]))
 
 (defn wrap-dado
