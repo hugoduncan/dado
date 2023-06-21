@@ -11,7 +11,6 @@
    Create jar for middleware:
      clojure -T:build jar :project middleware"
   (:require
-   [babashka.fs :as fs]
    [clojure.java.io :as io]
    [clojure.tools.build.api :as b]
    [clojure.tools.deps :as t]
@@ -41,12 +40,13 @@
 
 (def version (format "0.1.%s" (b/git-count-revs nil)))
 
-(defn- project-info [project]
+(defn- project-info
+  [project]
   (let [project-root (ensure-project-root "jar" project)
         aliases      (with-dir (io/file project-root) (get-project-aliases))
         lib          (-> aliases :jar :lib)]
     {:project-root project-root
-     :aliasesa     aliases
+     :aliases      aliases
      :lib          lib}))
 
 (defn- ensure-lib! [project aliases lib]
