@@ -6,9 +6,6 @@
    [org.hugoduncan.dado.clojure-target.interface :as clojure-target]
    [org.hugoduncan.dado.operation.interface :as operation]))
 
-;; (def capture (volatile! []))
-;; (vswap! capture conj {:action _action :args args :ns ns})
-
 (def suggest-fn-impl-system
   "You will describe alternatives to implement a function described by the user.
 
@@ -116,9 +113,9 @@ Generate clojure test code to test the function given by the user.")
   {"suggestion" (implement-fn-test ns (symbol (:fn-name args)))})
 
 (def critique-fn-system
-  "You will critique the function given by the user.
+  "You will critique the clojure function given by the user.
 
-Compare the doc  string against the implementation of the  function, and comment
+Compare the doc string against the implementation of the function, and comment
 on any inconsistencies.
 
 Comment on style and clojure idioms.
@@ -129,7 +126,7 @@ Comment on variable naming.
 
 Comment on complexity.
 
-Critique the function given by the user.")
+Critique the clojure function given by the user.")
 
 (defn critique-fn
   "Critique the function with the given name using the OpenAI chat

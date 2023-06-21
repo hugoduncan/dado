@@ -19,12 +19,12 @@
   [parsed-completion]
   (letfn [(format-element [elem]
             (if (:code elem)
-              (:code elem)
+              (str (:code elem) "\n")
               (->> (:text elem)
                    (str/split-lines)
                    (map #(str/replace % #"\n" ""))
-                   (map #(str/join "\n;; " (util/word-wrap % 80)))
-                   (map #(str ";; " % "\n"))
+                   (map #(str/join "\n;; " (util/word-wrap % 77)))
+                   (map #(if (str/blank? %) "\n" (str ";; " % "\n")))
                    (apply str))))] ;; concatenate all wrapped lines
     (str/join "\n" (mapv format-element parsed-completion))))
 

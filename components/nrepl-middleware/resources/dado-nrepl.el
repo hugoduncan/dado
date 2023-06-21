@@ -45,11 +45,11 @@ name."
 		     (symbol-name function-symbol)))))
         (prin1-to-string (cons 'defun (cons name form)) )))))
 
-(defun dado--popup-buffer ()
-  (cider-popup-buffer dado-result-buffer t nil 'ancillary))
+(defun dado--popup-buffer (&optional mode)
+  (cider-popup-buffer dado-result-buffer t mode 'ancillary))
 
-(defun dado--popup-result (response)
-  (let ((response-buffer (dado--popup-buffer)))
+(defun dado--popup-result (response &optional mode)
+  (let ((response-buffer (dado--popup-buffer mode)))
     (cider-emit-into-color-buffer response-buffer response)))
 
 (defun dado-request (callback action args)
@@ -65,14 +65,15 @@ name."
      (cider-current-repl)
      'tooling)))
 
-(defun dado--default-reply-handler (reply)
-  (when reply
-    ;; (message "reply %s" reply)
-    (nrepl-dbind-response reply (response)
-      (when response
-	(nrepl-dbind-response response (suggestion)
-	  (when suggestion
-	    (dado--popup-result suggestion)))))))
+(defun dado--default-reply-handler (&optional mode)
+  (lambda (reply)
+    (when reply
+      ;; (message "reply %s" reply)
+      (nrepl-dbind-response reply (response)
+	(when response
+	  (nrepl-dbind-response response (suggestion)
+	    (when suggestion
+	      (dado--popup-result suggestion mode))))))))
 
 (defun dado-op (callback action args)
   (when (cider-nrepl-op-supported-p "dado")
@@ -110,7 +111,7 @@ opposite of what that option dictates."
   (let ((symbol (or (cider-symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving an implementation of %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'clojure-mode)
      "implement-fn"
      `(dict "fn-name" ,symbol))))
 
@@ -126,7 +127,7 @@ opposite of what that option dictates."
   (let ((symbol (or (cider-symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving an test implementation for %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'clojure-mode)
      "implement-fn-test"
      `(dict "fn-name" ,symbol))))
 
@@ -142,9 +143,63 @@ opposite of what that option dictates."
   (let ((symbol (or (cider-symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving a critique of %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'clojure-mode)
      "critique-fn"
      `(dict "fn-name" ,symbol))))
+
+(defun dado-suggest-ns-impl ()
+  "Provide suggestions to implement a clojure namespace.
+
+Uses the docstring of the current namespace"
+  (interactive)
+  (cider-ensure-connected)
+  (message "Retrieving suggestions for namespace")
+  (dado-op
+   (dado--default-reply-handler 'clojure-mode)
+   "suggest-ns-impl"
+   `(dict)))
+
+(defun dado-critique-ns (&optional buffer)
+  "Critique a clojure namespace.
+
+Uses the current buffer if no buffer given."
+  (interactive (list (current-buffer)))
+  (cider-ensure-connected)
+  (let ((buffer (or buffer (current-buffer)))
+	(source (with-current-buffer buffer
+		  (buffer-substring-no-properties (point-min) (point-max)))))
+    (message "Retrieving a critique of namespace")
+    (dado-op
+     (dado--default-reply-handler 'clojure-mode)
+     "critique-ns"
+     `(dict "ns-source" ,source))))
+
+(defun dado-implement-ns ()
+  "Implement a clojure namespace.
+
+Uses the docstring of the current namespace"
+  (interactive)
+  (cider-ensure-connected)
+  (message "Retrieving an implementation of namespace")
+  (dado-op
+   (dado--default-reply-handler 'clojure-mode)
+   "implement-ns"
+   `(dict)))
+
+(defun dado-generate-ns-docstring (&optional buffer)
+  "Generate a docstring for the clojure namespace.
+
+Uses the current buffer if no buffer given."
+  (interactive (list (current-buffer)))
+  (cider-ensure-connected)
+  (let ((buffer (or buffer (current-buffer)))
+	(source (with-current-buffer buffer
+		  (buffer-substring-no-properties (point-min) (point-max)))))
+    (message "Generating a doc string for the namespace")
+    (dado-op
+     (dado--default-reply-handler 'clojure-mode)
+     "generate-ns-docstring"
+     `(dict "ns-source" ,source))))
 
 (defun dado-generate-fn-docstring (&optional arg)
   "Generate a doc string for a clojure function.
@@ -158,7 +213,7 @@ opposite of what that option dictates."
   (let ((symbol (or (cider-symbol-at-point) (cider-read-symbol-name))))
     (message "Generating a docstring for %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'clojure-mode)
      "generate-fn-docstring"
      `(dict "fn-name" ,symbol))))
 
@@ -175,7 +230,7 @@ function at point, depending on the value of
   (let ((symbol (or (symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving suggestions for implementation of %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'emacs-lisp-mode)
      "suggest-fn-impl"
      `(dict "fn-name" ,(symbol-name symbol)
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
@@ -192,7 +247,7 @@ function at point, depending on the value of
   (let ((symbol (or (symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving an implementation of %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'emacs-lisp-mode)
      "implement-fn"
      `(dict "fn-name" ,(symbol-name symbol)
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
@@ -208,7 +263,7 @@ function at point."
   (let ((symbol (or (elisp-symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving an test implementation for %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'emacs-lisp-mode)
      "implement-fn-test"
      `(dict "fn-name" ,(symbol-name symbol)
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
@@ -225,7 +280,7 @@ at point."
   (let ((symbol (or (symbol-at-point) (cider-read-symbol-name))))
     (message "Retrieving a critique of %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'emacs-lisp-mode)
      "critique-fn"
      `(dict "fn-name" ,(symbol-name symbol)
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
@@ -242,7 +297,7 @@ at point."
   (let ((symbol (or (symbol-at-point) (cider-read-symbol-name))))
     (message "Generating a docstring for %s" symbol)
     (dado-op
-     #'dado--default-reply-handler
+     (dado--default-reply-handler 'emacs-lisp-mode)
      "generate-fn-docstring"
      `(dict "fn-name" ,(symbol-name symbol)
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)

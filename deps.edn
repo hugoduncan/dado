@@ -1,10 +1,11 @@
 {:deps
  {;; comonents
   org.hugoduncan/dado.chat-gpt         {:local/root "components/chat-gpt"}
-  org.hugoduncan/dado.clojure-target   {:local/root "components/clojure-target"}
   org.hugoduncan/dado.clojure-fns      {:local/root "components/clojure-fns"}
-  org.hugoduncan/dado.elisp-target     {:local/root "components/elisp-target"}
+  org.hugoduncan/dado.clojure-ns       {:local/root "components/clojure-ns"}
+  org.hugoduncan/dado.clojure-target   {:local/root "components/clojure-target"}
   org.hugoduncan/dado.elisp-funs       {:local/root "components/elisp-funs"}
+  org.hugoduncan/dado.elisp-target     {:local/root "components/elisp-target"}
   org.hugoduncan/dado.emacs-core       {:local/root "components/emacs-core"}
   org.hugoduncan/dado.nrepl-middleware {:local/root "components/nrepl-middleware"}
   org.hugoduncan/dado.operation        {:local/root "components/operation"}
@@ -19,8 +20,9 @@
                    {io.github.clojure/tools.build
                     {:git/tag "v0.9.4" :git/sha "76b78fe"}
                     babashka/fs {:mvn/version "0.4.19"}}
-                   :paths      ["build/resources"]
-                   :ns-default build}
+                   :paths       ["build/resources"]
+                   :extra-paths ["build/src"]
+                   :ns-default  build}
 
            :test {:extra-paths []}
 
