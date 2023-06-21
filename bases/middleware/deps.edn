@@ -1,7 +1,7 @@
 {:paths   ["src"]
  :deps
  {org.hugoduncan/dado.chat-gpt         {:local/root "../../components/chat-gpt"}
-  org.hugoduncan/dado.clojure-ns       {:local/root "components/clojure-ns"}
+  org.hugoduncan/dado.clojure-ns       {:local/root "../../components/clojure-ns"}
   org.hugoduncan/dado.clojure-fns      {:local/root "../../components/clojure-fns"}
   org.hugoduncan/dado.clojure-target   {:local/root "../../components/clojure-target"}
   org.hugoduncan/dado.elisp-funs       {:local/root "../../components/elisp-funs"}

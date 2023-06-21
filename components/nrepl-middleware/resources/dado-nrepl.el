@@ -24,7 +24,7 @@
         (documentation symbol)
       (get symbol 'doc-string))))
 
-(defundado--elisp-arguments-for-symbol (symbol)
+(defun dado--elisp-arguments-for-symbol (symbol)
   "Return the arguments for SYMBOL that refers to a function."
   (let ((arglist (help-function-arglist symbol)))
     (cdr (cdr arglist))))

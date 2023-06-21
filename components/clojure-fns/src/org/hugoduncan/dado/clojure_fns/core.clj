@@ -103,7 +103,8 @@ Generate clojure test code to test the function given by the user.")
   (let [fn-var  (ns-resolve ns-sym (symbol fn-name))
         ns-name (ns-name  (:ns (meta fn-var)))
         ns-str  (str "(ns " ns-name ")\n")
-        fn-str  (clojure-target/source-fn fn-name)]
+        fn-str  (clojure-target/source-fn
+                 (symbol (str ns-name) (name fn-name)))]
     (->> (str ns-str fn-str)
          (chat-gpt/generate-completion implement-fn-test-system)
          clojure-target/format-parsed-completion-as-code)))
@@ -135,7 +136,8 @@ Critique the clojure function given by the user.")
   (let [fn-var  (ns-resolve ns-sym (symbol fn-name))
         ns-name (ns-name  (:ns (meta fn-var)))
         ns-str  (str "(ns " ns-name ")\n")
-        fn-str  (clojure-target/source-fn fn-name)]
+        fn-str  (clojure-target/source-fn
+                 (symbol (str ns-name) (name fn-name)))]
     (->> (str ns-str fn-str)
          (chat-gpt/generate-completion critique-fn-system)
          clojure-target/format-parsed-completion-as-code)))
@@ -161,7 +163,8 @@ Write a doc string for function given by the user.")
   (let [fn-var  (ns-resolve ns-sym (symbol fn-name))
         ns-name (ns-name  (:ns (meta fn-var)))
         ns-str  (str "(ns " ns-name ")\n")
-        fn-str  (clojure-target/source-fn fn-name)]
+        fn-str  (clojure-target/source-fn
+                 (symbol (str ns-name) (name fn-name)))]
     (->> (str ns-str fn-str)
          (chat-gpt/generate-completion generate-fn-docstring-system)
          clojure-target/format-parsed-completion-as-code)))
