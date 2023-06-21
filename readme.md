@@ -36,7 +36,7 @@ Add dado to `deps.edn`'s `:aliases`.
         {org.hugoduncan/dado-middleware {:mvn/version "0.1.2"}}}
 ```
 
-Evaluate `dado-nrepl.el`.
+Evaluate `dado-mode.el`.
 
 ** OpenAI credentials
 
