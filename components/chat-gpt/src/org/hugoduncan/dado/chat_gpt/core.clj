@@ -10,7 +10,7 @@
   {:api-key      (System/getenv "OPENAI_API_KEY")
    :organization (System/getenv "OPENAI_ORGANIZATION")})
 
-(defn generate-chat-completion
+(defn generate-completion
   "Generate a completion using ChatGPT."
   [system content]
   (let [result (api/create-chat-completion
@@ -19,6 +19,15 @@
                             {:role "user" :content content}]}
                 options)]
     (reduce str (mapv (comp :content :message)(:choices result)))))
+
+(defn generate-chat-completion
+  "Generate a completion using ChatGPT."
+  [messages]
+  (let [result (api/create-chat-completion
+                {:model    "gpt-3.5-turbo" ;; "gpt-4"
+                 :messages messages}
+                options)]
+    (mapv (comp (juxt :role :content) :message) (:choices result))))
 
 (defn parse-completion-string
   "Parse a completion string returned by ChatGPT.

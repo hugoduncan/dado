@@ -31,12 +31,31 @@
                "The namespace in which to run the action. Defaults to `*ns*`."}
     :returns  {"response" "An action specific map"}}}})
 
-(defn- middleware-symbol []
+(defn wrap-dado-chat
+  "Middleware that provides `dado/chat` nrepl op.
+
+  It understands the following params:
+
+  * `messages` - a list of messages."
+  [h]
+  (nrepl-midleware-core/wrap-dado-chat h))
+
+(set-descriptor!
+ #'wrap-dado-chat
+ {:requires #{}
+  :expects  #{}
+  :handles
+  {"dado/chat"
+   {:doc      "Provides dado code assistant actions."
+    :requires {"messages" "A list of messages"}
+    :optional {}
+    :returns  {"choices" "Completions"}}}})
+
+(defn- middleware-symbol [op-name]
   ;; It is safe to use *ns* as this is called only at compile time
-  (symbol (str (ns-name *ns*)) "wrap-dado"))
+  (symbol (str (ns-name *ns*)) (name op-name)))
 
 (def dado-middleware
   "A var that can be added to cider-jack-in-nrepl-middlewares"
-  [(middleware-symbol)])
-
-;; (alter-var-root #'cider-middleware/cider-middleware pop)
+  [(middleware-symbol 'wrap-dado)
+   (middleware-symbol 'wrap-dado-chat)])

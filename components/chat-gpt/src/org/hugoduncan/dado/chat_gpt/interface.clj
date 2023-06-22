@@ -9,8 +9,15 @@
   Return a sequence of code block and explanation texts."
   [system content]
   (->
-   (chat-gpt-core/generate-chat-completion system content)
+   (chat-gpt-core/generate-completion system content)
    chat-gpt-core/parse-completion-string))
+
+(defn generate-chat-completion
+  "Generate a completion using ChatGPT.
+  Return a sequence of code block and explanation texts."
+  [messages]
+  (->
+   (chat-gpt-core/generate-chat-completion messages)))
 
 (defn format-parsed-completion-verbatim
   "Format the parsed-completion argument to reconstruct the completion verbatim.

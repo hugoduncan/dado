@@ -26,7 +26,7 @@
 
 (defun dado--elisp-arguments-for-symbol (symbol)
   "Return the arguments for SYMBOL that refers to a function."
-  (let ((arglist (help-function-arglist symbol)))
+  (let ((arglist (help-function-arglist symbol 'preserve-names)))
     (cdr (cdr arglist))))
 
 (defun dado--elisp-function-source-for-symbol (function-symbol)
@@ -51,6 +51,16 @@ name."
 (defun dado--popup-result (response &optional mode)
   (let ((response-buffer (dado--popup-buffer mode)))
     (cider-emit-into-color-buffer response-buffer response)))
+
+(defun dado-chat-request (callback messages)
+  "Send \"dado/chat\" op with parameters MESSAGES."
+  (thread-first
+    `("op" "dado/chat"
+      "messages" ,messages)
+    (cider-nrepl-send-request
+     callback
+     (cider-current-repl)
+     'tooling)))
 
 (defun dado-request (callback action args)
   "Send \"dado\" op with parameters ACTION, ARGS and NS."
@@ -78,6 +88,20 @@ name."
 (defun dado-op (callback action args)
   (when (cider-nrepl-op-supported-p "dado")
     (dado-request callback action args))
+  nil)
+
+
+(defun dado-chat-op (callback messages)
+  (message "dado-chat-op")
+  (when (cider-nrepl-op-supported-p "dado/chat")
+    (dado-chat-request
+     (lambda (reply)
+       (when reply
+	 ;; (message "reply %s" reply)
+	 (nrepl-dbind-response reply (response)
+	   (when response
+	     (funcall callback response)))))
+     messages))
   nil)
 
 (provide 'dado-nrepl)
