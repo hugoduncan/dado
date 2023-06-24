@@ -1,12 +1,8 @@
 ;;; dado-mode.el --- DADO mode          -*- lexical-binding: t; -*-
 
-
 (require 'dado-nrepl)
 
-
-;; (dado-op "docstring" '(dict) nil)
-;; (dado-op "suggest-fn-impl" '(dict "fn-name" "org.hugoduncan.dado.util.interface/word-wrap"))
-
+;;;###autoload
 (defun dado-suggest-fn-impl (&optional arg)
   "Suggest possible ways of implementing a clojure function.
 
@@ -23,6 +19,7 @@ opposite of what that option dictates."
      "suggest-fn-impl"
      `(dict "fn-name" ,symbol))))
 
+;;;###autoload
 (defun dado-implement-fn (&optional arg)
   "Implement a clojure function.
 
@@ -39,6 +36,7 @@ opposite of what that option dictates."
      "implement-fn"
      `(dict "fn-name" ,symbol))))
 
+;;;###autoload
 (defun dado-implement-fn-test (&optional arg)
   "Implement a test for a clojure function.
 
@@ -55,6 +53,7 @@ opposite of what that option dictates."
      "implement-fn-test"
      `(dict "fn-name" ,symbol))))
 
+;;;###autoload
 (defun dado-critique-fn (&optional arg)
   "Critique a clojure function.
 
@@ -71,6 +70,7 @@ opposite of what that option dictates."
      "critique-fn"
      `(dict "fn-name" ,symbol))))
 
+;;;###autoload
 (defun dado-suggest-ns-impl ()
   "Provide suggestions to implement a clojure namespace.
 
@@ -83,6 +83,7 @@ Uses the docstring of the current namespace"
    "suggest-ns-impl"
    `(dict)))
 
+;;;###autoload
 (defun dado-critique-ns (&optional buffer)
   "Critique a clojure namespace.
 
@@ -98,6 +99,7 @@ Uses the current buffer if no buffer given."
      "critique-ns"
      `(dict "ns-source" ,source))))
 
+;;;###autoload
 (defun dado-implement-ns ()
   "Implement a clojure namespace.
 
@@ -110,6 +112,7 @@ Uses the docstring of the current namespace"
    "implement-ns"
    `(dict)))
 
+;;;###autoload
 (defun dado-generate-ns-docstring (&optional buffer)
   "Generate a docstring for the clojure namespace.
 
@@ -125,6 +128,7 @@ Uses the current buffer if no buffer given."
      "generate-ns-docstring"
      `(dict "ns-source" ,source))))
 
+;;;###autoload
 (defun dado-generate-fn-docstring (&optional arg)
   "Generate a doc string for a clojure function.
 
@@ -143,6 +147,7 @@ opposite of what that option dictates."
 
 ;;; Elisp
 
+;;;###autoload
 (defun dado-elisp-suggest-fn-impl (&optional arg)
   "Suggest possible ways of implementing an elisp function.
 
@@ -160,6 +165,7 @@ function at point, depending on the value of
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)))))
 
+;;;###autoload
 (defun dado-elisp-implement-fun (&optional arg)
   "Implement an elisp function.
 
@@ -177,6 +183,7 @@ function at point, depending on the value of
 	    "docstring" ,(dado--elisp-docstring-for-symbol symbol)
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)))))
 
+;;;###autoload
 (defun dado-elisp-implement-fn-test (&optional arg)
   "Implement a test for an elisp function.
 
@@ -194,6 +201,7 @@ function at point."
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)
 	    "fn-definition" ,(dado--elisp-function-source-for-symbol symbol)))))
 
+;;;###autoload
 (defun dado-elisp-critique-fn (&optional arg)
   "Critique an elisp function.
 
@@ -211,6 +219,7 @@ at point."
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)
 	    "fn-definition" ,(dado--elisp-function-source-for-symbol symbol)))))
 
+;;;###autoload
 (defun dado-elisp-generate-fn-docstring (&optional arg)
   "Generate a doc string for an elisp function.
 
@@ -228,6 +237,21 @@ at point."
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)
 	    "fn-definition" ,(dado--elisp-function-source-for-symbol symbol)))))
 
+;;;###autoload
+(defun dado-elisp-critique-feature ()
+  "Critique the given feature code.
+
+Prompts for the name of the elisp function, or uses the function
+at point."
+  (interactive)
+  (cider-ensure-connected)
+  (let ((source (buffer-substring-no-properties (point-min) (point-max))))
+    (message "Critiquing feature")
+    (dado-op
+     (dado--default-reply-handler 'emacs-lisp-mode)
+     "critique-ns"
+     `(dict
+       "feature-source" ,source))))
 
 (defconst dado-middleware-name
   "org.hugoduncan.dado.nrepl-middleware.interface/dado-middleware")

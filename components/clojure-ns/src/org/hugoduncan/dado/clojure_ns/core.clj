@@ -1,5 +1,5 @@
 (ns org.hugoduncan.dado.clojure-ns.core
-  "Assistant functions for authoring clojure functions."
+  "Assistant functions for authoring clojure namespaces."
   (:require
    [org.hugoduncan.dado.chat-gpt.interface :as chat-gpt]
    [org.hugoduncan.dado.clojure-target.interface :as clojure-target]
@@ -8,7 +8,7 @@
 (defn- ns-docstring
   "Return the doc string for the namespace with the given namespace symbol."
   [ns-sym]
-  (-> (the-ns name) meta :doc))
+  (-> (the-ns ns-sym) meta :doc))
 
 (def suggest-ns-impl-system
   "You will describe alternatives to implement a function described by the user.
@@ -38,7 +38,7 @@ Describe alternatives implement the function described by the user.")
 Compare the doc string against the implementation of the namespace, and comment
 on any inconsistencies.
 
-Comment on the on doc strings that could be improved.
+Comment on doc strings that could be improved.
 
 Comment on style and clojure idioms.
 
