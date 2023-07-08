@@ -47,7 +47,7 @@ opposite of what that option dictates."
   (interactive "P")
   (cider-ensure-connected)
   (let ((symbol (or (cider-symbol-at-point) (cider-read-symbol-name))))
-    (message "Retrieving an test implementation for %s" symbol)
+    (message "Retrieving a test implementation for %s" symbol)
     (dado-op
      (dado--default-reply-handler 'clojure-mode)
      "implement-fn-test"
@@ -184,7 +184,7 @@ function at point, depending on the value of
 	    "arguments" ,(dado--elisp-arguments-for-symbol symbol)))))
 
 ;;;###autoload
-(defun dado-elisp-implement-fn-test (&optional arg)
+(defun dado-elisp-implement-fun-test (&optional arg)
   "Implement a test for an elisp function.
 
 Prompts for the name of the elisp function, or uses the
@@ -192,7 +192,7 @@ function at point."
   (interactive "P")
   (cider-ensure-connected)
   (let ((symbol (or (elisp-symbol-at-point) (cider-read-symbol-name))))
-    (message "Retrieving an test implementation for %s" symbol)
+    (message "Retrieving a test implementation for %s" symbol)
     (dado-op
      (dado--default-reply-handler 'emacs-lisp-mode)
      "implement-fn-test"

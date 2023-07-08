@@ -86,22 +86,24 @@ name."
 	      (dado--popup-result suggestion mode))))))))
 
 (defun dado-op (callback action args)
-  (when (cider-nrepl-op-supported-p "dado")
-    (dado-request callback action args))
+  (if (cider-nrepl-op-supported-p "dado")
+      (dado-request callback action args)
+    (message "dado middleware is not available."))
   nil)
 
 
 (defun dado-chat-op (callback messages)
   (message "dado-chat-op")
-  (when (cider-nrepl-op-supported-p "dado/chat")
-    (dado-chat-request
-     (lambda (reply)
-       (when reply
-	 ;; (message "reply %s" reply)
-	 (nrepl-dbind-response reply (response)
-	   (when response
-	     (funcall callback response)))))
-     messages))
+  (if (cider-nrepl-op-supported-p "dado/chat")
+      (dado-chat-request
+       (lambda (reply)
+	 (when reply
+	   ;; (message "reply %s" reply)
+	   (nrepl-dbind-response reply (response)
+	     (when response
+	       (funcall callback response)))))
+       messages)
+    (message "dado middleware is not available."))
   nil)
 
 (provide 'dado-nrepl)
