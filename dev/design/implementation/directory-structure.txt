@@ -1,0 +1,10 @@
+dev/
+  ├── ai/              # AI interaction records
+  │   ├── threads/     # Conversation threads
+  │   ├── templates/   # Templates for responses
+  │   └── prompts/     # AI prompts
+  └── design/
+      ├── scope/        # Project features
+      ├── architecture/ # Project architecture
+      ├── adr/          # Architectural Decision Records
+      └── implementation/ # Project implementation

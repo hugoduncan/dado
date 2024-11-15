@@ -1,0 +1,2 @@
+- custom types and malli schemas should go in a `model` (sub-)namespace
+- custom protocols should go in a `protocol` (sub-)namespace

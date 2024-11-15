@@ -1,0 +1,3 @@
+- Use hato for http interactions
+- Prefer malli over clojure spec.
+- Use babashka.fs for filesystem operations, in preference to clojure.java.io
