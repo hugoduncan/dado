@@ -1,0 +1,4 @@
+{:paths   ["src"]
+ :deps    {com.taoensso/telemere {:mvn/version "1.0.0-RC1"}}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps  {org.clojure/test.check {:mvn/version "LATEST"}}}}}

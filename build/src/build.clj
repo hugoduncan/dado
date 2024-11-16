@@ -17,39 +17,49 @@
    [clojure.tools.deps.util.dir :refer [with-dir]]
    [clojure.string :as str]))
 
+(def version (format "0.1.%s" (b/git-count-revs nil)))
+
+(defn- valid-project-root
+  "Return the directory name for the given polylith project name.
+  If the directory does not contain a deps.edn, return nil."
+  [project]
+  (assert project)
+  (let [cwd          (System/getProperty "user.dir")
+        project-root (io/file cwd "projects" (name project))]
+    (when (and project
+               (.exists project-root)
+               (.exists (io/file project-root "deps.edn")))
+      project-root)))
+
+(defn- ensure-project-root-for-task!
+  "Given a task name and a project name, ensure the polylith project
+  exists and seems valid, and return the absolute path to it."
+  [project task]
+  (if-let [project-root (valid-project-root project)]
+    project-root
+    (throw
+     (ex-info
+      (str task " task requires a valid :project option")
+      {:project project}))))
+
 (defn- get-project-aliases []
-  (let [edn-fn (juxt :root-edn :project-edn)]
+  (let [all-maps (juxt :root-edn :project-edn)]
     (-> (t/find-edn-maps)
-        (edn-fn)
+        all-maps
         (t/merge-edns)
         :aliases)))
 
-(defn- ensure-project-root
-  "Given a task name and a project name, ensure the project
-   exists and seems valid, and return the absolute path to it."
-  [task project]
-  (let [project-root (str (System/getProperty "user.dir") "/projects/" project)]
-    (when-not (and project
-                   (.exists (io/file project-root))
-                   (.exists (io/file (str project-root "/deps.edn"))))
-      (throw
-       (ex-info
-        (str task " task requires a valid :project option")
-        {:project project})))
-    project-root))
-
-(def version (format "0.1.%s" (b/git-count-revs nil)))
-
 (defn- project-info
+  "Return info for the polylith `project` in the current repository."
   [project]
-  (let [project-root (ensure-project-root "jar" project)
-        aliases      (with-dir (io/file project-root) (get-project-aliases))
+  (let [project-root (ensure-project-root-for-task! project "jar")
+        aliases      (with-dir project-root (get-project-aliases))
         lib          (-> aliases :jar :lib)]
     {:project-root project-root
      :aliases      aliases
      :lib          lib}))
 
-(defn- ensure-lib! [project aliases lib]
+(defn- ensure-lib-in-project-deps-edn! [project aliases lib]
   (when-not lib
     (throw
      (ex-info
@@ -57,57 +67,49 @@
            "does not specify the :lib name in its :jar alias")
       {:aliases aliases}))))
 
-
 (defn default-target
   "Return the default target directory name."
-  {:arglists '([])}
-  ([] (default-target nil))
-  ([target]
-   (or target "target")))
+  []
+  "target")
 
 (defn default-basis
   "Return the default basis."
-  {:arglists '([])}
-  ([] (default-basis nil))
-  ([basis]
-   (or basis (b/create-basis {}))))
+  []
+  (b/create-basis {}))
 
 (defn default-class-dir
-  "Return the default `class-dir`.
-  May be passed a non-default target directory name."
-  {:arglists '([] [target])}
-  ([] (default-class-dir nil nil))
-  ([target] (default-class-dir nil target))
-  ([class-dir target]
-   (or class-dir (str (default-target target) "/classes"))))
+  "Return the default `class-dir`."
+  [target]
+  (io/file target "classes"))
 
-(defn default-jar-file
-  "Given the `lib` and `version`, return the default JAR
-  filename.
-  `lib` can be omitted and will default to `'application`
-  (for uberjar usage).
-  May be passed a non-default target directory name."
-  ([version] (default-jar-file nil nil version))
-  ([lib version] (default-jar-file nil lib version))
-  ([target lib version]
-   (format "%s/%s-%s.jar" (default-target target) (name (or lib 'application)) version)))
+(defn jar-file-name
+  "Given the `lib` and `version`, return the default JAR filename."
+  [lib version]
+  (format "%s-%s.jar" (name lib) version))
 
 (defn- lifted-basis
-  "This creates a basis where source deps have their primary
+  "Return a basis where source deps have their primary
   external dependencies lifted to the top-level, such as is
   needed by Polylith and possibly other monorepo setups."
   []
   (let [default-libs (:libs (b/create-basis))
         source-dep?  #(not (:mvn/version (get default-libs %)))
         lifted-deps
-        (reduce-kv (fn [deps lib {:keys [dependents] :as coords}]
-                     (if (and (contains? coords :mvn/version) (some source-dep? dependents))
-                       (assoc deps lib (select-keys coords [:mvn/version :exclusions]))
-                       deps))
-                   {}
-                   default-libs)]
+        (reduce-kv
+         (fn [deps lib {:keys [dependents] :as coords}]
+           (if (and (contains? coords :mvn/version)
+                    (some source-dep? dependents))
+             (assoc deps lib (select-keys coords [:mvn/version :exclusions]))
+             deps))
+         {}
+         default-libs)]
     (-> (b/create-basis {:extra {:deps lifted-deps}})
         (update :libs #(into {} (filter (comp :mvn/version val)) %)))))
+
+(defn- directory?
+  [p]
+  (let [f (io/file p)]
+    (and (.exists f) (.isDirectory f))))
 
 (defn- jar-opts
   "Provide sane defaults for jar/uber tasks.
@@ -119,30 +121,32 @@
     :as   opts}]
   (when transitive
     (assert (nil? basis) ":transitive cannot be true when :basis is provided"))
-  (let [basis       (if transitive
-                      (lifted-basis)
-                      (default-basis basis))
-        directory?  #(let [f (java.io.File. %)]
-                       (and (.exists f) (.isDirectory f)))
-        scm-default (cond tag     {:tag tag}
-                          version {:tag (str "v" version)})
-        src-default (or src-dirs ["src"])
-        version     (or version "standalone")
-        xxx-file    (default-jar-file target lib version)]
+  (let [basis         (if transitive
+                        (lifted-basis)
+                        (or basis (default-basis)))
+        src-dirs      (or src-dirs ["src"])
+        resource-dirs (or resource-dirs ["resources"])
+        target        (or target (default-target))
+        class-dir     (or class-dir (default-class-dir target))
+        xxx-file      (io/file target (jar-file-name lib version))
+        jar-file      (or jar-file xxx-file)
+        uber-file     (or uber-file xxx-file)
+        scm-default   (cond tag     {:tag tag}
+                            version {:tag (str "v" version)})
+        scm           (merge scm-default scm)]
     (assoc opts
-           :basis      (default-basis basis)
-           :class-dir  (default-class-dir class-dir target)
+           :basis      basis
+           :class-dir  class-dir
            :conflict-handlers conflict-handlers
-           :jar-file   (or    jar-file    xxx-file)
-           :ns-compile (or    ns-compile  (when (and main (not sort))
-                                            [main]))
-           :scm        (merge scm-default scm)
-           :src-dirs   src-default
+           :jar-file   jar-file
+           :ns-compile (or ns-compile (when (and main (not sort))
+                                        [main]))
+           :scm        scm
+           :src-dirs   src-dirs
            :src+dirs   (if transitive
                          (filter directory? (:classpath-roots basis))
-                         (into src-default
-                               (or resource-dirs ["resources"])))
-           :uber-file  (or    uber-file   xxx-file))))
+                         (into src-dirs resource-dirs))
+           :uber-file  uber-file)))
 
 (defn jar*
   "Build the library JAR file.
@@ -196,7 +200,7 @@
    The project's deps.edn file must contain a :jar alias."
   [{:keys [project jar-file] :as opts}]
   (let [{:keys [project-root aliases lib]} (project-info project)]
-    (ensure-lib! project aliases lib)
+    (ensure-lib-in-project-deps-edn! project aliases lib)
     (binding [b/*project-root* project-root]
       (let [class-dir "target/classes"
             jar-file  (or jar-file
@@ -224,20 +228,21 @@
                         basis class-dir classifier jar-file target]}])}
   [{:keys [lib version basis class-dir classifier jar-file target] :as opts}]
   (assert (and lib version) ":lib and :version are required for install")
-  (let [target (default-target target)]
-    (b/install {:basis      (default-basis basis)
+  (let [target (or target (default-target))]
+    (b/install {:basis      (or basis (default-basis))
                 :lib        lib
                 :classifier classifier
                 :version    version
-                :jar-file   (or jar-file (default-jar-file target lib version))
-                :class-dir  (default-class-dir class-dir target)})
+                :jar-file   (or jar-file
+                                (str (io/file target (jar-file-name lib version))))
+                :class-dir  (or class-dir (str (default-class-dir target)))})
     opts))
 
 (defn install
   "Install the JAR locally."
   [{:keys [project jar-file] :as opts}]
   (let [{:keys [project-root aliases lib]} (project-info project)]
-    (ensure-lib! project aliases lib)
+    (ensure-lib-in-project-deps-edn! project aliases lib)
     (binding [b/*project-root* project-root]
       (-> opts
           (assoc :lib lib :version version)
@@ -258,9 +263,9 @@
   (assert (and lib version) ":lib and :version are required for deploy")
   (when (and installer (not= :remote installer))
     (println ":installer" installer "is deprecated -- use install task for local deployment"))
-  (let [target    (default-target target)
-        class-dir (default-class-dir class-dir target)
-        jar-file  (or jar-file (default-jar-file target lib version))
+  (let [target    (or target (default-target))
+        class-dir (or class-dir (default-class-dir target))
+        jar-file  (or jar-file (str (io/file target (jar-file-name lib version))))
         dd-deploy (try (requiring-resolve 'deps-deploy.deps-deploy/deploy) (catch Throwable _))]
     (if dd-deploy
       (dd-deploy (merge {:installer :remote :artifact (b/resolve-path jar-file)
@@ -273,7 +278,7 @@
   "Deploy the JAR to Clojars."
   [{:keys [project jar-file] :as opts}]
   (let [{:keys [project-root aliases lib]} (project-info project)]
-    (ensure-lib! project aliases lib)
+    (ensure-lib-in-project-deps-edn! project aliases lib)
     (binding [b/*project-root* project-root]
       (-> opts
           (assoc :lib lib :version version)

@@ -21,6 +21,12 @@
     )
 ```
 
+### Functions
+
+Avoid `get-` and `set-` prefixes.
+
+Side-effecting functions should have names ending in a `!`.
+
 ### Namespaces
 - Use descriptive names that reflect the purpose of the namespace
 - Include comprehensive namespace documentation
@@ -73,6 +79,14 @@ Examples
     ;; implementation
     )
 ```
+
+## Namespaces
+
+The namespace should have a doc string describing its purpose.
+
+- in the `:require` form
+  - Check that all namespaces are actually used.
+  - Order the required namespaces alphabetically.
 
 ## Function Design
 

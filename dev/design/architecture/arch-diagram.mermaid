@@ -1,0 +1,47 @@
+graph TB
+    subgraph Core Domain
+        ProjConfig[Project Configuration<br/>- API keys<br/>- Project directories<br/>- Storage locations]
+        style ProjConfig fill:#e6f3ff,stroke:#000,stroke-width:2px
+        
+        AISManager[AI Session Manager<br/>- Session state<br/>- Command interface]
+        style AISManager fill:#e6f3ff,stroke:#000,stroke-width:2px
+        
+        AIThread[AI Message Thread Manager<br/>- Message history<br/>- Thread operations]
+        style AIThread fill:#e6f3ff,stroke:#000,stroke-width:2px
+        
+        AIContext[AI Context Manager<br/>- System/project prompts<br/>- Composable templates<br/>- Document selection]
+        style AIContext fill:#e6f3ff,stroke:#000,stroke-width:2px
+    end
+
+    subgraph Ports
+        Storage[Storage Port<br/>- EDN format for all data<br/>- Config/prompt/template storage]
+        style Storage fill:#d4edda,stroke:#000,stroke-width:2px
+        
+        AI[AI Port<br/>- Provider agnostic interface<br/>- Support multiple providers]
+        style AI fill:#d4edda,stroke:#000,stroke-width:2px
+    end
+
+    subgraph Secondary Adapters
+        FileSystem[File System Adapter<br/>- EDN files in project directory<br/>- System and project storage]
+        style FileSystem fill:#fff3cd,stroke:#000,stroke-width:2px
+        
+        Claude[Claude API Adapter<br/>- HTTP client<br/>- Core async operations]
+        style Claude fill:#fff3cd,stroke:#000,stroke-width:2px
+    end
+
+    ProjConfig --> Storage
+    ProjConfig --> AI
+    AISManager --> AIThread
+    AISManager --> AIContext
+    AISManager --> ProjConfig
+    AIThread --> Storage
+    AIThread --> AI
+    AIContext --> Storage
+    AIContext --> ProjConfig
+    Storage --> FileSystem
+    AI --> Claude
+
+    %% Direct REPL access
+    REPL((REPL)) -.-> AISManager
+    REPL -.-> AIContext
+    REPL -.-> ProjConfig

@@ -1,5 +1,9 @@
 {:deps
- {;; comonents
+ {;; components
+  org.hugoduncan/dado.ai-claude        {:local/root "components/ai-claude"}
+  org.hugoduncan/dado.ai-interaction   {:local/root "components/ai-interaction"}
+  org.hugoduncan/dado.ai-message       {:local/root "components/ai-message"}
+  org.hugoduncan/dado.ai-thread        {:local/root "components/ai-thread"}
   org.hugoduncan/dado.chat-gpt         {:local/root "components/chat-gpt"}
   org.hugoduncan/dado.clojure-fns      {:local/root "components/clojure-fns"}
   org.hugoduncan/dado.clojure-ns       {:local/root "components/clojure-ns"}
@@ -8,14 +12,16 @@
   org.hugoduncan/dado.elisp-funs       {:local/root "components/elisp-funs"}
   org.hugoduncan/dado.elisp-target     {:local/root "components/elisp-target"}
   org.hugoduncan/dado.emacs-core       {:local/root "components/emacs-core"}
+  org.hugoduncan/dado.logging          {:local/root "components/logging"}
   org.hugoduncan/dado.nrepl-middleware {:local/root "components/nrepl-middleware"}
   org.hugoduncan/dado.operation        {:local/root "components/operation"}
+  org.hugoduncan/dado.project-config   {:local/root "components/project-config"}
   org.hugoduncan/dado.util             {:local/root "components/util"}
   ;; bases
   org.hugoduncan/dado.middleware       {:local/root "bases/middleware"}
   }
  :aliases {:dev {:extra-paths ["development/src"]
-                 :extra-deps  {org.clojure/clojure {:mvn/version "1.11.1"}}}
+                 :extra-deps  {org.clojure/clojure {:mvn/version "1.12.0"}}}
 
            :build {:deps
                    {io.github.clojure/tools.build

@@ -288,8 +288,20 @@ at point."
       ;; functions
       "fs" dado-suggest-fn-impl "suggest implementation" t
       "fc" dado-critique-fn "critique" t
-      "fi" dado-implement-ns "implement" t
-      "fd" dado-generate-ns-docstring "generate docstring" t)))
+      "fi" dado-implement-fn "implement" t
+      "fd" dado-generate-fn-docstring "generate docstring" t)))
+
+(defvar dado-elisp-command-map
+  (-doto (make-sparse-keymap)
+    (lsp-define-conditional-key
+      ;; features
+      "nc" dado-elisp-critique-feature "critique" t
+
+      ;; functions
+      "fs" dado-elisp-suggest-fun-impl "suggest implementation" t
+      "fc" dado-elisp-critique-fun "critique" t
+      "fi" dado-elisp-implement-fun "implement" t
+      "fd" dado-elisp-generate-fun-docstring "generate docstring" t)))
 
 (defvar dado-clojure-map
   (let ((map (make-sparse-keymap)))
@@ -298,15 +310,24 @@ at point."
     map)
   "Keymap for `dado'.")
 
+(defvar dado-elisp-map
+  (let ((map (make-sparse-keymap)))
+    (when dado-keymap-prefix
+      (define-key map (kbd dado-keymap-prefix) dado-elisp-command-map))
+    map)
+  "Keymap for `dado'.")
+
 ;;;###autoload
 (define-minor-mode dado-mode "Mode for DADO assistant."
-  :keymap dado-clojure-map
   :lighter
   (" DADO["
    (dado--buffer-coding-language)
    "]")
   :group 'dado-mode
-  :interactive '(clojure-mode emacs-lisp-mode))
+  :interactive '(clojure-mode emacs-lisp-mode)
+  :after-hook (if (eq 'elisp (dado--buffer-coding-language))
+		  (use-local-map dado-elisp-map)
+		(use-local-map dado-clojure-map)))
 
 (provide 'dado-mode)
 

@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant R as REPL
+    participant PC as Project Config
+    participant AS as AI Session Manager
+    participant CM as Context Manager
+    participant TM as Thread Manager
+    participant AP as AI Port
+    participant SP as Storage Port
+    participant C as Claude Adapter
+    participant FS as File System
+
+    %% Initial session creation
+    R->>PC: Load project config
+    PC->>SP: Read config
+    SP->>FS: Load EDN
+    FS-->>SP: Config data
+    SP-->>PC: Config
+    PC-->>R: Loaded config
+
+    %% Start AI session
+    R->>AS: Create session
+    AS->>CM: Get initial context
+    CM->>SP: Load system prompts
+    SP->>FS: Read prompts EDN
+    FS-->>SP: Prompt data
+    SP-->>CM: System prompts
+    CM-->>AS: Initial context
+    AS->>TM: Create thread
+    TM->>SP: Store new thread
+    SP->>FS: Write thread EDN
+    AS-->>R: Session ready
+
+    %% Send message
+    R->>AS: Send message
+    AS->>TM: Add to thread
+    TM->>CM: Get current context
+    CM-->>TM: Context + prompts
+    TM->>AP: Send to AI
+    AP->>C: API request
+    C-->>AP: API response
+    AP-->>TM: AI response
+    TM->>SP: Update thread
+    SP->>FS: Write updated EDN
+    TM-->>AS: Updated thread
+    AS-->>R: AI response
