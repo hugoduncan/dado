@@ -8,65 +8,105 @@
   #"^--- (?:/dev/null|[^/\n].+)\n\+\+\+ ([^/\n].+)$")
 
 (def ^:private hunk-header-pattern
-  #"^@@ .+ @@\n")
+  #"^@@ .+ @@.*$")
 
-(defn- parse-file
+(defn- parse-file-diff
   "Parse a single file section from a patch.
    Returns {:target-path <path> :is-new? <bool> :hunks <hunks>}
    or error info map."
   [file-section]
-  (let [[header & lines] (str/split-lines file-section)]
-    (if-let [[_ target-path] (re-matches file-header-pattern header)]
-      (let [is-new? (str/starts-with? header "--- /dev/null")
-            hunks   (loop [remaining-lines lines
-                           current-hunk    []
-                           hunks           []]
-                      (cond
-                        (empty? remaining-lines)
-                        (if (empty? current-hunk)
-                          hunks
-                          (conj hunks current-hunk))
+  (prn :file-section file-section)
+  (t/trace!
+   {:id :dado.patch/parse-file-diff}
+   (let [all-lines      (str/split-lines file-section)
+         [header lines] [(str/join "\n" (take 2 all-lines)) (drop 2 all-lines)]]
+     (prn :header header)
+     (if-let [[_ target-path] (re-matches file-header-pattern header)]
+       (let [is-new? (str/starts-with? header "--- /dev/null")
+             hunks   (loop [remaining-lines lines
+                            current-hunk    []
+                            hunks           []]
+                       (prn :remaining-lines remaining-lines)
+                       (prn :current-hunk current-hunk)
+                       (prn :hunks hunks)
+                       (cond
+                         (empty? remaining-lines)
+                         (if (empty? current-hunk)
+                           hunks
+                           (conj hunks current-hunk))
 
-                        (re-matches hunk-header-pattern (first remaining-lines))
-                        (recur (rest remaining-lines)
-                               [(first remaining-lines)]
-                               (if (empty? current-hunk)
-                                 hunks
-                                 (conj hunks current-hunk)))
+                         (re-matches hunk-header-pattern (first remaining-lines))
+                         (recur (rest remaining-lines)
+                                [(first remaining-lines)]
+                                (if (empty? current-hunk)
+                                  hunks
+                                  (conj hunks current-hunk)))
 
-                        :else
-                        (recur (rest remaining-lines)
-                               (conj current-hunk (first remaining-lines))
-                               hunks)))]
-        {:target-path target-path
-         :is-new?     is-new?
-         :hunks       hunks})
-      {:error   :invalid-file-header
-       :content file-section})))
+                         :else
+                         (recur (rest remaining-lines)
+                                (conj current-hunk (first remaining-lines))
+                                hunks)))]
+         {:target-path target-path
+          :is-new?     is-new?
+          :hunks       hunks})
+       {:error   :invalid-file-header
+        :content file-section}))))
+
+(defn- context-line? [line]
+  (str/starts-with? line " "))
+
+(defn- addition-line? [line]
+  (str/starts-with? line "+"))
+
+(defn- deletion-line? [line]
+  (str/starts-with? line "-"))
 
 (defn- apply-hunk
   "Apply a single hunk to content, returns [new-content error-info]"
   [content hunk]
-  (let [[header & changes] hunk
-        context-lines      (->> changes
-                                (filter #(str/starts-with? % " "))
-                                (map #(subs % 1)))
-        content-lines      (str/split-lines content)]
-    (if (< (count context-lines) 2)
+  (let [[_header & diff-lines] hunk
+        content-lines          (str/split-lines content)]
+
+    (if (not (every? context-line?   (take 2 diff-lines)))
       [content {:error :insufficient-context
                 :hunk  hunk}]
-      (let [content-str (str/join "\n" content-lines)
-            context-str (str/join "\n" context-lines)]
-        (if (str/includes? content-str context-str)
-          (let [new-content (->> changes
-                                 (remove #(str/starts-with? % "-"))
-                                 (map #(if (str/starts-with? % "+")
-                                         (subs % 1)
-                                         (subs % 1)))
-                                 (str/join "\n"))]
-            [new-content nil])
-          [content {:error :context-mismatch
-                    :hunk  hunk}])))))
+      (loop [diff-lines    diff-lines
+             content-lines content-lines
+             new-lines     []]
+        (if (seq diff-lines)
+          (if (seq content-lines)
+            (cond
+              (context-line? (first diff-lines))
+              (if (= (first content-lines) (subs (first diff-lines) 1))
+                (recur
+                 (rest diff-lines)
+                 (rest content-lines)
+                 (conj new-lines (first content-lines)))
+                (recur
+                 diff-lines
+                 (rest content-lines)
+                 (conj new-lines (first content-lines))))
+
+              (deletion-line? (first diff-lines))
+              (if (= (first content-lines) (subs (first diff-lines) 1))
+                (recur
+                 (rest diff-lines)
+                 (rest content-lines)
+                 new-lines)
+                [content {:error :context-mismatch
+                          :hunk  hunk
+                          :line  (first content-lines)
+                          :edit  (first diff-lines)}])
+
+              (addition-line? (first diff-lines))
+              (recur
+               (rest diff-lines)
+               content-lines
+               (conj new-lines (subs (first diff-lines) 1))))
+            [content {:error :context-mismatch
+                      :hunk  hunk}])
+
+          [(str/join "\n" (into new-lines content-lines)) nil])))))
 
 (defn- apply-hunks
   "Apply all hunks to content, returns [new-content errors]"
@@ -154,7 +194,7 @@
    {:id :dado.patch/apply-patch}
    (let [file-sections (str/split patch-content #"(?m)^(?=---)")]
      ;; First pass - parse and validate all files
-     (let [parsed-files (mapv parse-file file-sections)
+     (let [parsed-files (mapv parse-file-diff file-sections)
            parse-errors (->> parsed-files
                              (filter :error)
                              (mapv #(assoc % :type :error/patch-validation)))]
