@@ -15,7 +15,8 @@ Mark all lines that need to be removed or changed as with `-`.
 
 Mark all new or modified lines with `+`.
 
-Mark all unchanged context lines with ` `, including empty lines.
+Add a leading ` ` to all unchanged context lines with, including
+empty lines, and lines that already start with a ` `.
 
 Do not leave out any lines or the diff patch won't apply correctly.
 
