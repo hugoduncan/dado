@@ -45,9 +45,9 @@
          {:target-path target-path
           :is-new?     is-new?
           :hunks       hunks})
-       {:error   :invalid-file-header
-        :content file-section
-        :header  header}))))
+       {:error   :error/invalid-patch-file-header
+        :context {:hunks  file-section
+                  :header header}}))))
 
 (defn- context-line? [line]
   (str/starts-with? line " "))
@@ -72,12 +72,26 @@
         post-str               (when index (subs content (+ index n-context)))]
     (cond
       (nil? index)
-      [content {:error :context-mismatch
-                :hunk  hunk}]
+      (do
+        (t/event! :error/patch-failed
+                  {:level :warn
+                   :data  {:context context
+                           :content content}})
+        [content {:error   :error/patch-context-mismatch
+                  :context {:hunk    hunk
+                            :context context
+                            :content content}}])
 
       (and (seq context) (str/index-of post-str context))
-      [content {:error :insufficient-context
-                :hunk  hunk}]
+      (do
+        (t/event! :error/patch-failed
+                  {:level :warn
+                   :data  {:context context
+                           :content content}})
+        [content {:error   :error/patch-insufficient-context
+                  :context {:hunk    hunk
+                            :context context
+                            :content content}}])
 
       :else
       (let [pre-str       (subs content 0 index)
@@ -108,26 +122,31 @@
                    (rest diff-lines)
                    (rest context-lines)
                    new-lines)
-                  [content {:error :context-mismatch
-                            :hunk  hunk
-                            :line  (first context-lines)
-                            :edit  (first diff-lines)}])
+                  [content {:error   :context-mismatch
+                            :context {:hunk hunk
+                                      :line (first context-lines)
+                                      :edit (first diff-lines)}}])
 
                 (addition-line? (first diff-lines))
                 (recur
                  (rest diff-lines)
                  context-lines
                  (conj new-lines (subs (first diff-lines) 1))))
-              [content {:error :context-mismatch
-                        :hunk  hunk
-                        :line  "--- End of File ---"
-                        :edit  (first diff-lines)}])
-            [(str
-              pre-str
-              (str/join "\n" new-lines)
-              (when (and (not no-nl?) (empty? post-str))
-                "\n"))
-             nil]))))))
+              (do
+                (t/event!
+                 :event/failed
+                 {:level :warn
+                  :data  {:hunk hunk :content content :context context}})
+                [content {:error   :context-mismatch
+                          :context {:hunk hunk
+                                    :line "--- End of File ---"
+                                    :edit (first diff-lines)}}]
+                [(str
+                  pre-str
+                  (str/join "\n" new-lines)
+                  (when (and (not no-nl?) (empty? post-str))
+                    "\n"))
+                 nil]))))))))
 
 (defn- apply-hunks
   "Apply all hunks to content, returns [new-content errors]"
@@ -175,8 +194,8 @@
              :path  target-path}]
 
        :else
-       (let [current-content      (if is-new? "" (slurp target-path))
-             [new-content errors] (apply-hunks current-content hunks)]
+       (let [current-content       (if is-new? "" (slurp target-path))
+             [_new-content errors] (apply-hunks current-content hunks)]
          (if (seq errors)
            [nil {:errors errors
                  :path   target-path}]
@@ -189,7 +208,7 @@
 
 (defn- write-changes!
   "Write changes to filesystem, returns true on success"
-  [{:keys [target-path is-new? hunks]} new-content]
+  [{:keys [target-path is-new?]} new-content]
   (t/trace!
    {:id :dado.patch/write-file}
    (try
@@ -199,6 +218,10 @@
      (let [temp-path (str target-path ".tmp")]
        (spit temp-path new-content)
        (fs/move temp-path target-path {:replace-existing true}))
+
+     (if is-new?
+       (t/event! :patch/file-created {:level :debug :path target-path})
+       (t/event! :patch/applied {:level :debug :path target-path}))
      true
 
      (catch Exception e
@@ -238,10 +261,14 @@
                                         [{} []]
                                         valid-files)]
            (if (seq errors)
-             (throw (ex-info "Patch application failed"
-                             {:type    :error/patch-application
-                              :context {:component "dado.patch"
-                                        :errors    errors}}))
+             (do
+               (t/event!
+                :patch/failed
+                {:level :warn :errors errors})
+               (throw (ex-info "Patch application failed"
+                               {:type    :error/patch-application
+                                :context {:component "dado.patch"
+                                          :errors    errors}})))
 
              ;; Final pass - write changes to filesystem
              (do
