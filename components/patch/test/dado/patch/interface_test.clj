@@ -1,9 +1,9 @@
 (ns dado.patch.interface-test
   (:require
+   [babashka.fs :as fs]
+   [clojure.stacktrace :refer [root-cause]]
    [clojure.test :refer [deftest is testing]]
-   [dado.patch.interface :as patch]
-   [clojure.string :as str]
-   [babashka.fs :as fs]))
+   [dado.patch.interface :as patch]))
 
 (deftest apply-patch!-test
   (testing "successful patch application"
@@ -37,22 +37,25 @@
 
   (testing "patch with invalid format"
     (let [invalid-patch "invalid patch content"]
-      (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                            #"Invalid patch format"
-                            (patch/apply-patch! invalid-patch)))))
+      (try (patch/apply-patch! invalid-patch)
+           (is false "should throw")
+           (catch Exception e
+             (is (= "Invalid patch format" (ex-message (root-cause e)))))))
 
-  (testing "patch with missing file"
-    (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
-      (let [missing-file (fs/file temp-dir "missing.txt")
-            patch        (str "--- " (.getPath missing-file) "\n"
-                              "+++ " (.getPath missing-file) "\n"
-                              "@@ ... @@\n"
-                              " line1\n"
-                              "-line2\n"
-                              "+line2 updated")]
-        (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                              #"Patch application failed"
-                              (patch/apply-patch! patch))))))
+    (testing "patch with missing file"
+      (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
+        (let [missing-file (fs/file temp-dir "missing.txt")
+              patch        (str "--- " (.getPath missing-file) "\n"
+                                "+++ " (.getPath missing-file) "\n"
+                                "@@ ... @@\n"
+                                " line1\n"
+                                "-line2\n"
+                                "+line2 updated")]
+          (try (patch/apply-patch! patch)
+               (is false "should throw")
+               (catch Exception e
+                 (is (= "Patch application failed"
+                        (ex-message (root-cause e))))))))))
 
   (testing "patch with context mismatch"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
@@ -64,9 +67,11 @@
                        " line1\n"
                        "-line2 modified\n"
                        "+line2 updated")]
-        (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                              #"Patch application failed"
-                              (patch/apply-patch! patch))))))
+        (try (patch/apply-patch! patch)
+             (is false "should throw")
+             (catch Exception e
+               (is (= "Patch application failed"
+                      (ex-message (root-cause e))))))        )))
 
   (testing "patch creating a new file"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
@@ -132,9 +137,11 @@
                        "-line1"
                        "+line1 updated\n")]
         (is (= "line1" (slurp file)))
-        (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                              #"Patch application failed"
-                              (patch/apply-patch! patch))))))
+        (try (patch/apply-patch! patch)
+             (is false "should throw")
+             (catch Exception e
+               (is (= "Patch application failed"
+                      (ex-message (root-cause e)))))))))
 
   (testing "patch with insufficient context"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]

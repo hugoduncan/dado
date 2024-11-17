@@ -62,6 +62,11 @@
   "Apply a single hunk to content, returns [new-content error-info]"
   [content hunk]
   (let [[_header & diff-lines] hunk
+        diff-lines             (mapv
+                                ;; fix an issue with blank lines not being
+                                ;; marked as context
+                                #(if (= "" %) " " %)
+                                diff-lines)
         context                (->> diff-lines
                                     (filterv
                                      (some-fn context-line? deletion-line?))
@@ -140,13 +145,13 @@
                 [content {:error   :context-mismatch
                           :context {:hunk hunk
                                     :line "--- End of File ---"
-                                    :edit (first diff-lines)}}]
-                [(str
-                  pre-str
-                  (str/join "\n" new-lines)
-                  (when (and (not no-nl?) (empty? post-str))
-                    "\n"))
-                 nil]))))))))
+                                    :edit (first diff-lines)}}]))
+            [(str
+              pre-str
+              (str/join "\n" new-lines)
+              (when (and (not no-nl?) (empty? post-str))
+                "\n"))
+             nil]))))))
 
 (defn- apply-hunks
   "Apply all hunks to content, returns [new-content errors]"
