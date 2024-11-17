@@ -67,7 +67,9 @@
   (let [[_header & diff-lines] hunk
         content-lines          (str/split-lines content)]
 
-    (if (not (every? context-line?   (take 2 diff-lines)))
+    (if (and
+         (> (count content-lines) 2)
+         (not (every? context-line?  (take 2 diff-lines))))
       [content {:error :insufficient-context
                 :hunk  hunk}]
       (loop [diff-lines    diff-lines
