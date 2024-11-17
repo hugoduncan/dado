@@ -143,7 +143,7 @@
                (is (= "Patch application failed"
                       (ex-message (root-cause e)))))))))
 
-  (testing "patch with insufficient context"
+  (testing "patch with non-trivial context"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
       (let [file  (fs/file temp-dir "file.txt")
             _     (spit file
@@ -164,5 +164,27 @@
         (is (= {(.getPath file) {:lines-added 1 :lines-removed 1}}
                (patch/apply-patch! patch)))
 
-        (is (= "line A\nline B\nline C\nline A\nline B\nline D updated"
+        (is (= "line A\nline B\nline C\nline A\nline B\nline D updated\n"
+               (slurp file))))))
+
+  (testing "patch with post context content"
+    (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
+      (let [file  (fs/file temp-dir "file.txt")
+            _     (spit file
+                        (str
+                         "line A\n"
+                         "line B\n"
+                         "line C\n"
+                         "line D\n"))
+            patch (str "--- " (.getPath file) "\n"
+                       "+++ " (.getPath file) "\n"
+                       "@@ ... @@\n"
+                       " line A\n"
+                       "-line B\n"
+                       "+line B updated\n"
+                       " line C\n"                       )]
+        (is (= {(.getPath file) {:lines-added 1 :lines-removed 1}}
+               (patch/apply-patch! patch)))
+
+        (is (= "line A\nline B updated\nline C\nline D\n"
                (slurp file)))))))

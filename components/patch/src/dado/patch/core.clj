@@ -149,6 +149,7 @@
             [(str
               pre-str
               (str/join "\n" new-lines)
+              post-str
               (when (and (not no-nl?) (empty? post-str))
                 "\n"))
              nil]))))))
