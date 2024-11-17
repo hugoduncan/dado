@@ -20,27 +20,28 @@
    (let [all-lines      (str/split-lines file-section)
          [header lines] [(str/join "\n" (take 2 all-lines)) (drop 2 all-lines)]]
      (if-let [[_ target-path] (re-matches file-header-pattern header)]
-       (let [is-new? (str/starts-with? header "--- /dev/null")
-             hunks   (loop [remaining-lines lines
-                            current-hunk    []
-                            hunks           []]
-                       (cond
-                         (empty? remaining-lines)
-                         (if (empty? current-hunk)
-                           hunks
-                           (conj hunks current-hunk))
+       (let [target-path (str/trim target-path)
+             is-new?     (str/starts-with? header "--- /dev/null")
+             hunks       (loop [remaining-lines lines
+                                current-hunk    []
+                                hunks           []]
+                           (cond
+                             (empty? remaining-lines)
+                             (if (empty? current-hunk)
+                               hunks
+                               (conj hunks current-hunk))
 
-                         (re-matches hunk-header-pattern (first remaining-lines))
-                         (recur (rest remaining-lines)
-                                [(first remaining-lines)]
-                                (if (empty? current-hunk)
-                                  hunks
-                                  (conj hunks current-hunk)))
+                             (re-matches hunk-header-pattern (first remaining-lines))
+                             (recur (rest remaining-lines)
+                                    [(first remaining-lines)]
+                                    (if (empty? current-hunk)
+                                      hunks
+                                      (conj hunks current-hunk)))
 
-                         :else
-                         (recur (rest remaining-lines)
-                                (conj current-hunk (first remaining-lines))
-                                hunks)))]
+                             :else
+                             (recur (rest remaining-lines)
+                                    (conj current-hunk (first remaining-lines))
+                                    hunks)))]
          {:target-path target-path
           :is-new?     is-new?
           :hunks       hunks})
