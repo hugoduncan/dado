@@ -64,8 +64,8 @@
         content-lines          (str/split-lines content)]
 
     (if (and
-         (> (count content-lines) 2)
-         (not (every? context-line?  (take 2 diff-lines))))
+         (> (count content-lines) 1)
+         (not (every? context-line?  (take 1 diff-lines))))
       [content {:error :insufficient-context
                 :hunk  hunk}]
       (loop [diff-lines    diff-lines
