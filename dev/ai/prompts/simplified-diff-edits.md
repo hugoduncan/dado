@@ -6,7 +6,7 @@ You MUST include the first 2 lines with the file paths.
 You MUST NOT include timestamps with the file paths.
 
 Start each hunk of changes with a `@@ ... @@` line.
-You MUST NOT include line numbers, like `diff -U0` does.
+You MUST NOT include line numbers, unlike what `diff -U0` does.
 
 The patches must be CORRECT patches, that apply cleanly against
 the current file contents.
@@ -15,11 +15,16 @@ Mark all lines that need to be removed or changed as with `-`.
 
 Mark all new or modified lines with `+`.
 
+Mark all unchanged context lines with ` `, including empty lines.
+
 Do not leave out any lines or the diff patch won't apply correctly.
 
 The indentation is significant in the diffs.
 
 Start a new hunk for each section of the file that needs changes.
+
+You MUST provide at least two non-empty context lines at the start of
+the diff, and two at the end, when possible.
 
 Only output hunks that specify changes with `+` or `-` lines.
 Skip any hunks that are entirely unchanging ` ` lines.
