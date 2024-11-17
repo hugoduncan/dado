@@ -30,10 +30,10 @@
    [:role [:= :assistant]]
    [:content string?]
    [:finish-reason [:enum :stop :length :content-filter]]
-   [:usage [:map
-            [:prompt-chars pos-int?]
-            [:completion-chars pos-int?]
-            [:total-chars pos-int?]]]])
+   #_[:usage [:map
+              [:prompt-chars pos-int?]
+              [:completion-chars pos-int?]
+              [:total-chars pos-int?]]]])
 
 (def FileBlock
   [:map

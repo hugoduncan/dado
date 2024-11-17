@@ -15,7 +15,7 @@
   [:map
    [:type [:= "text"]]
    [:text string?]
-   [:cache_control {:optional true} [:enum "ephemeral"]]])
+   [:cache_control {:optional true} [:map [:type [:enum "ephemeral"]]]]])
 
 (def ClaudeMessage
   [:map

@@ -1,0 +1,5 @@
+{:paths   ["src"]
+ :deps    {com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
+           babashka/fs           {:mvn/version "0.4.19"}
+           com.taoensso/truss    {:mvn/version "1.11.0"}}
+ :aliases {:test {:extra-paths ["test"]}}}

@@ -12,3 +12,5 @@ When generating code for a polylith component:
 - provide a test implementation for the interface namespace
 
 - Also generate a `deps.edn` file for the component.
+
+- component files live under the `components/component-name` directory

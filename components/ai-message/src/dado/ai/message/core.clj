@@ -1,10 +1,22 @@
 (ns dado.ai.message.core
-  (:require [dado.ai.message.model :as model]
-            [babashka.fs :as fs]
+  (:require [babashka.fs :as fs]
+            [dado.ai.message.model :as model]
             [taoensso.telemere :as t]
             [taoensso.truss :refer [have?]]
+            [malli.core :as m]
             [malli.error :as me]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [dado.update-extractor.interface :as extractor]))
+
+(defn create-message
+  "Creates a new message with the given role and content"
+  [role content & {:keys [name]}]
+  (t/trace! {:id :message/created}
+            (let [message {:role    role
+                           :content content}]
+              (if name
+                (assoc message :name name)
+                message))))
 
 (defn create-message-thread
   "Creates a new message thread with given metadata"
@@ -17,6 +29,15 @@
               (if system-prompt
                 (assoc-in message-thread [:metadata :system-prompt] system-prompt)
                 message-thread))))
+
+(defn update-system-prompt
+  "Updates the system prompt for a message thread"
+  [message-thread system-prompt]
+  {:pre [(have? model/message-thread? message-thread
+                :data (me/humanize (m/explain model/MessageThread message-thread)))
+         (have? string? system-prompt)]}
+  (t/trace! {:id :message/system-prompt-updated}
+            (assoc-in message-thread [:metadata :system-prompt] system-prompt)))
 
 (defn add-message
   "Adds a message to a message thread"
@@ -45,9 +66,11 @@
   "Adds a response message to the message thread"
   [message-thread response]
   {:pre [(have? model/message-thread? message-thread)
-         (have? model/response-message? response)]}
+         (have? model/response-message?
+                response
+                :data (me/humanize (m/explain model/ResponseMessage response)))]}
   (t/trace! {:id :message/response-added}
-            (update message-thread :messages conj response)))
+            (update message-thread :messages conj (dissoc response :usage))))
 
 (def file-block-regex #"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```")
 
@@ -65,19 +88,9 @@
                                  :name       name}})
                    matches))))
 
-
-#_(defn extract-file-blocks [response]
-    (t/trace!
-     {:id :message/code-extracted}
-     (let [content            (:content response)
-           code-block-pattern #"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```"
-           matches            (re-seq code-block-pattern content)]
-       (for [[_ lang name-comment code] matches]
-         (let [block-type (if (re-find #"^@@" code) :unified-diff :text)
-               name       (or (and name-comment (str/trim name-comment))
-                              "unnamed")]
-           {:language lang
-            :name     name
-            :content  (str/trim code)
-            :metadata {:block-type block-type
-                       :name       name}})))))
+(defn extract-diff-blocks
+  "Extracts diff blocks from a response content string"
+  [response]
+  {:pre [(have? model/response-message? response)]}
+  (t/trace! {:id :message/diff-extracted}
+            (extractor/extract-diffs (:content response))))

@@ -21,6 +21,7 @@ We will:
   - Message construction and validation
   - Message Thread operations (add message, add context, add response).
     These work immutably.
+  - Update the system prompt for a message thread.
   - File handling (adding file content to context/messages).  Files will
     be added by specifying the path.  The path is used for the context
     `:name`, and the files content is read to pass as the context
@@ -39,6 +40,10 @@ We will:
 
 	It can use the `#"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```"` regex.
     This may need to be modified to support new other languages.
+
+  - diff block extraction from a response.  This should use the Update
+    Extractor component.  It returns a string will all the diffs that
+    have been found.
 
   - Provide validator functions for use by other components
     in pre and post conditions. The validator functions are not meant to
