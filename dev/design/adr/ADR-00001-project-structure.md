@@ -4,8 +4,8 @@ Date: 2024-11-12
 Status: Proposed
 
 ## Context
-Bootstrapping a new developer tool that will assist with AI-driven development requires 
-foundational decisions about project structure, build tools, and namespace organization. 
+Bootstrapping a new developer tool that will assist with AI-driven development requires
+foundational decisions about project structure, build tools, and namespace organization.
 These choices will impact development workflow, maintainability, and future extensibility.
 
 ## Decision
@@ -20,7 +20,7 @@ We will:
    - Direct Clojure integration
    - Simple, data-driven configuration
 
-3. Use org.hugoduncan.dado as the root namespace
+3. Use `dado` as the root namespace
    - Clear ownership and organization
    - Follows Java package naming conventions
    - Provides namespace hierarchy for project components
@@ -50,4 +50,3 @@ Initial components likely to include:
 - Emacs interface
 - Thread modeling
 - Dev directory management
-

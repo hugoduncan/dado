@@ -16,7 +16,7 @@ dev/
 ```
 
 ### 2. AI Interaction Components
-#### Claude API Wrapper (`org.hugoduncan.dado.ai.claude`)
+#### Claude API Wrapper (`dado.ai.claude`)
 - Minimal HTTP wrapper over Claude API
 - Uses hato for HTTP client
 - Handles authentication, rate limiting, errors

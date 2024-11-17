@@ -1,7 +1,7 @@
 # AI Thread Component Design
 
 ## Overview
-The thread component provides a filesystem-based thread management system for AI conversations. It handles thread creation, persistence, and retrieval in a provider-agnostic way. Located in the `org.hugoduncan.dado.ai.thread` namespace.
+The thread component provides a filesystem-based thread management system for AI conversations. It handles thread creation, persistence, and retrieval in a provider-agnostic way. Located in the `dado.ai.thread` namespace.
 
 ## Thread Storage Format
 
@@ -27,7 +27,7 @@ dev/
 ## Data Models
 
 ```clojure
-(ns org.hugoduncan.dado.ai.thread.model
+(ns dado.ai.thread.model
   "Data models for AI conversation threads.")
 
 (defrecord Thread
@@ -54,11 +54,11 @@ dev/
 ## Core Functions
 
 ```clojure
-(ns org.hugoduncan.dado.ai.thread
+(ns dado.ai.thread
   "Thread management for AI conversations."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [org.hugoduncan.dado.ai.thread.model :as model]))
+            [dado.ai.thread.model :as model]))
 
 ;; Thread Management
 (defn create-thread
@@ -176,14 +176,14 @@ dev/
 
 ```clojure
 ;; Creating a new thread
-(create-thread 
+(create-thread
   "Refactor Authentication System"
   :context {:documents ["adr/auth-system.md"
                        "src/auth/core.clj"]})
 ;; => #Thread{:id "20241112145522-refactor_auth_system" ...}
 
 ;; Adding a message
-(add-message 
+(add-message
   "20241112145522-refactor_auth_system"
   :human
   "How should we restructure the auth system?"

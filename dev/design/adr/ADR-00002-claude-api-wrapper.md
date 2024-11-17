@@ -16,7 +16,7 @@ simple and focused on API interaction only, allowing for:
 
 ## Decision
 
-1. Create a minimal wrapper under the org.hugoduncan.dado.ai.claude namespace prefix
+1. Create a minimal wrapper under the dado.ai.claude namespace prefix
    - Direct mapping to Claude API endpoints
    - No additional abstraction layers
    - Focus on HTTP interaction only

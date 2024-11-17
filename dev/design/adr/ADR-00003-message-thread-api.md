@@ -17,9 +17,9 @@ The message thread management system needs to be independent of specific AI prov
 ## Decision
 
 1. Create three coordinated components:
-   - Message Thread Management (`org.hugoduncan.dado.ai.thread`)
-   - AI Provider Integration (`org.hugoduncan.dado.ai.claude`)
-   - AI Interaction (`org.hugoduncan.dado.ai.interaction`)
+   - Message Thread Management (`dado.ai.thread`)
+   - AI Provider Integration (`dado.ai.claude`)
+   - AI Interaction (`dado.ai.interaction`)
 
 2. Core Data Models:
    ```clojure
@@ -60,13 +60,13 @@ The message thread management system needs to be independent of specific AI prov
      * Message addition
      * Context management
      * Thread retrieval and search
-   
+
    - AI Provider Integration:
      * Provider API interaction
      * Rate limiting
      * Error handling
      * Response streaming
-   
+
    - AI Interaction:
      * Coordinates between components
      * Manages system prompts
@@ -108,5 +108,4 @@ The message thread management system needs to be independent of specific AI prov
 1. Persistence Implementation:
    ```clojure
    (def edn-readers
-     {'org.hugoduncan.dado.ai.interaction.model.MessageThread 
-     
+     {'dado.ai.interaction.model.MessageThread

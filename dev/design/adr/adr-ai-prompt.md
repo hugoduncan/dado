@@ -24,8 +24,8 @@ We will create a System Prompt component that:
 - Templates use `{{key}}` syntax for substitution
 - Uses trace! logging on template reading and prompt construction
 - Throws exceptions for missing templates or data
-- Uses the `dado.ai.prompt` namespace
-- Uses the `ai-prompt` component name
+- The implement must use the `dado.ai.prompt` namespace
+- The implement must use the `ai-prompt` component name
 
 The `construct-prompt` function will:
 1. Read and parse all specified templates
