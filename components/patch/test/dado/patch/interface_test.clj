@@ -1,3 +1,4 @@
 (ns dado.patch.interface-test
-  (:require [dado.patch.interface :as sut]
-            [clojure.test :as t]))
+  (:require
+   [clojure.test :as t]
+   [dado.patch.interface :as patch]))
