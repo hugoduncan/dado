@@ -102,7 +102,9 @@
                content-lines
                (conj new-lines (subs (first diff-lines) 1))))
             [content {:error :context-mismatch
-                      :hunk  hunk}])
+                      :hunk  hunk
+                      :line  "--- End of File ---"
+                      :edit  (first diff-lines)}])
 
           [(str/join "\n" (into new-lines content-lines)) nil])))))
 
