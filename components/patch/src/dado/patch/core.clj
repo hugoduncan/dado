@@ -15,20 +15,15 @@
    Returns {:target-path <path> :is-new? <bool> :hunks <hunks>}
    or error info map."
   [file-section]
-  (prn :file-section file-section)
   (t/trace!
    {:id :dado.patch/parse-file-diff}
    (let [all-lines      (str/split-lines file-section)
          [header lines] [(str/join "\n" (take 2 all-lines)) (drop 2 all-lines)]]
-     (prn :header header)
      (if-let [[_ target-path] (re-matches file-header-pattern header)]
        (let [is-new? (str/starts-with? header "--- /dev/null")
              hunks   (loop [remaining-lines lines
                             current-hunk    []
                             hunks           []]
-                       (prn :remaining-lines remaining-lines)
-                       (prn :current-hunk current-hunk)
-                       (prn :hunks hunks)
                        (cond
                          (empty? remaining-lines)
                          (if (empty? current-hunk)
