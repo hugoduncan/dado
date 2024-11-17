@@ -5,7 +5,7 @@
             [taoensso.truss :refer [have!]]))
 
 (def ^:private file-header-pattern
-  #"^--- (?:/dev/null|[^/\n].+)\n\+\+\+ ([^/\n].+)$")
+  #"^--- (?:/dev/null|[^\n].+)\n\+\+\+ ([^\n].+)$")
 
 (def ^:private hunk-header-pattern
   #"^@@ .+ @@.*$")
@@ -46,7 +46,8 @@
           :is-new?     is-new?
           :hunks       hunks})
        {:error   :invalid-file-header
-        :content file-section}))))
+        :content file-section
+        :header  header}))))
 
 (defn- context-line? [line]
   (str/starts-with? line " "))
@@ -61,57 +62,72 @@
   "Apply a single hunk to content, returns [new-content error-info]"
   [content hunk]
   (let [[_header & diff-lines] hunk
-        content-lines          (cond-> (str/split-lines content)
-                                 (str/ends-with? content "\n")
-                                 (conj ""))
-        diff-lines             (cond-> diff-lines
-                                 (= (last diff-lines)
-                                    "\\ No newline at end of file")
-                                 (butlast))]
-    (if (and
-         (> (count content-lines) 1)
-         (not (every? context-line?  (take 1 diff-lines))))
+        context                (->> diff-lines
+                                    (filterv
+                                     (some-fn context-line? deletion-line?))
+                                    (mapv #(subs % 1))
+                                    (str/join "\n"))
+        n-context              (count context)
+        index                  (str/index-of content context)
+        post-str               (when index (subs content (+ index n-context)))]
+    (cond
+      (nil? index)
+      [content {:error :context-mismatch
+                :hunk  hunk}]
+
+      (and (seq context) (str/index-of post-str context))
       [content {:error :insufficient-context
                 :hunk  hunk}]
-      (loop [diff-lines    diff-lines
-             content-lines content-lines
-             new-lines     []]
-        (if (seq diff-lines)
-          (if (or (seq content-lines) (addition-line? (first diff-lines)))
-            (cond
-              (context-line? (first diff-lines))
-              (if (= (first content-lines) (subs (first diff-lines) 1))
+
+      :else
+      (let [pre-str       (subs content 0 index)
+            context-lines (str/split-lines context)
+            no-nl?        (= (last diff-lines)
+                             "\\ No newline at end of file")
+            diff-lines    (cond-> diff-lines no-nl? (butlast))]
+        (loop [diff-lines    diff-lines
+               context-lines context-lines
+               new-lines     []]
+          (if (seq diff-lines)
+            (if (or (seq context-lines) (addition-line? (first diff-lines)))
+              (cond
+                (context-line? (first diff-lines))
+                (if (= (first context-lines) (subs (first diff-lines) 1))
+                  (recur
+                   (rest diff-lines)
+                   (rest context-lines)
+                   (conj new-lines (first context-lines)))
+                  (recur
+                   diff-lines
+                   (rest context-lines)
+                   (conj new-lines (first context-lines))))
+
+                (deletion-line? (first diff-lines))
+                (if (= (first context-lines) (subs (first diff-lines) 1))
+                  (recur
+                   (rest diff-lines)
+                   (rest context-lines)
+                   new-lines)
+                  [content {:error :context-mismatch
+                            :hunk  hunk
+                            :line  (first context-lines)
+                            :edit  (first diff-lines)}])
+
+                (addition-line? (first diff-lines))
                 (recur
                  (rest diff-lines)
-                 (rest content-lines)
-                 (conj new-lines (first content-lines)))
-                (recur
-                 diff-lines
-                 (rest content-lines)
-                 (conj new-lines (first content-lines))))
-
-              (deletion-line? (first diff-lines))
-              (if (= (first content-lines) (subs (first diff-lines) 1))
-                (recur
-                 (rest diff-lines)
-                 (rest content-lines)
-                 new-lines)
-                [content {:error :context-mismatch
-                          :hunk  hunk
-                          :line  (first content-lines)
-                          :edit  (first diff-lines)}])
-
-              (addition-line? (first diff-lines))
-              (recur
-               (rest diff-lines)
-               content-lines
-               (conj new-lines (subs (first diff-lines) 1))))
-            [content {:error :context-mismatch
-                      :hunk  hunk
-                      :line  "--- End of File ---"
-                      :edit  (first diff-lines)}])
-
-          [(str/join "\n" (into new-lines content-lines)) nil])))))
+                 context-lines
+                 (conj new-lines (subs (first diff-lines) 1))))
+              [content {:error :context-mismatch
+                        :hunk  hunk
+                        :line  "--- End of File ---"
+                        :edit  (first diff-lines)}])
+            [(str
+              pre-str
+              (str/join "\n" new-lines)
+              (when (and (not no-nl?) (empty? post-str))
+                "\n"))
+             nil]))))))
 
 (defn- apply-hunks
   "Apply all hunks to content, returns [new-content errors]"
