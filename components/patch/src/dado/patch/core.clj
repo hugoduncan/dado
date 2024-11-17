@@ -61,8 +61,13 @@
   "Apply a single hunk to content, returns [new-content error-info]"
   [content hunk]
   (let [[_header & diff-lines] hunk
-        content-lines          (str/split-lines content)]
-
+        content-lines          (cond-> (str/split-lines content)
+                                 (str/ends-with? content "\n")
+                                 (conj ""))
+        diff-lines             (cond-> diff-lines
+                                 (= (last diff-lines)
+                                    "\\ No newline at end of file")
+                                 (butlast))]
     (if (and
          (> (count content-lines) 1)
          (not (every? context-line?  (take 1 diff-lines))))
