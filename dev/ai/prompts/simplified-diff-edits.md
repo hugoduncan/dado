@@ -19,12 +19,15 @@ Mark all unchanged context lines with ` `, including empty lines.
 
 Do not leave out any lines or the diff patch won't apply correctly.
 
-The indentation is significant in the diffs.
-
-Start a new hunk for each section of the file that needs changes.
+The indentation is VERY significant in the diffs, or the diff patch
+won't apply correctly.
 
 You MUST provide at least two non-empty context lines at the start of
 the diff, and two at the end, when possible.
+
+You MUST NOT start a diff with a context line with no content.
+
+Start a new hunk for each section of the file that needs changes.
 
 Only output hunks that specify changes with `+` or `-` lines.
 Skip any hunks that are entirely unchanging ` ` lines.
