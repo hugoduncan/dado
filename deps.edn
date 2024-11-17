@@ -1,6 +1,7 @@
 {:deps
  {;; components
   org.hugoduncan/dado.ai-claude         {:local/root "components/ai-claude"}
+  org.hugoduncan/dado.ai-prompt         {:local/root "components/ai-prompt"}
   org.hugoduncan/dado.ai-interaction    {:local/root "components/ai-interaction"}
   org.hugoduncan/dado.ai-message        {:local/root "components/ai-message"}
   org.hugoduncan/dado.ai-thread         {:local/root "components/ai-thread"}
