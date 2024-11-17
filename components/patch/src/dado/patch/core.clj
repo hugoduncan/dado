@@ -72,7 +72,7 @@
              content-lines content-lines
              new-lines     []]
         (if (seq diff-lines)
-          (if (seq content-lines)
+          (if (or (seq content-lines) (addition-line? (first diff-lines)))
             (cond
               (context-line? (first diff-lines))
               (if (= (first content-lines) (subs (first diff-lines) 1))
