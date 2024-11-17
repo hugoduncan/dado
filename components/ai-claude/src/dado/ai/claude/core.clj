@@ -49,7 +49,7 @@
        system-content (assoc :system system-content)))))
 
 (defn- from-claude-response [response]
-  (t/log! :warn {:response response})
+  (t/log! :debug {:response response})
   (let [content (get-in response [:content 0 :text])]
     {:role          :assistant
      :content       content

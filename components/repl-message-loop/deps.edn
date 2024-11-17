@@ -1,0 +1,7 @@
+{:deps {org.clojure/clojure   {:mvn/version "1.11.1"}
+        com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
+        com.taoensso/truss    {:mvn/version "1.12.0"}
+        metosin/malli         {:mvn/version "0.13.0"}
+        dado/ai.message       {:local/root "../ai-message"}
+        dado/ai.claude        {:local/root "../ai-claude"}
+        dado/patch            {:local/root "../patch"}}}
