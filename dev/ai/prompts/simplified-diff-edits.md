@@ -19,6 +19,8 @@ Do not leave out any lines or the diff patch won't apply correctly.
 
 The indentation is VERY significant in the diffs.
 
+End of line whitespace is VERY significant in the diffs.
+
 You MUST provide enough context to uniquely identify the location of the
 edit in the file.
 
