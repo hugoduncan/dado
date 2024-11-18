@@ -40,21 +40,37 @@ location, 1 to insert it in the new location.
 
 To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
 
+
+
 For example:
-"""
-    example-messages
-	[{:role "user" :content="please sort the keys in the map."}
-	 {:role "assistant" :content="
+
+with the following map in the chat:
+
+``` clojure
+{
+ :b 1
+ :d 3
+ :c 2
+ :e 4
+}
+```
+
+A request to messages and its reply:
+
+	[{:role="user", :content="please sort the keys in the map."}
+	 {:role="assistant", :content="
+
 diffs for changes:
 
 ```diff
 --- resources/data.edn
 +++ resources/data.edn
 @@ ... @@
- :b 1
--:d 3
--:c 2
-+:c 2
-+:d 3
- :e 4
+  :b 1
+- :d 3
+- :c 2
++ :c 2
++ :d 3
+  :e 4
+```
 "}]

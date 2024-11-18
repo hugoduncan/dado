@@ -143,9 +143,10 @@
                  {:level :warn
                   :data  {:hunk hunk :content content :context context}})
                 [content {:error   :context-mismatch
-                          :context {:hunk hunk
-                                    :line "--- End of File ---"
-                                    :edit (first diff-lines)}}]))
+                          :context {:hunk           hunk
+                                    :line           "--- End of File ---"
+                                    :edit           (first diff-lines)
+                                    :remaining-diff diff-lines}}]))
             [(str
               pre-str
               (str/join "\n" new-lines)
