@@ -21,6 +21,9 @@ The indentation is VERY significant in the diffs.
 
 End of line whitespace is VERY significant in the diffs.
 
+Whitespace after the start of line ` `, `+` or `-` is VERY significant
+in the diffs.
+
 You MUST provide enough context to uniquely identify the location of the
 edit in the file.
 
