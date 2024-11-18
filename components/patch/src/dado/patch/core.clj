@@ -359,6 +359,12 @@
                  (conj errors error)
                  errors))))))
 
+(defn- apply-create
+  "Apply all hunks to content, returns [new-content errors]"
+  [hunks]
+  (prn :apply-create :hunks hunks)
+  [(str (str/join "\n" (first hunks)) "\n") nil])
+
 (defn- count-search-replace-changes
   "Count lines added and removed in a file's hunks"
   [hunks]
@@ -398,12 +404,10 @@
                [{:op op :paths [target-path]} nil])))
 
          :create
-         (if (fs/exists? target-path)
-           [nil {:error :file-exists :path target-path}]
-           (let [[new-content errors] (apply-search-replace-hunks "" hunks)]
-             (if (seq errors)
-               [nil {:errors errors :path target-path}]
-               [{:op op :paths [target-path]} nil])))
+         (let [[new-content errors] (apply-create hunks)]
+           (if (seq errors)
+             [nil {:errors errors :path target-path}]
+             [{:op op :paths [target-path]} nil]))
 
          :delete
          (if (not (fs/exists? target-path))
@@ -578,13 +582,15 @@
               (do
                 (doseq [op-info valid-ops]
                   (case (:op op-info)
-                    (:edit :create)
-                    (let [current-content (if (= :create (:op op-info))
-                                            ""
-                                            (slurp (:target-path op-info)))
+                    (:edit)
+                    (let [current-content (slurp (:target-path op-info))
                           [new-content _] (apply-search-replace-hunks
                                            current-content
                                            (:hunks op-info))]
+                      (write-changes! op-info new-content))
+
+                    (:create)
+                    (let [[new-content _] (apply-create (:hunks op-info))]
                       (write-changes! op-info new-content))
 
                     (:delete :move :copy)

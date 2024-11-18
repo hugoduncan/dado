@@ -279,11 +279,8 @@
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
       (let [new-file (fs/file temp-dir "new-file.txt")
             patch    (str "CREATE " (.getPath new-file) "\n"
-                          "<<<<<<< SEARCH\n"
-                          "=======\n"
                           "new line1\n"
-                          "new line2\n"
-                          ">>>>>>> REPLACE")]
+                          "new line2\n")]
         (is (= [{:op :create :paths [(.getPath new-file)]}]
                (patch/apply-search-replace-diff-patch! patch)))
         (is (= "new line1\nnew line2\n" (slurp new-file))))))
