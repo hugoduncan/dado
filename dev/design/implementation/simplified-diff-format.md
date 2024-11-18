@@ -18,12 +18,18 @@ It is based on the format produced by `diff -U0`.
 - Each hunk starts with a `@@ ... @@` line.
   This is followed by a sequence of lines
 
-  Unchanged lines are provided for context.  Each unchanged line is
+- Unchanged lines are provided for context.  Each unchanged line is
   prefixed by ` `.
 
-  Deleted lines are prefixed by `-`.
+- Deleted lines are prefixed by `-`.
 
-  Added lines are prefixed by `+`.
+- Added lines are prefixed by `+`.
+
+
+- The whitespace after the ` ` or `-` marker must match the whitespace
+  in the source.
+
+- End of line The whitespace is significant
 
 ```diff
 --- target/file/path
@@ -42,4 +48,32 @@ It is based on the format produced by `diff -U0`.
 +++ some/new-file-path
 @@ ... @@
 +[added lines]
+```
+
+For example, given a file `src/example.clj`:
+
+``` clojure
+(defn f
+  "Some doc"
+  [a]
+  (do
+     (println 1)
+     (println 2)
+     (println 3)))
+```
+
+A valid diff might be:
+
+``` diff
+--- src/example.clj
++++ src/example.clj
+@@ ... @@
+ (defn f
+   "Some doc"
+   [a]
+   (do
+      (println 1)
+-     (println 2)
++     (println 4)
+      (println 3)))
 ```
