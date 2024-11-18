@@ -45,7 +45,7 @@ location, 1 to insert it in the new location.
 
 To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
 
-
+Before outputting the diff, consider if it could be applied as expected.
 
 For example:
 
