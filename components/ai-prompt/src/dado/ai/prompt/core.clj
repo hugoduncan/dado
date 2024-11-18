@@ -1,33 +1,43 @@
 (ns dado.ai.prompt.core
   "Core implementation of the AI Prompt component."
   (:require
-   [clojure.java.io :as io]
+   [babashka.fs :as fs]
+   [clojure.string :as str]
    [selmer.parser :as selmer]
-   [taoensso.telemere :as t]))
+   [selmer.util :as selmer-util]
+   [taoensso.telemere :as t]
+   [taoensso.truss :refer [have]]))
 
-(def ^:private prompt-dir "dev/ai/prompts/")
+
+(defn missing-value-fn [tag context-map]
+  (throw
+   (ex-info
+    "Missing data for prompt substitution"
+    {:tag tag :context-map context-map})))
+
+(selmer-util/set-missing-value-formatter! missing-value-fn)
+
+(defn- prompt-dir [project-config]
+  (fs/path (have (:dev-dir project-config)) "ai" "prompts"))
 
 (defn- read-template
-  [template-name]
-  (let [template-path (io/file prompt-dir (str template-name ".md"))]
+  [prompt-dir template-name]
+  (let [template-path (fs/path prompt-dir (str template-name ".md"))]
     (t/trace!
-      {:id ::read-template :data {:template template-name}}
-      (if (.exists template-path)
-        (slurp template-path)
-        (throw (ex-info "Missing template file" {:type :error/missing-template
-                                                 :template template-name}))))))
-
-(defn- parse-template
-  [template-name template-content]
-  (t/trace!
-    {:id ::parse-template :data {:template template-name}}
-    (selmer/parse template-content)))
+     {:id ::read-template :data {:template template-name}}
+     (if (fs/exists? template-path)
+       (slurp (fs/file template-path))
+       (throw (ex-info
+               "Missing template file"
+               {:type    :error/missing-template
+                :context {:template   template-name
+                          :prompt-dir prompt-dir}}))))))
 
 (defn- compose-templates
   [parsed-templates]
   (t/trace!
-    {:id ::compose-templates}
-    (apply str parsed-templates)))
+   {:id ::compose-templates}
+   (str/join "\n" parsed-templates)))
 
 (defn- substitute-data
   [composed-template data]
@@ -36,19 +46,19 @@
     (selmer/render composed-template data)))
 
 (defn construct-prompt
-  [template-names data]
+  [project-config template-names data]
   (t/trace!
-    {:id ::construct-prompt :data {:templates template-names :keys (keys data)}}
-    (let [templates (map (fn [template-name]
-                           (-> template-name
-                               read-template
-                               (parse-template template-name)))
-                         template-names)
-          composed (compose-templates templates)
-          substituted (substitute-data composed data)]
-      (if-not (re-find #"\{\{.+?\}\}" substituted)
-        substituted
-        (throw (ex-info "Missing data for prompt substitution"
-                        {:type :error/missing-data
-                         :data data
-                         :unresolved-template substituted}))))))
+   {:id ::construct-prompt :data {:templates template-names :keys (keys data)}}
+   (let [templates   (map (fn [template-name]
+                            (-> (read-template
+                                 (prompt-dir project-config)
+                                 template-name)))
+                          template-names)
+         composed    (compose-templates templates)
+         substituted (substitute-data composed data)]
+     (if-not (re-find #"\{\{.+?\}\}" substituted)
+       substituted
+       (throw (ex-info "Missing data for prompt substitution"
+                       {:type                :error/missing-data
+                        :data                data
+                        :unresolved-template substituted}))))))
