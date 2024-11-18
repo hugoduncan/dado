@@ -53,12 +53,19 @@
   [response]
   (core/extract-file-blocks response))
 
-(defn extract-diff-blocks
-  "Extracts diff blocks from an AI response message.
+(defn extract-simplified-diffs
+  "Extracts simplified diffs from an AI response message.
    Returns string containing all extracted diffs.
    Throws if response is invalid."
   [response]
-  (core/extract-diff-blocks response))
+  (core/extract-simplified-diffs response))
+
+(defn extract-search-replace-diffs
+  "Extracts search replace diffs from an AI response message.
+   Returns string containing all extracted diffs.
+   Throws if response is invalid."
+  [response]
+  (core/extract-search-replace-diffs response))
 
 ;; Expose validators for use by other components
 (def message? model/message?)

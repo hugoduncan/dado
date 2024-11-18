@@ -45,10 +45,15 @@
               _        (t/event! :message-loop/response-processed)
 
               ;; Extract and apply any diffs
-              diff-content (ai-message/extract-diff-blocks response)]
+              simplified-diffs     (ai-message/extract-simplified-diffs response)
+              search-replace-diffs (ai-message/extract-search-replace-diffs response)]
 
-          (when (seq diff-content)
-            (patch/apply-patch! diff-content)
+          (when (seq simplified-diffs)
+            (patch/apply-simplified-diff-patch! simplified-diffs)
+            (t/event! :message-loop/diffs-applied))
+
+          (when (seq search-replace-diffs)
+            (patch/apply-search-replace-diff-patch! search-replace-diffs)
             (t/event! :message-loop/diffs-applied))
 
           ;; Add response and continue loop

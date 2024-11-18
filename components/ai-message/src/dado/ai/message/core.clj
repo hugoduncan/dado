@@ -88,9 +88,16 @@
                                  :name       name}})
                    matches))))
 
-(defn extract-diff-blocks
-  "Extracts diff blocks from a response content string"
+(defn extract-simplified-diffs
+  "Extracts simplified diff blocks from a response content string"
   [response]
   {:pre [(have? model/response-message? response)]}
   (t/trace! {:id :message/diff-extracted}
-            (extractor/extract-diffs (:content response))))
+            (extractor/extract-simplified-diffs (:content response))))
+
+(defn extract-search-replace-diffs
+  "Extracts search/replace diffs from a response content string"
+  [response]
+  {:pre [(have? model/response-message? response)]}
+  (t/trace! {:id :message/diff-extracted}
+            (extractor/extract-search-replace-diffs (:content response))))
