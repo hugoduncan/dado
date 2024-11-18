@@ -9,7 +9,7 @@
 
 (def ^:private default-api-url "https://api.anthropic.com/v1/messages")
 (def ^:private default-model-name "claude-3-5-sonnet-20241022")
-(def ^:private default-max-tokens 4096)
+(def ^:private default-max-tokens 8192)
 
 (defn- to-claude-role [role]
   (name role))
