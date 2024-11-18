@@ -1,5 +1,6 @@
 (ns dado.ai.prompt.interface-test
   (:require [clojure.test :refer [deftest testing is]]
+            [clojure.java.io :as io]
             [dado.ai.prompt.interface :as prompt]
             [babashka.fs :as fs]))
 
@@ -11,17 +12,27 @@
       (spit (fs/file prompt-dir "template2.md") "Your request is: {{request}}")
 
       (let [project-config {:dev-dir (str temp-dir)}]
-        (testing "successful prompt construction"
+        (testing "successful prompt construction from project templates"
           (let [result (prompt/construct-prompt
-                        project-config
-                        ["template1" "template2"]
-                        {:name "AI" :request "Tell me a joke"})]
+                       project-config
+                       ["template1" "template2"]
+                       {:name "AI" :request "Tell me a joke"})]
             (is (= "Hello AI\nYour request is: Tell me a joke" result))))
 
-        (testing "missing template"
+        (testing "template fallback to resources"
+          (with-redefs [io/resource (fn [path] 
+                                    (when (= path "dev/ai/prompts/resource-template.md")
+                                      (io/input-stream (.getBytes "Resource {{type}}"))))]
+            (let [result (prompt/construct-prompt
+                         project-config
+                         ["resource-template"]
+                         {:type "test"})]
+              (is (= "Resource test" result)))))
+
+        (testing "template not found in either location"
           (is (thrown-with-msg?
                clojure.lang.ExceptionInfo
-               #"Missing template file"
+               #"Template not found in project or resources"
                (prompt/construct-prompt
                 project-config
                 ["missing-template"]
@@ -29,13 +40,11 @@
 
         (testing "malformed template"
           (spit (fs/file prompt-dir "bad-template.md") "{{unclosed")
-          (is (thrown-with-msg?
-               clojure.lang.ExceptionInfo
-               #""
-               (prompt/construct-prompt
-                project-config
-                ["bad-template"]
-                {}))))
+          (is (thrown? clojure.lang.ExceptionInfo
+                      (prompt/construct-prompt
+                       project-config
+                       ["bad-template"]
+                       {}))))
 
         (testing "missing data"
           (is (thrown-with-msg?
