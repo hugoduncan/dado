@@ -4,7 +4,10 @@ Search Replace Diff Format. Do NOT user other formats.
 Only ever return code in a Search Replace Diff! Do NOT use Simplified
 Diff format.
 
-You MUST include the first 2 lines with the file paths.
+The whole Simplified diff should be within a markdown code block using
+the `searchreplace` language.
+
+For each file, you MUST include the first 2 lines with the file paths.
 
 Start each hunk of changes with a `<<<<<<< SEARCH` line.
 
@@ -38,3 +41,7 @@ To move code within a file, use 2 hunks: 1 to delete it from its current
 location, 1 to insert it in the new location.
 
 To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
+
+SEARCH blocks should be concise.  Do not include a large sequences of
+unchanged lines.  Prefer to split blocks into smaller blocks, with only
+a few unchanged lines to uniquely identify the edit site.
