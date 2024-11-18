@@ -21,7 +21,7 @@
   (fs/path (have (:dev-dir project-config)) "ai" "prompts"))
 
 (defn- resource-template-path [template-name]
-  (str "dev/ai/prompts/" template-name ".md"))
+  (str "dado/ai/prompts/" template-name ".md"))
 
 (defn- read-template
   "Reads template first from project directory, falling back to resources.
