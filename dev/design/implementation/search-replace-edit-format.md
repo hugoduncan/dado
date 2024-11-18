@@ -1,24 +1,23 @@
-# Search Replace Diff Format
+# Search Replace Edit Format
 
-- The search replace diff consists of a markdown code block with the
+- The search replace edit format consists of a markdown code block with the
   `searchreplace` language marker.
 
 - The code block contains a sequence of edit instructions for one or more files.
 
-- Each file starts with:
+- Each file starts with `CREATE` or `EDIT` and the file name, with no
+  decoration:
 
 ```
---- target/file/path
-+++ target/file/path
+EDIT target/file/path
 ```
   If this is a new file it will start with:
 ```
---- /dev/null
-+++ target/file/path
+CREATE target/file/path
 ```
 
-This is followed by one or more hunks to be applied to the file.  Each
-hunk uses this format:
+This is followed by one or more search/replace edit chunks to be applied
+to the file.  Each chunk uses this format:
 
 - A marker for start of the search block `<<<<<<< SEARCH`.
 - A sequence of lines that will be searched.
@@ -27,8 +26,7 @@ hunk uses this format:
 - A marker for end of the replace block `>>>>>>> REPLACE`.
 
 ``` searchreplace
---- target/file/path
-+++ target/file/path
+EDIT target/file/path
 <<<<<<< SEARCH
 [lines to replace]
 =======
@@ -39,8 +37,7 @@ hunk uses this format:
 =======
 [other replacement lines]
 >>>>>>> REPLACE
---- /dev/null
-+++ some/new-file-path
+CREATE some/new-file-path
 <<<<<<< SEARCH
 =======
 [new lines]
@@ -62,8 +59,7 @@ For example, given a file `src/example.clj`:
 A valid diff might be:
 
 ``` searchreplace
---- src/example.clj
-+++ src/example.clj
+EDIT src/example.clj
 <<<<<<< SEARCH
  (defn f
   "Some doc"

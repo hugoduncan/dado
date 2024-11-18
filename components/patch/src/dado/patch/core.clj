@@ -7,6 +7,9 @@
 (def ^:private file-header-pattern
   #"^--- (?:/dev/null|[^\n].+)\n\+\+\+ ([^\n].+)$")
 
+(def ^:private search-replace-file-header-pattern
+  #"^(EDIT|CREATE) ([^\n].+)$")
+
 (def ^:private simplified-hunk-header-pattern
   #"^@@ .+ @@.*$")
 
@@ -62,10 +65,12 @@
   (t/trace!
    {:id :dado.patch/parse-file-diff}
    (let [all-lines      (str/split-lines file-section)
-         [header lines] [(str/join "\n" (take 2 all-lines)) (drop 2 all-lines)]]
-     (if-let [[_ target-path] (re-matches file-header-pattern header)]
+         [header lines] [(first all-lines) (rest all-lines)]]
+     (if-let [[_ verb target-path] (re-matches
+                                    search-replace-file-header-pattern
+                                    header)]
        (let [target-path (str/trim target-path)
-             is-new?     (str/starts-with? header "--- /dev/null")
+             is-new?     (= "CREATE" verb)
              hunks       (loop [remaining-lines lines
                                 current-hunk    []
                                 hunks           []]
@@ -285,11 +290,6 @@
         n-context              (count search)
         index                  (str/index-of content search)
         post-str               (when index (subs content (+ index n-context)))]
-    (prn :index index)
-    (prn :search search)
-    (prn :replace replace)
-    (prn :post-str post-str)
-    (prn :content content)
     (cond
       (nil? index)
       (do
@@ -323,7 +323,6 @@
 (defn- apply-search-replace-hunks
   "Apply all hunks to content, returns [new-content errors]"
   [content hunks]
-  (prn :Contentx content)
   (loop [current-content content
          remaining-hunks hunks
          errors          []]
@@ -460,7 +459,7 @@
   [patch-content]
   (t/trace!
    {:id :dado.patch/apply-patch}
-   (let [file-sections (str/split patch-content #"(?m)^(?=---)")]
+   (let [file-sections (str/split patch-content #"(?m)^(?=EDIT|CREATE)")]
      ;; First pass - parse and validate all files
      (let [parsed-files (mapv parse-search-replace-file-diff file-sections)
            parse-errors (->> parsed-files
