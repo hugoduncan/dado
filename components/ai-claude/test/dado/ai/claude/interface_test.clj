@@ -1,8 +1,7 @@
 (ns dado.ai.claude.interface-test
-  (:require [clojure.test :refer [deftest is testing]]
-            [dado.ai.claude.interface :as claude]
-            [malli.core :as m]
-            [dado.ai.claude.model :as model]))
+  (:require
+   [clojure.test :refer [deftest is testing]]
+   [dado.ai.claude.interface :as claude]))
 
 (deftest send!-test
   (testing "validates provider config"
