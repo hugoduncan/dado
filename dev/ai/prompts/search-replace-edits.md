@@ -81,6 +81,6 @@ a few unchanged lines to uniquely identify the edit site.
 
 ## CREATE operation
 
-For CREATE operations, provide the complete file content between `<<<<<<< CONTENT`
-and `>>>>>>> CONTENT` markers. Parent directories will be created if needed.
-The operation is atomic via a temporary file.
+For CREATE operations, provide the complete file content after the
+`CREATE` line. Parent directories will be created if needed.  The
+operation is atomic via a temporary file.

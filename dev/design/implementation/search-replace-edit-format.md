@@ -43,9 +43,7 @@ EDIT target/file/path
 [search/replace chunks]
 
 CREATE target/file/path
-<<<<<<< CONTENT
 [new file content]
->>>>>>> CONTENT
 
 DELETE target/file/path
 
@@ -79,10 +77,8 @@ EDIT target/file/path
 >>>>>>> REPLACE
 
 CREATE new/file/path
-<<<<<<< CONTENT
 This is the complete
 content of the new file
->>>>>>> CONTENT
 
 DELETE obsolete/file
 
