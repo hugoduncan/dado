@@ -4,55 +4,35 @@
 Proposed
 
 ## Context
-- Need to apply simplified unified diffs to text files
+- Need to apply both simplified unified diffs and search-replace edit format
 - Component will be used to modify files based on AI responses
-- Only need to handle text file modifications
-- Only need to apply patches, not create them
-- Must handle file system operations safely
-- Must validate patch format before applying
+- Must handle text file modifications reliably
+- Must validate patches before applying
+- Must handle file system operations safely and atomically
 
 ## Decision
 We will:
 - Create a dedicated Patch component responsible for:
-  - Parsing simplified unified diff format
+  - Supporting both simplified unified diff and search-replace edit formats
   - Validating patch structure and target files
   - Applying changes to files on disk
   - Providing pure functions for patch operations
 
-- Use simplified unified diff format as specified in the "Simplified Diff Format" document
-
-- Component Interface:
+- Support both formats through separate interface functions:
   ```clojure
-  (apply-patch! [patch-content]
-    "Applies a patch to files, returns map of results per file.
-     The patch-content is a string containing a simplified unified diff.
+  (apply-simplified-diff-patch! [patch-content]
+    "Applies a simplified unified diff to files.
+     Returns map of file paths to change statistics.
+     Throws ex-info with all validation errors if any occur.")
 
-     First applies all changes in memory, collecting any errors.
-     If any errors occur during in-memory application, throws an
-     ex-info containing a sequence of all errors encountered.
-
-     Only proceeds with file system changes if no errors occurred
-     during in-memory application.
-
-     Returns a map of file paths to change statistics on success.")
+  (apply-search-replace-diff-patch! [patch-content]
+    "Applies a search-replace edit format patch.
+     Returns sequence of operation result maps.
+     Throws ex-info with all validation errors if any occur.")
   ```
 
-- File operations:
-  - Before file modification:
-    - Apply complete patch in memory
-    - Collect all errors encountered during in-memory application
-    - If any errors occurred, throw exception with all errors
-    - Otherwise proceed with file system changes
-  - Common operations:
-    - Write changes to temporary file
-    - Use default system permissions for new files/directories
-    - Move temporary file to target atomically
-  - For modifications:
-    - Verify target file exists before starting
-  - For new files:
-    - Create target directory if it doesn't exist before starting
-
-- Return value format:
+- Return value formats:
+  For simplified diffs:
   ```clojure
   {"path/to/file1" {:lines-added 10
                     :lines-removed 5}
@@ -60,35 +40,56 @@ We will:
                     :lines-removed 2}}
   ```
 
-- Multi-file handling:
-  - Multiple file patches allowed in single operation
-  - Changes to individual files are atomic
-  - No cross-file atomicity guaranteed
-  - Each file change validated independently during in-memory phase
-  - All errors collected during in-memory phase
-  - Only proceed with file changes if no errors occurred
-  - Return includes results for all processed files
+  For search-replace edits:
+  ```clojure
+  [{:operation :edit
+    :files ["path/to/file1"]}
+   {:operation :create
+    :files ["path/to/newfile"]}
+   {:operation :move
+    :files ["source/path" "target/path"]}]
+  ```
+
+- File operations:
+  - Before any modifications:
+    - Parse and validate complete patch
+    - Apply changes in memory
+    - Collect all validation errors
+    - Only proceed with file system changes if validation succeeds
+  - Common operations:
+    - Write changes to temporary file
+    - Use default system permissions
+    - Move temporary file to target atomically
+  - Operation-specific:
+    - EDIT: Verify target exists and SEARCH blocks match exactly once
+    - CREATE: Verify target doesn't exist
+    - DELETE: Verify target exists
+    - MOVE/COPY: Verify source exists
 
 - Validation rules:
-  - For modifications:
-    - Target file must exist
+  For simplified diffs:
+    - Must follow unified diff format
+    - At least two context lines per hunk
+    - Target files must exist for modifications
+    - All paths must be relative
     - Context lines must match target file
-  - For new files:
-    - All parent directories must be creatable if they don't exist
-  - Patch format requirements:
-    - Must follow simplified unified diff format
-    - At least two context lines required per hunk
-    - All file paths must be relative
+
+  For search-replace format:
+    - Must follow search-replace edit format
+    - SEARCH blocks must match target file content exactly once
+    - Source files must exist for MOVE/COPY
+    - All paths must be relative
+    - Target paths must be writable
+    - Parent directories must be creatable
 
 - Error handling:
-  - Collect all errors during in-memory application
-  - Throw single exception containing all collected errors
-  - For modifications:
-    - Record error if target file doesn't exist
-    - Record error if context lines don't match
-  - For new files:
-    - Record error if target file exists
-    - Record error if target directory not writable
+  - Collect all errors during validation phase
+  - Throw single exception containing all errors
+  - Operation-specific errors:
+    - EDIT: No match or multiple matches for SEARCH block
+    - CREATE: Target already exists
+    - DELETE: Target doesn't exist
+    - MOVE/COPY: Source doesn't exist or target exists
 
 ## Error Types
 - :error/patch-validation
@@ -96,6 +97,10 @@ We will:
 - :error/patch-application
 - :error/context-mismatch
 - :error/file-exists
+- :error/search-block-match
+- :error/source-missing
+- :error/multiple-matches
+- :error/invalid-operation
 
 ## Event Taxonomy
 - :patch/validated
@@ -103,40 +108,44 @@ We will:
 - :patch/applied
 - :patch/failed
 - :patch/file-created
+- :patch/file-deleted
+- :patch/file-moved
+- :patch/file-copied
+- :patch/search-matched
+- :patch/operation-complete
 
 ## Logging and Metrics
 - Use trace level logging for all interface functions
 - Generate metrics for:
-  - Number of files modified
-  - Number of lines added/removed
-  - Patch validation time
-  - Patch application time
+  - Operations by type
+  - Files affected
+  - Lines modified
+  - Validation time
+  - Application time
   - Error counts by type
 
 ## Consequences
 ### Positive
-- Simple, focused component
-- Clear validation rules
-- Support for multi-file patches
+- Supports both patch formats cleanly
+- Clear separation of concerns
+- Strong validation rules
 - Safe file operations
 - Pure functional interface
-- Easy to test
-- No size limitations on patches
-- Memory validation before file changes
-- Complete error collection before failure
+- Complete error collection
+- Format-specific return values
 
 ### Negative
-- Limited to simplified diff format
-- Must handle file system errors carefully
-- Cannot handle complex patch scenarios
-- Must hold complete patch in memory
+- Must handle two distinct formats
+- More complex validation logic
+- Must handle additional file operations
+- Need to maintain format-specific validation
 
 ## Validation
-- Patches must follow simplified unified diff format
-- Each hunk must have at least 2 context lines
-- All file paths must be relative
-- For modifications: target files must exist
-- For new files: target files must not exist
+- All operations must be validated before any files are modified
+- Patches must follow their respective format rules
+- File paths must be relative
+- Source files must exist for MOVE/COPY
+- SEARCH blocks must match exactly once
 - File operations must be atomic
 
 ## Dependencies
@@ -146,5 +155,7 @@ We will:
 - Logging system (telemere)
 - Error handling system
 
-## Note
-The diff format is described in the "Simplified Diff Format" document.
+## Notes
+Formats are described in:
+- "Simplified Diff Format" document
+- "Search Replace Edit Format" document
