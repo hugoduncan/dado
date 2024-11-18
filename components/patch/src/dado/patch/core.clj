@@ -365,22 +365,6 @@
   (prn :apply-create :hunks hunks)
   [(str (str/join "\n" (first hunks)) "\n") nil])
 
-(defn- count-search-replace-changes
-  "Count lines added and removed in a file's hunks"
-  [hunks]
-  {:lines-added 0 :lines-removed 0}
-  #_(reduce (fn [counts line]
-              (cond
-                (str/starts-with? line "+")
-                (update counts :lines-added inc)
-
-                (str/starts-with? line "-")
-                (update counts :lines-removed inc)
-
-                :else counts))
-            {:lines-added 0 :lines-removed 0}
-            (mapcat rest hunks)))
-
 (defn- apply-search-replace-file-changes
   "Apply changes to a single file operation, returns [stats error-info]"
   [op-info]
