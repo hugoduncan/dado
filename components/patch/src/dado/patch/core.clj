@@ -8,7 +8,7 @@
   #"^--- (?:/dev/null|[^\n].+)\n\+\+\+ ([^\n].+)$")
 
 (def ^:private search-replace-file-header-pattern
-  #"^(EDIT|CREATE) ([^\n].+)$")
+  #"^(EDIT|CREATE|DELETE|MOVE|COPY)\s([^\s\n]+)(?:\s+([^\s\n]+))?$")
 
 (def ^:private simplified-hunk-header-pattern
   #"^@@ .+ @@.*$")
@@ -57,48 +57,70 @@
         :context {:hunks  file-section
                   :header header}}))))
 
+(defn- parse-hunks [lines]
+  (loop [remaining-lines lines
+         current-hunk    []
+         hunks           []]
+    (cond
+      (empty? remaining-lines)
+      (if (empty? current-hunk)
+        hunks
+        (conj hunks current-hunk))
+
+      (re-matches
+       search-replace-hunk-header-pattern
+       (first remaining-lines))
+      (recur (rest remaining-lines)
+             [(first remaining-lines)]
+             (if (empty? current-hunk)
+               hunks
+               (conj hunks current-hunk)))
+
+      :else
+      (recur (rest remaining-lines)
+             (conj current-hunk (first remaining-lines))
+             hunks))))
+
 (defn- parse-search-replace-file-diff
   "Parse a single file section from a search-replace diff patch.
-   Returns {:target-path <path> :is-new? <bool> :hunks <hunks>}
-   or error info map."
+   Returns a map with operation details or error info map."
   [file-section]
   (t/trace!
    {:id :dado.patch/parse-file-diff}
    (let [all-lines      (str/split-lines file-section)
          [header lines] [(first all-lines) (rest all-lines)]]
-     (if-let [[_ verb target-path] (re-matches
-                                    search-replace-file-header-pattern
-                                    header)]
-       (let [target-path (str/trim target-path)
-             is-new?     (= "CREATE" verb)
-             hunks       (loop [remaining-lines lines
-                                current-hunk    []
-                                hunks           []]
-                           (cond
-                             (empty? remaining-lines)
-                             (if (empty? current-hunk)
-                               hunks
-                               (conj hunks current-hunk))
-
-                             (re-matches
-                              search-replace-hunk-header-pattern
-                              (first remaining-lines))
-                             (recur (rest remaining-lines)
-                                    [(first remaining-lines)]
-                                    (if (empty? current-hunk)
-                                      hunks
-                                      (conj hunks current-hunk)))
-
-                             :else
-                             (recur (rest remaining-lines)
-                                    (conj current-hunk (first remaining-lines))
-                                    hunks)))]
-         {:target-path target-path
-          :is-new?     is-new?
-          :hunks       hunks})
+     (if-let [[_ verb path-1 path-2] (re-matches
+                                      search-replace-file-header-pattern
+                                      header)]
+       (let [path-2 (when path-2 (str/trim path-2))
+             path-1 (when path-1 (str/trim path-1))
+             op     (keyword (str/lower-case verb))]
+         (case op
+           :edit   {:op          :edit
+                    :target-path path-1
+                    :hunks       (parse-hunks lines)}
+           :create {:op          :create
+                    :target-path path-1
+                    :hunks       (parse-hunks lines)}
+           :delete {:op          :delete
+                    :target-path path-1}
+           :move   (if (str/blank? path-2)
+                     {:error   :error/invalid-patch-file-header
+                      :context {:section file-section
+                                :header  header}}
+                     {:op          :move
+                      :source-path path-1
+                      :target-path path-2})
+           :copy   (if (str/blank? path-2)
+                     {:error   :error/invalid-patch-file-header
+                      :context {:section file-section
+                                :header  header}}
+                     {:op          :copy
+                      :source-path path-1
+                      :target-path path-2})))
        {:error   :error/invalid-patch-file-header
-        :context {:hunks  file-section
-                  :header header}}))))
+        :context {:section file-section
+                  :header  header}}))))
 
 (defn- context-line? [line]
   (str/starts-with? line " "))
@@ -328,7 +350,9 @@
          errors          []]
     (if (empty? remaining-hunks)
       [current-content errors]
-      (let [[new-content error] (apply-search-replace-hunk current-content (first remaining-hunks))]
+      (let [[new-content error] (apply-search-replace-hunk
+                                 current-content
+                                 (first remaining-hunks))]
         (recur new-content
                (rest remaining-hunks)
                (if error
@@ -352,57 +376,109 @@
             (mapcat rest hunks)))
 
 (defn- apply-search-replace-file-changes
-  "Apply changes to a single file, returns [stats error-info]"
-  [{:keys [target-path is-new? hunks]}]
+  "Apply changes to a single file operation, returns [stats error-info]"
+  [op-info]
   (t/trace!
-   {:id :dado.patch/apply-file}
+   {:id :dado.patch/apply-file :data {:op-info op-info}}
    (try
-     (cond
-       (and (not is-new?) (not (fs/exists? target-path)))
-       [nil {:error :file-not-found
-             :path  target-path}]
+     (let [{:keys [op source-path target-path hunks]} op-info]
+       (case op
+         :edit
+         (cond
+           (not (fs/exists? target-path))
+           [nil {:error   :file-not-found
+                 :context {:path target-path
+                           :op   :edit}}]
 
-       (and is-new? (fs/exists? target-path))
-       [nil {:error :file-exists
-             :path  target-path}]
+           :else
+           (let [current-content      (slurp target-path)
+                 [new-content errors] (apply-search-replace-hunks current-content hunks)]
+             (if (seq errors)
+               [nil {:errors errors :path target-path}]
+               [{:op op :paths [target-path]} nil])))
 
-       :else
-       (let [current-content       (if is-new? "" (slurp target-path))
-             [_new-content errors] (apply-search-replace-hunks current-content hunks)]
-         (if (seq errors)
-           [nil {:errors errors
-                 :path   target-path}]
-           [(count-search-replace-changes hunks) nil])))
+         :create
+         (if (fs/exists? target-path)
+           [nil {:error :file-exists :path target-path}]
+           (let [[new-content errors] (apply-search-replace-hunks "" hunks)]
+             (if (seq errors)
+               [nil {:errors errors :path target-path}]
+               [{:op op :paths [target-path]} nil])))
+
+         :delete
+         (if (not (fs/exists? target-path))
+           [nil {:error :file-not-found :path target-path}]
+           [{:op op :paths [target-path]} nil])
+
+         (:move :copy)
+         (cond
+           (not (fs/exists? source-path))
+           [nil {:error   :file-not-found
+                 :context {:path source-path
+                           :op   op}}]
+
+           (fs/exists? target-path)
+           [nil {:error   :file-exists
+                 :context {:path target-path
+                           :op   op}}]
+
+           :else
+           [{:op op :paths [source-path target-path]} nil])))
 
      (catch Exception e
-       [nil {:error :file-access
-             :path  target-path
-             :cause e}]))))
+       [nil {:error :file-access :cause e}]))))
 
 (defn- write-changes!
   "Write changes to filesystem, returns true on success"
-  [{:keys [target-path is-new?]} new-content]
+  [op-info new-content]
   (t/trace!
    {:id   :dado.patch/write-file
-    :data {:path target-path :content new-content}}
+    :data {:op op-info :content new-content}}
    (try
-     (when is-new?
-       (fs/create-dirs (fs/parent target-path)))
+     (let [{:keys [op target-path source-path]} op-info]
+       (case op
+         (:edit :create)
+         (do
+           (when (= op :create)
+             (fs/create-dirs (fs/parent target-path)))
+           (let [temp-path (str target-path ".tmp")]
+             (spit temp-path new-content)
+             (fs/move temp-path target-path {:replace-existing true}))
+           (t/event! (if (= op :create)
+                       :patch/file-created
+                       :patch/applied)
+                     {:level :debug :path target-path}))
 
-     (let [temp-path (str target-path ".tmp")]
-       (spit temp-path new-content)
-       (fs/move temp-path target-path {:replace-existing true}))
+         :delete
+         (do
+           (fs/delete target-path)
+           (t/event! :patch/file-deleted
+                     {:level :debug :path target-path}))
 
-     (if is-new?
-       (t/event! :patch/file-created {:level :debug :path target-path})
-       (t/event! :patch/applied {:level :debug :path target-path}))
-     true
+         :move
+         (do
+           (fs/create-dirs (fs/parent target-path))
+           (fs/move source-path target-path)
+           (t/event! :patch/file-moved
+                     {:level  :debug
+                      :source source-path
+                      :target target-path}))
+
+         :copy
+         (do
+           (fs/create-dirs (fs/parent target-path))
+           (fs/copy source-path target-path)
+           (t/event! :patch/file-copied
+                     {:level  :debug
+                      :source source-path
+                      :target target-path})))
+       true)
 
      (catch Exception e
        (throw (ex-info "Failed to write changes"
                        {:type    :error/file-access
                         :context {:component "dado.patch"
-                                  :path      target-path}
+                                  :op        op-info}
                         :cause   e}))))))
 
 (defn apply-simplified-diff-patch!
@@ -459,10 +535,10 @@
   [patch-content]
   (t/trace!
    {:id :dado.patch/apply-patch}
-   (let [file-sections (str/split patch-content #"(?m)^(?=EDIT|CREATE)")]
-     ;; First pass - parse and validate all files
-     (let [parsed-files (mapv parse-search-replace-file-diff file-sections)
-           parse-errors (->> parsed-files
+   (let [file-sections (str/split patch-content #"(?m)^(?=EDIT|CREATE|DELETE|MOVE|COPY)")]
+     ;; First pass - parse and validate all operations
+     (let [parsed-ops   (mapv parse-search-replace-file-diff file-sections)
+           parse-errors (->> parsed-ops
                              (filter :error)
                              (mapv #(assoc % :type :error/patch-validation)))]
        (if (seq parse-errors)
@@ -471,20 +547,20 @@
                           :context {:component "dado.patch"
                                     :errors    parse-errors}}))
 
-         ;; Second pass - apply all changes in memory
-         (let [valid-files      (remove :error parsed-files)
-               [results errors] (reduce (fn [[results errors] file-info]
-                                          (let [[stats error]
-                                                (apply-search-replace-file-changes
-                                                 file-info)]
-                                            [(if stats
-                                               (assoc results (:target-path file-info) stats)
-                                               results)
-                                             (if error
-                                               (conj errors error)
-                                               errors)]))
-                                        [{} []]
-                                        valid-files)]
+         ;; Second pass - validate all operations in memory
+         (let [valid-ops        (remove :error parsed-ops)
+               [results errors] (reduce
+                                 (fn [[results errors] op-info]
+                                   (let [[stats error]
+                                         (apply-search-replace-file-changes op-info)]
+                                     [(if stats
+                                        (conj results stats)
+                                        results)
+                                      (if error
+                                        (conj errors error)
+                                        errors)]))
+                                 [[] []]
+                                 valid-ops)]
            (if (seq errors)
              (do
                (t/event!
@@ -495,15 +571,22 @@
                                 :context {:component "dado.patch"
                                           :errors    errors}})))
 
-             ;; Final pass - write changes to filesystem
+             ;; Final pass - execute all operations
              (t/trace!
               {:id   :dado.patch/write-patched
-               :data {:valid-files valid-files}}
+               :data {:valid-ops valid-ops}}
               (do
-                (doseq [file-info valid-files]
-                  (let [current-content (if (:is-new? file-info)
-                                          ""
-                                          (slurp (:target-path file-info)))
-                        [new-content _] (apply-search-replace-hunks current-content (:hunks file-info))]
-                    (write-changes! file-info new-content)))
+                (doseq [op-info valid-ops]
+                  (case (:op op-info)
+                    (:edit :create)
+                    (let [current-content (if (= :create (:op op-info))
+                                            ""
+                                            (slurp (:target-path op-info)))
+                          [new-content _] (apply-search-replace-hunks
+                                           current-content
+                                           (:hunks op-info))]
+                      (write-changes! op-info new-content))
+
+                    (:delete :move :copy)
+                    (write-changes! op-info nil)))
                 results)))))))))
