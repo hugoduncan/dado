@@ -109,3 +109,10 @@
   {:pre [(have? model/response-message? response)]}
   (t/trace! {:id :message/diff-extracted}
             (extractor/extract-search-replace-diffs (:content response))))
+
+(defn extract-updated-namespaces
+  "Extracts updated namespaces list from an AI response message"
+  [response]
+  {:pre [(have? model/response-message? response)]}
+  (t/trace! {:id :message/updated-namespaces-extracted}
+            (extractor/extract-updated-namespaces (:content response))))

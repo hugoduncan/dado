@@ -75,6 +75,13 @@
   [response]
   (core/extract-search-replace-diffs response))
 
+(defn extract-updated-namespaces
+  "Extracts updated namespaces list from an AI response message.
+   Returns sequence of namespace strings in dependency order.
+   Empty sequence if no namespace list found.
+   Throws if response is invalid."
+  [response]
+  (core/extract-updated-namespaces response))
 ;; Expose validators for use by other components
 (def message? model/message?)
 (def message-thread? model/message-thread?)

@@ -45,6 +45,25 @@
       (is (= "clojure" (:language (first blocks))))
       (is (= "test.clj" (get-in (first blocks) [:metadata :name]))))))
 
+(deftest extract-updated-namespaces-test
+  (testing "extracts updated namespaces"
+    (let [response   {:role          :assistant
+                      :content       "```updated-namespaces\nmy.project.model\nmy.project.core\n```"
+                      :finish-reason :stop}
+          namespaces (message/extract-updated-namespaces response)]
+      (is (= ["my.project.model" "my.project.core"] namespaces))))
+
+  (testing "returns empty sequence when no namespaces found"
+    (let [response   {:role          :assistant
+                      :content       "no namespaces here"
+                      :finish-reason :stop}
+          namespaces (message/extract-updated-namespaces response)]
+      (is (empty? namespaces))))
+
+  (testing "validates response format"
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (message/extract-updated-namespaces {:invalid "format"})))))
+
 (deftest add-context-file-test
   (testing "adds file to context"
     (let [thread    {:id         "test"
