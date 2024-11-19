@@ -57,15 +57,15 @@
 
               ;; Extract and apply any diffs
               simplified-diffs   (ai-message/extract-simplified-diffs response)
-              fod-diffs          (ai-message/extract-file-operation-directives response)
+              fods               (ai-message/extract-file-operation-directives response)
               updated-namespaces (ai-message/extract-updated-namespaces response)]
 
           (when (seq simplified-diffs)
             (patch/apply-simplified-diff-patch! simplified-diffs)
             (t/event! :message-loop/diffs-applied))
 
-          (when (seq fod-diffs)
-            (patch/apply-fod-diff-patch! fod-diffs)
+          (when (seq fods)
+            (patch/apply-fod-diff-patch! fods)
             (t/event! :message-loop/diffs-applied))
 
           ;; Reload any updated namespaces
