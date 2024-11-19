@@ -19,7 +19,9 @@
       (empty? remaining-lines)
       (if (empty? current-hunk)
         hunks
-        (conj hunks current-hunk))
+        (if (seq current-hunk)
+          (conj hunks current-hunk)
+          hunks))
 
       (re-matches
        hunk-header-pattern
