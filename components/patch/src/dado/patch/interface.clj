@@ -1,7 +1,9 @@
 (ns dado.patch.interface
   "Component for applying simplified unified diffs to files.
    Validates and applies patches in memory before making any file system changes."
-  (:require [dado.patch.core :as core]))
+  (:require
+   [dado.patch.core.search-replace :as search-replace]
+   [dado.patch.core.simplified-diff :as simplified-diff]))
 
 (defn apply-simplified-diff-patch!
   "Applies a patch to files, returns map of results per file.
@@ -18,7 +20,7 @@
    {\"path/to/file\" {:lines-added <n>
                       :lines-removed <n>}}"
   [patch-content]
-  (core/apply-simplified-diff-patch! patch-content))
+  (simplified-diff/apply-simplified-diff-patch! patch-content))
 
 (defn apply-search-replace-diff-patch!
   "Applies a patch to files, returns map of results per file.
@@ -35,4 +37,4 @@
    {\"path/to/file\" {:lines-added <n>
                       :lines-removed <n>}}"
   [patch-content]
-  (core/apply-search-replace-diff-patch! patch-content))
+  (search-replace/apply-search-replace-diff-patch! patch-content))
