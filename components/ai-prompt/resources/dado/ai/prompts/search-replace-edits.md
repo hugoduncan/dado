@@ -55,29 +55,49 @@ The chunk ends with the `>>>>>>> REPLACE` marker line.
 
 Do not forget the marker lines.
 
-Every SEARCH section must match the existing file content verbatim, at
-the character level, including all comments, docstrings, whitespace,
-etc.
+To move code within a file, use 2 chunks: 1 to delete it from its current
+location, 1 to insert it in the new location.
 
 You MUST provide enough SEARCH lines to uniquely identify the location of the
 edit in the file.
 
-Start a new chunk for each section of the file that needs changes.
+Every SEARCH section must match the lines to change in the existing file
+content exactly, at the character level, including comments, docstrings,
+whitespace, etc.
 
-Output chunks in whatever order makes the most sense.
-Hunks don't need to be in any particular order.
+You MUST provide enough SEARCH lines to uniquely identify the location
+of the edit in the file, but SEARCH blocks should be concise. Do not
+include large sequences of unchanged lines. Prefer to split SEARCH
+blocks into smaller blocks, with only a few unchanged lines to uniquely
+identify the edit site.
 
-When editing a function, method, loop, etc use a chunk to replace the
-*entire* code block. Place the existing version in the SEARCH block,
+Start a new SEARCH REPLACE chunk for each section of the file that needs
+changes.
+
+Output chunks in whatever order makes the most sense.  Hunks don't need
+to be in any particular order.
+
+When editing a block of code containing a function, method, loop,
+top-level form, etc, use a SEARCH REPLACE chunk to replace the *entire*
+code block. Place the entire existing code block in the SEARCH block,
 and the updated version in the REPLACE block. This will help you
-generate correct code and correct diffs.
+generate correct code and correct diffs.  This does do not imply the
+anti-pattern of putting the whole file in a single SEARCH REPLACE chunk.
 
-To move code within a file, use 2 chunks: 1 to delete it from its current
-location, 1 to insert it in the new location.
+1. Instead of replacing the entire file content in one chunk, create
+   separate chunks for distinct changes
 
-SEARCH blocks should be concise. Do not include large sequences of
-unchanged lines. Prefer to split chunks into smaller blocks, with only
-a few unchanged lines to uniquely identify the edit site.
+2. Each chunk should contain just enough context to uniquely identify
+   where the change should be made
+
+3. If modifying multiple parts of a file, create separate chunks for
+   each modification
+
+4. When editing a function/method, use a chunk for just that function,
+   not the whole file
+
+5. Keep chunks focused on logical units of change
+
 
 ## CREATE operation
 
