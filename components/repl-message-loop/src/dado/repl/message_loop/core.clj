@@ -12,15 +12,24 @@
     (when-not (clojure.string/blank? input)
       input)))
 
+(defn- refresh-thread-context
+  "Updates thread with current prompt and context files"
+  [thread prompt-fn context-files-fn]
+  (-> thread
+      (ai-message/update-system-prompt (prompt-fn))
+      (ai-message/set-context-files (context-files-fn))))
+
 (defn message-loop
   "Implementation of the interactive message loop.
    See interface ns for docs."
-  [message-thread config]
+  [config message-thread prompt-fn context-files-fn]
   ;; Validate inputs
   (have? ai-message/message-thread? message-thread
          :data (malli.error/humanize
                 (malli.core/explain ai-message/message-thread-schema message-thread)))
   (have? map? config)
+  (have? fn? prompt-fn)
+  (have? fn? context-files-fn)
 
   (t/event! :message-loop/started {:config (dissoc config :api-key)})
 
@@ -39,7 +48,9 @@
                                              (ai-message/create-message :user input))
               _      (t/event! :message-loop/message-received)
 
-              ;; Get AI response
+              ;; Refresh context and get AI response
+              thread   (refresh-thread-context thread prompt-fn context-files-fn)
+              _        (t/event! :message-loop/context-refreshed)
               response (claude/send! (-> config :ai-providers :claude) thread)
               _        (println "-> " (:content response))
               _        (t/event! :message-loop/response-processed)

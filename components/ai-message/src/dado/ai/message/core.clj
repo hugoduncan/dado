@@ -62,6 +62,14 @@
                          (fnil conj [])
                          file-context))))
 
+(defn set-context-files
+  "Set the file contexts on the message thread context."
+  [message-thread context-file-paths]
+  (reduce
+   add-context-file
+   (assoc-in message-thread [:metadata :context :files] [])
+   context-file-paths))
+
 (defn add-response
   "Adds a response message to the message thread"
   [message-thread response]

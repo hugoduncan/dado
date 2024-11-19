@@ -11,6 +11,7 @@ Proposed
 - Must support exact "EXIT" command for termination
 - Should follow existing component patterns
 - Must coordinate multiple components safely
+- Need to refresh prompt and context before each AI interaction
 
 ## Decision
 We will:
@@ -19,16 +20,19 @@ We will:
   - Coordinating with AI Message component for thread operations and response processing
   - Sending messages via AI Port
   - Applying patches via Patch component
+  - Refreshing prompt and context before each AI interaction
 
 - Component Interface:
   ```clojure
-  (message-loop [message-thread config]
+  (message-loop [message-thread config prompt-fn context-files-fn]
     "Runs interactive message loop starting with given thread.
      Returns final message thread when user enters 'EXIT'.
 
      Arguments:
      - message-thread: Valid message thread (validated via AI Message component)
-     - config: Project configuration map")
+     - config: Project configuration map
+     - prompt-fn: Function that returns current system prompt string
+     - context-files-fn: Function that returns sequence of context file paths")
   ```
 
 - Use existing components:
@@ -39,19 +43,20 @@ We will:
   - Patch component for applying extracted diffs
 
 - Required Operations:
-  1. Validate input message thread
+  1. Validate input message thread and functions
   2. Prompt user for message using println/read-line
   3. If message is empty/whitespace-only, return to step 2
   4. If message is exact "EXIT" string, return current message thread
   5. Add user message to thread
-  6. Send updated thread to AI Port
-  7. Extract diff blocks from response using AI Message component
+  6. Update thread with current prompt and context files
+  7. Send updated thread to AI Port
+  8. Extract diff blocks from response using AI Message component
      - If extraction errors occur, terminate with error
-     - If no diffs found, skip to step 9
-  8. Apply extracted diffs via Patch component
+     - If no diffs found, skip to step 10
+  9. Apply extracted diffs via Patch component
      - If patch application errors occur, terminate with error
-  9. Add response to thread
-  10. Return to step 2
+  10. Add response to thread
+  11. Return to step 2
 
 - Exit Handling:
   - Only recognize exact "EXIT" string
@@ -64,11 +69,17 @@ We will:
   - No input validation beyond checking for "EXIT"
   - No special formatting of displayed responses
 
+- Context Refresh:
+  - Clear existing context files before adding new ones
+  - Prompt and context files updated before each AI interaction
+  - Both functions called within the message loop
+
 - Error Handling:
   - Diff extraction errors terminate loop
   - Patch application errors terminate loop
   - No diffs found skips patch application step
   - Errors from component interactions are wrapped and propagated
+  - Function call errors terminate loop
 
 - State Management:
   - Message thread maintained only in memory
@@ -78,6 +89,8 @@ We will:
 - Validation:
   - Input message thread must be valid (via AI Message component)
   - Config must contain required AI provider settings
+  - prompt-fn must be a function
+  - context-files-fn must be a function
   - All component interactions must be validated
 
 ## Error Types
@@ -88,6 +101,7 @@ We will:
 ## Event Taxonomy
 - :message-loop/started
 - :message-loop/message-received
+- :message-loop/context-refreshed
 - :message-loop/response-processed
 - :message-loop/diffs-applied
 - :message-loop/exited
@@ -100,15 +114,20 @@ We will:
 - Proper validation at boundaries
 - Consistent error handling
 - Proper use of AI Message component for diff extraction
+- Dynamic context and prompt updates
+- Clear separation of concerns for context management
 
 ### Negative
 - Must coordinate multiple components
 - Need to handle component failures gracefully
 - Must maintain message thread state correctly
+- Additional function call overhead
+- Must handle function call failures
 
 ## Validation
 - Message thread must be valid
 - Config must contain required fields
+- Both prompt-fn and context-files-fn must be functions
 
 ## Dependencies
 - AI Message component

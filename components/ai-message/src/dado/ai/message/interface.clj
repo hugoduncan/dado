@@ -38,6 +38,14 @@
   [message-thread file-path]
   (core/add-context-file message-thread file-path))
 
+(defn set-context-files
+  "Set the file contexts on the message thread context.
+   File must exist and be readable.
+   Returns updated message thread with context file contents added to context.
+   Throws if a file does not exist or message thread is invalid."
+  [message-thread context-file-paths]
+  (core/set-context-files message-thread context-file-paths))
+
 (defn add-response
   "Adds an AI response message to the message thread.
    Response must be a valid response message with usage statistics.
