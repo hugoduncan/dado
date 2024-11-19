@@ -21,3 +21,13 @@
    Throws ex-info with :error/update-extraction if malformed blocks found."
   [text]
   (core/extract-search-replace-diffs text))
+
+(defn extract-updated-namespaces
+  "Extracts all updated namespace lists from text.
+   Returns sequence of namespace strings.
+   Namespace lists are identified by markdown code fence markers with
+   'updated-namespaces' language.
+   Returns empty sequence if no namespace lists found.
+   Throws ex-info with :error/update-extraction if malformed blocks found."
+  [text]
+  (core/extract-updated-namespaces text))
