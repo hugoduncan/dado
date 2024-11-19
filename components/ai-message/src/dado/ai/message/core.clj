@@ -104,7 +104,7 @@
             (extractor/extract-simplified-diffs (:content response))))
 
 (defn extract-file-operation-directives
-  "Extracts File Operation Directive diffs from a response content string"
+  "Extracts File Operation Directives from a response content string"
   [response]
   {:pre [(have? model/response-message? response)]}
   (t/trace! {:id :message/diff-extracted}
