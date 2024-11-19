@@ -189,7 +189,7 @@
         (is (= "line A\nline B updated\nline C\nline D\n"
                (slurp file)))))))
 
-(deftest apply-search-replace-diff-patch!-test
+(deftest apply-fod-diff-patch!-test
   (testing "successful edit operation"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
       (let [file1 (fs/file temp-dir "file1.txt")
@@ -222,7 +222,7 @@
                        ">>>>>>> REPLACE\n")]
         (is (= [{:op :edit :paths [(.getPath file1)]}
                 {:op :edit :paths [(.getPath file2)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (= "line1\nline2 updated\nline3\nline4\n" (slurp file1)))
         (is (= "line1\nline2 updated\nline3\nline4 updated\n" (slurp file2))))))
 
@@ -233,7 +233,7 @@
                            "COPY target/path\n"]] ; missing source
       (doseq [invalid-patch invalid-patches]
         (testing (str "patch: " invalid-patch)
-          (try (patch/apply-search-replace-diff-patch! invalid-patch)
+          (try (patch/apply-fod-diff-patch! invalid-patch)
                (is false "should throw")
                (catch Exception e
                  (prn :e e)
@@ -251,7 +251,7 @@
                               "line1\n"
                               "line2 updated"
                               ">>>>>>> REPLACE")]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed"
@@ -269,7 +269,7 @@
                        "line1\n"
                        "line2 updated"
                        ">>>>>>> REPLACE")]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed"
@@ -282,7 +282,7 @@
                           "new line1\n"
                           "new line2\n")]
         (is (= [{:op :create :paths [(.getPath new-file)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (= "new line1\nnew line2\n" (slurp new-file))))))
 
   (testing "patch updating an empty file"
@@ -296,7 +296,7 @@
                        "new line2\n"
                        ">>>>>>> REPLACE")]
         (is (= [{:op :edit :paths [(.getPath file)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (= "new line1\nnew line2\n" (slurp file))))))
 
   (testing "patch updating with final line with no newline"
@@ -311,7 +311,7 @@
                        ">>>>>>> REPLACE"
                        )]
         (is (= [{:op :edit :paths [(.getPath file)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (= "new line1\n" (slurp file))))))
 
   (testing "patch with insufficient context"
@@ -328,7 +328,7 @@
                        "new line1\n"
                        ">>>>>>> REPLACE")]
         (is (= "line1\nline1\nline1\n" (slurp file)))
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed"
@@ -356,7 +356,7 @@
                        "line D updated\n"
                        ">>>>>>> REPLACE" )]
         (is (=  [{:op :edit :paths [(.getPath file)]}]
-                (patch/apply-search-replace-diff-patch! patch)))
+                (patch/apply-fod-diff-patch! patch)))
 
         (is (= "line A\nline B\nline C\nline A\nline B\nline D updated\n"
                (slurp file))))))
@@ -368,14 +368,14 @@
             patch (str "DELETE " (.getPath file))]
         (is (fs/exists? file))
         (is (=  [{:op :delete :paths [(.getPath file)]}]
-                (patch/apply-search-replace-diff-patch! patch)))
+                (patch/apply-fod-diff-patch! patch)))
         (is (not (fs/exists? file))))))
 
   (testing "delete non-existent file"
     (fs/with-temp-dir [temp-dir {:prefix "dado-patch-test-"}]
       (let [file  (fs/file temp-dir "does-not-exist.txt")
             patch (str "DELETE " (.getPath file))]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed" (ex-message (root-cause e)))))))))
@@ -389,7 +389,7 @@
         (is (fs/exists? source))
         (is (not (fs/exists? target)))
         (is (= [{:op :move :paths [(.getPath source) (.getPath target)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (not (fs/exists? source)))
         (is (fs/exists? target))
         (is (= "content to move" (slurp target))))))
@@ -399,7 +399,7 @@
       (let [source (fs/file temp-dir "missing.txt")
             target (fs/file temp-dir "target.txt")
             patch  (str "MOVE " (.getPath target) " " (.getPath source))]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed" (ex-message (root-cause e)))))))))
@@ -411,7 +411,7 @@
             _      (spit source "source content")
             _      (spit target "target content")
             patch  (str "MOVE " (.getPath target) " " (.getPath source))]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed" (ex-message (root-cause e)))))))))
@@ -425,7 +425,7 @@
         (is (fs/exists? source))
         (is (not (fs/exists? target)))
         (is (= [{:op :copy :paths [(.getPath source) (.getPath target)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
         (is (fs/exists? source))
         (is (fs/exists? target))
         (is (= "content to copy" (slurp target))))))
@@ -435,7 +435,7 @@
       (let [source (fs/file temp-dir "missing.txt")
             target (fs/file temp-dir "target.txt")
             patch  (str "COPY " (.getPath target) " " (.getPath source))]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed" (ex-message (root-cause e)))))))))
@@ -447,7 +447,7 @@
             _      (spit source "source content")
             _      (spit target "target content")
             patch  (str "COPY " (.getPath target) " " (.getPath source))]
-        (try (patch/apply-search-replace-diff-patch! patch)
+        (try (patch/apply-fod-diff-patch! patch)
              (is false "should throw")
              (catch Exception e
                (is (= "Patch application failed" (ex-message (root-cause e)))))))))
@@ -475,7 +475,7 @@
                              "COPY " (.getPath source-file) " " (.getPath copy-target) "\n"
                              "MOVE " (.getPath source-file) " " (.getPath move-target) "\n"
                              "DELETE " (.getPath delete-file))]
-        (let [result (patch/apply-search-replace-diff-patch! patch)]
+        (let [result (patch/apply-fod-diff-patch! patch)]
           (is (= [{:op :edit :paths [(.getPath edit-file)]}
                   {:op :copy :paths [(.getPath source-file) (.getPath copy-target)]}
                   {:op :move :paths [(.getPath source-file) (.getPath move-target)]}
@@ -510,7 +510,7 @@
                        "line C\n"
                        ">>>>>>> REPLACE")]
         (is (= [ {:op :edit :paths [(.getPath file)]}]
-               (patch/apply-search-replace-diff-patch! patch)))
+               (patch/apply-fod-diff-patch! patch)))
 
         (is (= "line A\nline B updated\nline C\nline D\n"
                (slurp file)))))))

@@ -1,8 +1,8 @@
-# Search Replace Edit Format
+# File Operation Directive Format
 
-The search replace edit format is used to specify file operations in a
+The File Operation Directive (FOD) format is used to specify file operations in a
 safe and atomic way. It consists of a markdown code block with the
-`searchreplace` language marker.
+`fod` language marker.
 
 The code block contains a sequence of file operations. All file paths
 must be relative.
@@ -63,7 +63,7 @@ the file content. Each chunk uses this format:
 
 ## Examples:
 
-``` searchreplace
+``` fod
 EDIT target/file/path
 <<<<<<< SEARCH
 [lines to replace]
@@ -101,7 +101,7 @@ For example, given a file `src/example.clj`:
 
 A valid diff might be:
 
-``` searchreplace
+``` fod
 EDIT src/example.clj
 <<<<<<< SEARCH
 (defn f

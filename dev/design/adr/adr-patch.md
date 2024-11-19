@@ -4,7 +4,7 @@
 Proposed
 
 ## Context
-- Need to apply both simplified unified diffs and search-replace edit format
+- Need to apply both simplified unified diffs and FOD edit format
 - Component will be used to modify files based on AI responses
 - Must handle text file modifications reliably
 - Must validate patches before applying
@@ -13,7 +13,7 @@ Proposed
 ## Decision
 We will:
 - Create a dedicated Patch component responsible for:
-  - Supporting both simplified unified diff and search-replace edit formats
+  - Supporting both simplified unified diff and FOD edit formats
   - Validating patch structure and target files
   - Applying changes to files on disk
   - Providing pure functions for patch operations
@@ -25,8 +25,8 @@ We will:
      Returns map of file paths to change statistics.
      Throws ex-info with all validation errors if any occur.")
 
-  (apply-search-replace-diff-patch! [patch-content]
-    "Applies a search-replace edit format patch.
+  (apply-fod-diff-patch! [patch-content]
+    "Applies a FOD edit format patch.
      Returns sequence of operation result maps.
      Throws ex-info with all validation errors if any occur.")
   ```
@@ -40,7 +40,7 @@ We will:
                     :lines-removed 2}}
   ```
 
-  For search-replace edits:
+  For FOD edits:
   ```clojure
   [{:operation :edit
     :files ["path/to/file1"]}
@@ -74,8 +74,8 @@ We will:
     - All paths must be relative
     - Context lines must match target file
 
-  For search-replace format:
-    - Must follow search-replace edit format
+  For FOD format:
+    - Must follow FOD edit format
     - SEARCH blocks must match target file content exactly once
     - Source files must exist for MOVE/COPY
     - All paths must be relative

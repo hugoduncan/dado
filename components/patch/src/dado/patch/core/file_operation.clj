@@ -1,4 +1,4 @@
-(ns dado.patch.core.search-replace
+(ns dado.patch.core.file-operation
   (:require [babashka.fs :as fs]
             [clojure.string :as str]
             [taoensso.telemere :as t]
@@ -36,7 +36,7 @@
              hunks))))
 
 (defn- parse-file-diff
-  "Parse a single file section from a search-replace diff patch.
+  "Parse a single file section from a FOD patch.
    Returns a map with operation details or error info map."
   [file-section]
   (t/trace!
@@ -205,7 +205,7 @@
      (catch Exception e
        [nil {:error :file-access :cause e}]))))
 
-(defn apply-search-replace-diff-patch!
+(defn apply-fod-diff-patch!
   "See dado.patch.interface/apply-simplified-diff-patch! for documentation"
   [patch-content]
   (t/trace!

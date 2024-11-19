@@ -19,14 +19,14 @@
       (str/join (map second matches))
       "")))
 
-(defn extract-search-replace-diffs
+(defn extract-file-operation-directives
   "Implementation of search/replace diff extraction."
   [text]
   {:pre [(have? string? text)]}
 
   (t/event!    :update/extraction-started)
 
-  (let [diff-pattern #"(?s)``` ?searchreplace\n(.*?)```"
+  (let [diff-pattern #"(?s)```\s?fod\n(.*?)```"
         matches      (re-seq diff-pattern text)]
 
     (t/event! :update/extraction-completed)

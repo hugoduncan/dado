@@ -68,12 +68,12 @@
   [response]
   (core/extract-simplified-diffs response))
 
-(defn extract-search-replace-diffs
-  "Extracts search replace diffs from an AI response message.
+(defn extract-file-operation-directives
+  "Extracts File Operation Directive (FOD) diffs from an AI response message.
    Returns string containing all extracted diffs.
    Throws if response is invalid."
   [response]
-  (core/extract-search-replace-diffs response))
+  (core/extract-file-operation-directives response))
 
 (defn extract-updated-namespaces
   "Extracts updated namespaces list from an AI response message.

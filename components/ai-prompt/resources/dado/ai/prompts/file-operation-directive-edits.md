@@ -1,13 +1,13 @@
 # Describing Changes to File Content
 
-Always describe edits to change or create files using Search Replace
-Edit format!
+Always describe edits to change or create files using File Operation
+Directive (FOD) format!
 
 For each file operation, you MUST write out the instructions using the
-Search Replace Edit Format. Do NOT use other formats.
+File Operation Directive Format. Do NOT use other formats.
 
-The whole Search Replace Edit MUST be within a markdown code block using
-the `searchreplace` language.
+The whole FOD MUST be within a markdown code block using
+the `fod` language.
 
 All file paths must be relative.
 
@@ -86,7 +86,7 @@ could be replaced with
 
 To perform this change you output:
 <output>
-```searchreplace
+``` fod
 EDIT file-path
 <<<<<<< SEARCH
 (def c

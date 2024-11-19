@@ -13,14 +13,14 @@
   (core/extract-simplified-diffs text))
 
 
-(defn extract-search-replace-diffs
-  "Extracts all search-replace diffs from text.
+(defn extract-file-operation-directives
+  "Extracts all file operation directives from text.
    Return their content as a string.
    Diff blocks are identified by markdown code fence markers.
    Returns empty string if no diff blocks found.
    Throws ex-info with :error/update-extraction if malformed blocks found."
   [text]
-  (core/extract-search-replace-diffs text))
+  (core/extract-file-operation-directives text))
 
 (defn extract-updated-namespaces
   "Extracts all updated namespace lists from text.
