@@ -2,7 +2,8 @@
   (:require [babashka.fs :as fs]
             [clojure.string :as str]
             [taoensso.telemere :as t]
-            [taoensso.truss :refer [have! have]]))
+            [taoensso.truss :refer [have! have]]
+            [dado.patch.core.common :as common]))
 
 (def ^:private file-header-pattern
   #"^--- (?:/dev/null|[^\n].+)\n\+\+\+ ([^\n].+)$")
@@ -362,7 +363,6 @@
 (defn- apply-create
   "Apply all hunks to content, returns [new-content errors]"
   [hunks]
-  (prn :apply-create :hunks hunks)
   [(str (str/join "\n" (first hunks)) "\n") nil])
 
 (defn- apply-search-replace-file-changes
@@ -416,58 +416,6 @@
      (catch Exception e
        [nil {:error :file-access :cause e}]))))
 
-(defn- write-changes!
-  "Write changes to filesystem, returns true on success"
-  [op-info new-content]
-  (t/trace!
-   {:id   :dado.patch/write-file
-    :data {:op op-info :content new-content}}
-   (try
-     (let [{:keys [op target-path source-path]} op-info]
-       (case op
-         (:edit :create)
-         (do
-           (when (= op :create)
-             (fs/create-dirs (fs/parent target-path)))
-           (let [temp-path (str target-path ".tmp")]
-             (spit temp-path new-content)
-             (fs/move temp-path target-path {:replace-existing true}))
-           (t/event! (if (= op :create)
-                       :patch/file-created
-                       :patch/applied)
-                     {:level :debug :path target-path}))
-
-         :delete
-         (do
-           (fs/delete target-path)
-           (t/event! :patch/file-deleted
-                     {:level :debug :path target-path}))
-
-         :move
-         (do
-           (fs/create-dirs (fs/parent target-path))
-           (fs/move source-path target-path)
-           (t/event! :patch/file-moved
-                     {:level  :debug
-                      :source source-path
-                      :target target-path}))
-
-         :copy
-         (do
-           (fs/create-dirs (fs/parent target-path))
-           (fs/copy source-path target-path)
-           (t/event! :patch/file-copied
-                     {:level  :debug
-                      :source source-path
-                      :target target-path})))
-       true)
-
-     (catch Exception e
-       (throw (ex-info "Failed to write changes"
-                       {:type    :error/file-access
-                        :context {:component "dado.patch"
-                                  :op        op-info}
-                        :cause   e}))))))
 
 (defn apply-simplified-diff-patch!
   "See dado.patch.interface/apply-simplified-diff-patch! for documentation"
@@ -515,7 +463,7 @@
                                          ""
                                          (slurp (:target-path file-info)))
                        [new-content _] (apply-simplified-hunks current-content (:hunks file-info))]
-                   (write-changes! file-info new-content)))
+                   (common/write-changes! file-info new-content)))
                results))))))))
 
 (defn apply-search-replace-diff-patch!
@@ -571,12 +519,12 @@
                           [new-content _] (apply-search-replace-hunks
                                            current-content
                                            (:hunks op-info))]
-                      (write-changes! op-info new-content))
+                      (common/write-changes! op-info new-content))
 
                     (:create)
                     (let [[new-content _] (apply-create (:hunks op-info))]
-                      (write-changes! op-info new-content))
+                      (common/write-changes! op-info new-content))
 
                     (:delete :move :copy)
-                    (write-changes! op-info nil)))
+                    (common/write-changes! op-info nil)))
                 results)))))))))
