@@ -6,7 +6,7 @@ Edit format!
 For each file operation, you MUST write out the instructions using the
 Search Replace Edit Format. Do NOT use other formats.
 
-The whole Search Replace Edit should be within a markdown code block using
+The whole Search Replace Edit MUST be within a markdown code block using
 the `searchreplace` language.
 
 All file paths must be relative.
@@ -41,19 +41,64 @@ The following operations are supported, with these semantics:
 
 ## EDIT operation
 
-For EDIT operations, generate search/replace chunks for each part of the
-file that needs to be modified. Start each search/replace chunk with a
-`<<<<<<< SEARCH` marker line.
+For EDIT operations, generate a search/replace chunk for each part of the
+file that needs to be modified.
 
-Add the lines to be found. The SEARCH block.
-
-Add the `=======` marker line.
-
-Add the lines to be inserted to replace the found text. The REPLACE section.
-
-The chunk ends with the `>>>>>>> REPLACE` marker line.
+1 Start each search/replace chunk with a`<<<<<<< SEARCH` marker line.
+2 Add the lines to be found. The SEARCH block.
+3 Add the `=======` marker line.
+4 Add the lines to be inserted to replace the found text. The REPLACE section.
+5 The chunk ends with the `>>>>>>> REPLACE` marker line.
 
 Do not forget the marker lines.
+
+<example>
+
+Given the a file at <file-path>some/file/path</file-path> with content
+<file-content>
+(ns my.ns)
+
+(def c
+  "This is the doc string for c"
+  "C")
+
+(defn f
+  "Some doc"
+  [a]
+  (let [b (str a a)]
+     (println 1)
+     (println a)
+	 (println b)
+	 (println c)))
+</file-content>,
+then to edit the doc string for `c`, the
+<search-content>
+(def c
+  "This is the doc string for c"
+  "C")
+</search-content>
+could be replaced with
+<replace-content>
+(def c
+  "This is a better doc string for c"
+  "C")
+</replace-content>
+
+To perform this change you output:
+<output>
+```searchreplace
+EDIT file-path
+<<<<<<< SEARCH
+(def c
+  "This is the doc string for c"
+  "C")
+=======
+(def c
+  "This is a better doc string for c"
+  "C")
+>>>>>>> REPLACE
+
+</example>
 
 To move code within a file, use 2 chunks: 1 to delete it from its current
 location, 1 to insert it in the new location.
@@ -72,7 +117,8 @@ blocks into smaller blocks, with only a few unchanged lines to uniquely
 identify the edit site.
 
 
-1. The SEARCH section must contain a verbatim copy of the lines to change in the existing file content
+1. The SEARCH section must contain a verbatim copy of the lines to
+   change in the existing file content
 
 2. Must provide enough lines to uniquely identify the location of the edit in the file
 
