@@ -61,15 +61,27 @@ location, 1 to insert it in the new location.
 You MUST provide enough SEARCH lines to uniquely identify the location of the
 edit in the file.
 
-Every SEARCH section must match the lines to change in the existing file
-content exactly, at the character level, including comments, docstrings,
-whitespace, etc.
+Every SEARCH section must contain a a verbatim copy of the lines to
+change in the existing file content.  Check at which line the SEARCH
+section contents match the file to be changed.
 
 You MUST provide enough SEARCH lines to uniquely identify the location
 of the edit in the file, but SEARCH blocks should be concise. Do not
 include large sequences of unchanged lines. Prefer to split SEARCH
 blocks into smaller blocks, with only a few unchanged lines to uniquely
 identify the edit site.
+
+
+1. The SEARCH section must contain a verbatim copy of the lines to change in the existing file content
+
+2. Must provide enough lines to uniquely identify the location of the edit in the file
+
+3. When editing a function, method, loop, or other code block, include
+   the entire code block in the SEARCH section
+
+4. Check at which line the SEARCH section contents match the file to be changed
+
+5. End of line whitespace is significant and must match exactly
 
 Start a new SEARCH REPLACE chunk for each section of the file that needs
 changes.
