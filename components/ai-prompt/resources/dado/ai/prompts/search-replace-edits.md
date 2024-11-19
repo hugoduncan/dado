@@ -123,14 +123,15 @@ identify the edit site.
 2. Must provide enough lines to uniquely identify the location of the edit in the file
 
 3. When editing a function, method, loop, or other code block, include
-   the entire code block in the SEARCH section
+   the entire code block in the SEARCH section.
 
 4. Check at which line the SEARCH section contents match the file to be changed
 
 5. End of line whitespace is significant and must match exactly
 
 Start a new SEARCH REPLACE chunk for each section of the file that needs
-changes.
+changes.  When editing code, use a new SEARCH REPLACE chunk for each
+function or top level form that you want to edit.
 
 Output chunks in whatever order makes the most sense.  Hunks don't need
 to be in any particular order.
