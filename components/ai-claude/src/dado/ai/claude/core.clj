@@ -36,8 +36,9 @@
                                                {:type "text"
                                                 :text
                                                 (str
-                                                 (when name (str"FILE: " name "\n"))
-                                                 content)
+                                                 "<document path=\"" name "\">\n"
+                                                 content
+                                                 "\n</document>")
                                                 ;; at most 4 cache-controls per request
                                                 ;; :cache_control {:type "ephemeral"}
                                                 })))
