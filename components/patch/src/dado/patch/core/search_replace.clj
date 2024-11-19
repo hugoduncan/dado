@@ -5,10 +5,10 @@
             [taoensso.truss :refer [have]]
             [dado.patch.core.common :as common]))
 
-(def ^:private search-replace-file-header-pattern
+(def ^:private file-header-pattern
   #"^(EDIT|CREATE|DELETE|MOVE|COPY)\s([^\s\n]+)(?:\s+([^\s\n]+))?$")
 
-(def ^:private search-replace-hunk-header-pattern
+(def ^:private hunk-header-pattern
   #"^<<<<<<< SEARCH$")
 
 (defn- parse-hunks [lines]
@@ -22,7 +22,7 @@
         (conj hunks current-hunk))
 
       (re-matches
-       search-replace-hunk-header-pattern
+       hunk-header-pattern
        (first remaining-lines))
       (recur (rest remaining-lines)
              [(first remaining-lines)]
@@ -35,7 +35,7 @@
              (conj current-hunk (first remaining-lines))
              hunks))))
 
-(defn- parse-search-replace-file-diff
+(defn- parse-file-diff
   "Parse a single file section from a search-replace diff patch.
    Returns a map with operation details or error info map."
   [file-section]
@@ -44,7 +44,7 @@
    (let [all-lines      (str/split-lines file-section)
          [header lines] [(first all-lines) (rest all-lines)]]
      (if-let [[_ verb path-1 path-2] (re-matches
-                                      search-replace-file-header-pattern
+                                      file-header-pattern
                                       header)]
        (let [path-2 (when path-2 (str/trim path-2))
              path-1 (when path-1 (str/trim path-1))
@@ -76,7 +76,7 @@
         :context {:section file-section
                   :header  header}}))))
 
-(defn- split-search-replace-hunk
+(defn- split-hunk
   [hunk]
   (let [sections (->> hunk
                       (reduce
@@ -94,11 +94,11 @@
     (have #(= 2 (count %)) sections)
     (mapv #(str/join "\n" %) sections)))
 
-(defn- apply-search-replace-hunk
+(defn- apply-hunk
   "Apply a single hunk to content, returns [new-content error-info]"
   [content hunk]
   (let [[_header & hunk-lines] hunk
-        [search replace]       (split-search-replace-hunk hunk)
+        [search replace]       (split-hunk hunk)
         n-context              (count search)
         index                  (str/index-of content search)
         post-str               (when index (subs content (+ index n-context)))]
@@ -132,7 +132,7 @@
             (when (str/blank? post-str) "\n"))
        nil])))
 
-(defn- apply-search-replace-hunks
+(defn- apply-hunks
   "Apply all hunks to content, returns [new-content errors]"
   [content hunks]
   (loop [current-content content
@@ -140,7 +140,7 @@
          errors          []]
     (if (empty? remaining-hunks)
       [current-content errors]
-      (let [[new-content error] (apply-search-replace-hunk
+      (let [[new-content error] (apply-hunk
                                  current-content
                                  (first remaining-hunks))]
         (recur new-content
@@ -154,7 +154,7 @@
   [hunks]
   [(str (str/join "\n" (first hunks)) "\n") nil])
 
-(defn- apply-search-replace-file-changes
+(defn- apply-file-changes
   "Apply changes to a single file operation, returns [stats error-info]"
   [op-info]
   (t/trace!
@@ -171,7 +171,7 @@
 
            :else
            (let [current-content      (slurp target-path)
-                 [new-content errors] (apply-search-replace-hunks current-content hunks)]
+                 [new-content errors] (apply-hunks current-content hunks)]
              (if (seq errors)
                [nil {:errors errors :path target-path}]
                [{:op op :paths [target-path]} nil])))
@@ -212,7 +212,7 @@
    {:id :dado.patch/apply-patch}
    (let [file-sections (str/split patch-content #"(?m)^(?=EDIT|CREATE|DELETE|MOVE|COPY)")]
      ;; First pass - parse and validate all operations
-     (let [parsed-ops   (mapv parse-search-replace-file-diff file-sections)
+     (let [parsed-ops   (mapv parse-file-diff file-sections)
            parse-errors (->> parsed-ops
                              (filter :error)
                              (mapv #(assoc % :type :error/patch-validation)))]
@@ -227,7 +227,7 @@
                [results errors] (reduce
                                  (fn [[results errors] op-info]
                                    (let [[stats error]
-                                         (apply-search-replace-file-changes op-info)]
+                                         (apply-file-changes op-info)]
                                      [(if stats
                                         (conj results stats)
                                         results)
@@ -255,7 +255,7 @@
                   (case (:op op-info)
                     (:edit)
                     (let [current-content (slurp (:target-path op-info))
-                          [new-content _] (apply-search-replace-hunks
+                          [new-content _] (apply-hunks
                                            current-content
                                            (:hunks op-info))]
                       (common/write-changes! op-info new-content))
