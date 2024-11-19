@@ -57,7 +57,8 @@
 
               ;; Extract and apply any diffs
               simplified-diffs     (ai-message/extract-simplified-diffs response)
-              search-replace-diffs (ai-message/extract-search-replace-diffs response)]
+              search-replace-diffs (ai-message/extract-search-replace-diffs response)
+              updated-namespaces   (ai-message/extract-updated-namespaces response)]
 
           (when (seq simplified-diffs)
             (patch/apply-simplified-diff-patch! simplified-diffs)
@@ -66,6 +67,12 @@
           (when (seq search-replace-diffs)
             (patch/apply-search-replace-diff-patch! search-replace-diffs)
             (t/event! :message-loop/diffs-applied))
+
+          ;; Reload any updated namespaces
+          (when (seq updated-namespaces)
+            (doseq [ns-name updated-namespaces]
+              (require (symbol ns-name) :reload))
+            (t/event! :message-loop/namespaces-reloaded))
 
           ;; Add response and continue loop
           (recur (ai-message/add-response thread response))))
