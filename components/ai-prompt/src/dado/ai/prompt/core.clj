@@ -81,3 +81,26 @@
                {:type :error/missing-data
                 :data data
                 :unresolved-template substituted}))))))
+
+(defn interface-paths
+  "Returns paths to interface namespace files for a component"
+  [component-name]
+  {:pre [(have string? component-name)]}
+  (t/trace!
+   {:id ::find-interface-paths :data {:component component-name}}
+   (let [interface-path (fs/path (fs/cwd) "components" component-name "src")]
+     (->> (fs/glob interface-path "**/*interface.clj")
+          (mapv (partial fs/relativize (fs/cwd)))
+          (mapv str)))))
+
+(defn implementation-paths
+  "Returns paths to implementation files for a component"
+  [component-name]
+  {:pre [(have string? component-name)]}
+  (t/trace!
+   {:id ::find-implementation-paths :data {:component component-name}}
+   (let [impl-path (fs/path (fs/cwd) "components" component-name)]
+     (->> (fs/glob impl-path "**")
+          (filterv fs/regular-file?)
+          (mapv (partial fs/relativize (fs/cwd)))
+          (mapv str)))))
