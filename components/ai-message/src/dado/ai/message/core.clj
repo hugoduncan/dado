@@ -50,7 +50,10 @@
             (update message-thread :messages conj message)))
 
 (defn add-context-file
-  "Adds a file's content to the message thread context"
+  "Adds a file's content to the message thread context.
+   If there is no existing sequence in the context files,
+   starts a new sequence. If there is an existing sequence,
+   adds to the last sequence."
   [message-thread file-path]
   {:pre [(have? model/message-thread? message-thread)]}
   (t/trace! {:id :message/file-added}
@@ -59,16 +62,41 @@
                                 :content content}]
               (update-in message-thread
                          [:metadata :context :files]
-                         (fnil conj [])
-                         file-context))))
+                         (fn [files]
+                           (let [files (or files [[]])]
+                             (if (empty? files)
+                               [[file-context]]
+                               (update files
+                                       (dec (count files))
+                                       conj
+                                       file-context))))))))
+
+(defn- file-path->content-map
+  [file-path]
+  {:pre [(have? string? file-path)]}
+  {:name    (str file-path)
+   :content (slurp (fs/file file-path))})
+
+(defn add-context-file-sequence
+  "Starts a new sequence in the context files and adds the file to it."
+  [message-thread file-sequence]
+  {:pre [(have? model/message-thread? message-thread)]}
+  (t/trace! {:id :message/file-sequence-added}
+            (update-in message-thread
+                       [:metadata :context :files]
+                       (fnil conj [])
+                       (mapv file-path->content-map file-sequence))))
 
 (defn set-context-files
-  "Set the file contexts on the message thread context."
-  [message-thread context-file-paths]
+  "Set the file contexts on the message thread context.
+   Takes a sequence of sequences of file paths.
+   Each inner sequence becomes a sequence in the context files."
+  [message-thread context-file-sequences]
   (reduce
-   add-context-file
+   (fn [message-thread file-paths]
+     (add-context-file-sequence message-thread file-paths))
    (assoc-in message-thread [:metadata :context :files] [])
-   context-file-paths))
+   context-file-sequences))
 
 (defn add-response
   "Adds a response message to the message thread"

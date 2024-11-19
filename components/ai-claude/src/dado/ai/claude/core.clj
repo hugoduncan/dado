@@ -19,6 +19,41 @@
            :content content}
     name (assoc :name name)))
 
+(defn- file-sequence->content-maps
+  [cache-count file-sequence]
+  (let [all-but-last (butlast file-sequence)
+        last-file    (last file-sequence)
+        can-cache?   (< @cache-count 4)]
+    (concat
+     ;; Convert all but last file in sequence
+     (for [{:keys [name content]} all-but-last]
+       {:type "text"
+        :text (str
+               "<document path=\"" name "\">\n"
+               content
+               "\n</document>")})
+     ;; Handle last file, maybe with cache control
+     (when last-file
+       (let [base-content
+             {:type "text"
+              :text (str
+                     "<document path=\"" (:name last-file) "\">\n"
+                     (:content last-file)
+                     "\n</document>")}]
+         [(if can-cache?
+            (do
+              (swap! cache-count inc)
+              (assoc base-content
+                     :cache_control {:type "ephemeral"}))
+            base-content)])))))
+
+(defn- ->system-content [file-sequences]
+  ;; Process each sequence of files
+  (let [cache-count (atom 0)]
+    (->> file-sequences
+         (mapcat (partial file-sequence->content-maps cache-count))
+         vec)))
+
 (defn- to-claude-request [message-thread config]
   (t/trace!
    {:id :dado.ai.claude/request-translation}
@@ -27,21 +62,10 @@
          system-content                  (if (seq (:files context))
                                            (vec
                                             (concat
-                                             ;; System prompt if present
                                              (when system-prompt
                                                [{:type "text"
                                                  :text system-prompt}])
-                                             ;; Each context file
-                                             (for [{:keys [name content]} (:files context)]
-                                               {:type "text"
-                                                :text
-                                                (str
-                                                 "<document path=\"" name "\">\n"
-                                                 content
-                                                 "\n</document>")
-                                                ;; at most 4 cache-controls per request
-                                                ;; :cache_control {:type "ephemeral"}
-                                                })))
+                                             (->system-content (:files context))))
                                            ;; Just system prompt as string if no files
                                            system-prompt)]
      (cond-> {:model      (or model-name default-model-name)

@@ -33,18 +33,30 @@
 (defn add-context-file
   "Adds a file's content to the message thread context.
    File must exist and be readable.
+   If there is no existing sequence in the context files, starts a new sequence.
+   If there is an existing sequence, adds to the last sequence.
    Returns updated message thread with file content added to context.
    Throws if file does not exist or message thread is invalid."
   [message-thread file-path]
   (core/add-context-file message-thread file-path))
 
+(defn add-context-file-sequence
+  "Adds a new sequence of context files.
+   Files must exist and be readable.
+   Returns updated message thread with the new file sequence in context.
+   Throws if files do not exist or message thread is invalid."
+  [message-thread file-sequence]
+  (core/add-context-file-sequence message-thread file-sequence))
+
 (defn set-context-files
   "Set the file contexts on the message thread context.
-   File must exist and be readable.
-   Returns updated message thread with context file contents added to context.
-   Throws if a file does not exist or message thread is invalid."
-  [message-thread context-file-paths]
-  (core/set-context-files message-thread context-file-paths))
+   Takes a sequence of sequences of file paths.
+   Each inner sequence becomes a sequence in the context files.
+   All files must exist and be readable.
+   Returns updated message thread with all context file contents added.
+   Throws if any file does not exist or message thread is invalid."
+  [message-thread context-file-sequences]
+  (core/set-context-files message-thread context-file-sequences))
 
 (defn add-response
   "Adds an AI response message to the message thread.

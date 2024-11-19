@@ -21,9 +21,10 @@
                [:context {:optional true}
                 [:map
                  [:files [:vector
-                          [:map
-                           [:name string?]
-                           [:content string?]]]]]]]]])
+                          [:vector
+                           [:map
+                            [:name string?]
+                            [:content string?]]]]]]]]]])
 
 (def ResponseMessage
   [:map
