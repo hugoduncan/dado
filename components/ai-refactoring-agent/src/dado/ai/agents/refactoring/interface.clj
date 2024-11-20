@@ -11,5 +11,5 @@
    - Context-aware refactoring
 
    Throws :error/agent-creation on validation failure."
-  [config additional-context-fn]
-  (core/create-agent config additional-context-fn))
+  [project-config additional-context-fn]
+  (core/create-agent project-config additional-context-fn))
