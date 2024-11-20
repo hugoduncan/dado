@@ -19,9 +19,7 @@
       (empty? remaining-lines)
       (if (empty? current-hunk)
         hunks
-        (if (seq current-hunk)
-          (conj hunks current-hunk)
-          hunks))
+        (filterv seq (conj hunks current-hunk)))
 
       (re-matches
        hunk-header-pattern
