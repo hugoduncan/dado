@@ -27,10 +27,10 @@
    Returns map with :content and :path if found, nil otherwise."
   [project-config agent doc-name]
   (let [dev-dir  (get project-config :dev-dir "dev")
-        fs-paths [(fs/path dev-dir "ai/agents" (name (:name agent)) doc-name)
-                  (fs/path dev-dir "ai/agents/common" doc-name)]
-        cp-paths [(str "ai/agents/" (name (:name agent)) "/" doc-name)
-                  (str "ai/agents/common/" doc-name)]]
+        fs-paths [(fs/path dev-dir "dado/ai/agents" (name (:name agent)) doc-name)
+                  (fs/path dev-dir "dado/ai/agents/common" doc-name)]
+        cp-paths [(str "dado/ai/agents/" (name (:name agent)) "/" doc-name)
+                  (str "dado/ai/agents/common/" doc-name)]]
     (t/trace! {:id   :agent/document-search
                :data {:fs-paths fs-paths
                       :cp-paths cp-paths}}

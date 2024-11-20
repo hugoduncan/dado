@@ -33,10 +33,10 @@ An agent is represented by a map with the following schema:
 
 ### Document Loading Paths
 Documents are searched in this order:
-1. `<dev-dir>/ai/agents/<agent-name>/` in project
-2. `<dev-dir>/ai/agents/common/` in project
-3. `ai/agents/<agent-name>/` in resources
-4. `ai/agents/common/` in resources
+1. `<dev-dir>/dado/ai/agents/<agent-name>/` in project
+2. `<dev-dir>/dado/ai/agents/common/` in project
+3. `dado/ai/agents/<agent-name>/` in resources
+4. `dado/ai/agents/common/` in resources
 
 ### Component Interface
 ```clojure

@@ -20,9 +20,9 @@
    Throws :error/document-not-found if docs missing.
    
    Search paths (in order):
-   1. <dev-dir>/ai/agents/<agent-name>/
-   2. <dev-dir>/ai/agents/common/
-   3. ai/agents/<agent-name>/ in resources
-   4. ai/agents/common/ in resources"
+   1. <dev-dir>/dado/ai/agents/<agent-name>/
+   2. <dev-dir>/dado/ai/agents/common/
+   3. dado/ai/agents/<agent-name>/ in resources
+   4. dado/ai/agents/common/ in resources"
   [project-config agent doc-name]
   (core/load-agent-document project-config agent doc-name))
