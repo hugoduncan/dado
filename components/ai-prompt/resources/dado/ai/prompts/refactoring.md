@@ -50,6 +50,10 @@ When presenting your output, use the following format:
 - Any potential impacts on functionality or performance]
 </explanation>
 
+<updated-namespaces-list>
+[List all modified namespaces in dependency order according to the Updated Namespaces List Format]
+</updated-namespaces-list>
+
 <commit-message>
 [Insert a commit message for the changes here]
 </commit-message>
