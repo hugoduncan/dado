@@ -12,6 +12,20 @@
     (when-not (clojure.string/blank? input)
       input)))
 
+(defn- reload-updated-namespaces!
+  "Reloads the given sequence of updated namespace names.
+   Prints status for each namespace reload attempt.
+   Continues even if some reloads fail."
+  [updated-namespaces]
+  (doseq [ns-name updated-namespaces]
+    (try
+      (require (symbol ns-name) :reload)
+      (println "Reloaded namespace:" ns-name)
+      (catch Throwable t
+        (println "Failed to reload namespace:" ns-name)
+        (println "Error:" (.getMessage t)))))
+  (t/event! :message-loop/namespaces-reloaded))
+
 (defn- refresh-thread-context
   "Updates thread with current prompt and context files"
   [thread prompt-fn context-files-fn]
@@ -70,9 +84,7 @@
 
           ;; Reload any updated namespaces
           (when (seq updated-namespaces)
-            (doseq [ns-name updated-namespaces]
-              (require (symbol ns-name) :reload))
-            (t/event! :message-loop/namespaces-reloaded))
+            (reload-updated-namespaces! updated-namespaces))
 
           ;; Add response and continue loop
           (recur (ai-message/add-response thread response))))
