@@ -4,12 +4,12 @@
 (defn create-agent
   "Creates a refactoring agent for code modifications.
    Returns an agent map compatible with the AI Agent interface.
-   
+
    The agent specializes in:
    - Code refactoring suggestions
    - Safe code modifications using FOD format
    - Context-aware refactoring
-   
+
    Throws :error/agent-creation on validation failure."
-  [config]
-  (core/create-agent config))
+  [config additional-context-fn]
+  (core/create-agent config additional-context-fn))
