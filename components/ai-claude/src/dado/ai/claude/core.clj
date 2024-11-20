@@ -20,10 +20,9 @@
     name (assoc :name name)))
 
 (defn- file-sequence->content-maps
-  [cache-count file-sequence]
+  [add-cache? file-sequence]
   (let [all-but-last (butlast file-sequence)
-        last-file    (last file-sequence)
-        can-cache?   (< @cache-count 4)]
+        last-file    (last file-sequence)]
     (concat
      ;; Convert all but last file in sequence
      (for [{:keys [name content]} all-but-last]
@@ -32,7 +31,7 @@
                "<document path=\"" name "\">\n"
                content
                "\n</document>")})
-     ;; Handle last file, maybe with cache control
+     ;; Handle last file, conditionally adding cache control
      (when last-file
        (let [base-content
              {:type "text"
@@ -40,18 +39,17 @@
                      "<document path=\"" (:name last-file) "\">\n"
                      (:content last-file)
                      "\n</document>")}]
-         [(if can-cache?
-            (do
-              (swap! cache-count inc)
-              (assoc base-content
-                     :cache_control {:type "ephemeral"}))
+         [(if add-cache?
+            (assoc base-content
+                   :cache_control {:type "ephemeral"})
             base-content)])))))
 
 (defn- ->system-content [file-sequences]
-  ;; Process each sequence of files
-  (let [cache-count (atom 0)]
-    (->> file-sequences
-         (mapcat (partial file-sequence->content-maps cache-count))
+  (let [cached-sequences (take 4 file-sequences)
+        normal-sequences (drop 4 file-sequences)]
+    (->> (concat
+          (mapcat #(file-sequence->content-maps true %) cached-sequences)
+          (mapcat #(file-sequence->content-maps false %) normal-sequences))
          vec)))
 
 (defn- to-claude-request [message-thread config]
