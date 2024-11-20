@@ -27,3 +27,19 @@ in namespace `the.example.component`.
 
 - The project's root `deps.end` deps must in include a `:local-root`
   reference to the component directory.
+
+#  Component Structure
+
+```
+components/<component-name>/
+  ├── deps.edn
+  ├── resources/
+  ├── src/
+  │   └── the/component/namespace/
+  │       ├── interface.clj
+  │       ├── core.clj
+  │       └── model.clj
+  └── test/
+      └── the/component/namespace/
+          └── interface_test.clj
+```
