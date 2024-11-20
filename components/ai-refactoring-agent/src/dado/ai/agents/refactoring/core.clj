@@ -1,8 +1,7 @@
 (ns dado.ai.agents.refactoring.core
   (:require
-   [dado.ai.agent.interface :as agent]
+   [babashka.fs :as fs]
    [dado.ai.agents.refactoring.model :as model]
-   [dado.ai.message.interface :as msg]
    [dado.ai.prompt.interface :as prompt]
    [malli.core :as m]
    [malli.error :as me]
@@ -20,35 +19,20 @@
                                 {:type  :error/refactoring-response
                                  :cause e}))))))
 
-;; TODO move these and abstract somehow
-(defn adr-files [] (mapv str (babashka.fs/list-dir "dev/design/adr")))
-(defn scope-files [] (mapv str (babashka.fs/list-dir "dev/design/scope")))
-(defn implementation-files [] (mapv str (babashka.fs/list-dir "dev/design/implementation")))
+(defn- get-directory-files
+  "Gets list of files in a configured directory"
+  [project-config dir-key]
+  (when-let [dir (project-config/get-directory project-config dir-key)]
+    (mapv str (fs/list-dir dir))))
 
 (defn- get-context
-  [additional-context-fn]
+  [project-config additional-context-fn]
   (t/trace!
    {:id :refactoring/get-context}
-   [(scope-files)
-    (adr-files)
-    (implementation-files)
-    (reduce
-     into
-     []
-     (additional-context-fn)
-     #_[;; (prompt/implementation-paths "ai-claude")
-        ;; (prompt/implementation-paths "ai-prompt")
-        ;; (prompt/implementation-paths "ai-message")
-        ;; (prompt/implementation-paths "patch")
-        (prompt/implementation-paths "ai-agent")
-        (prompt/implementation-paths "ai-refactoring-agent")
-        ;; (prompt/implementation-paths "repl-message-loop")
-        ;; (prompt/implementation-paths "update-extractor")
-        []
-        ;; "deps.edn"
-        ;; "dev/design/implementation/search-replace-edit-format.md"
-        ;; "dev/design/implementation/simplified-diff-format.md"
-        ])]))
+   [(get-directory-files project-config :dado/scope)
+    (get-directory-files project-config :dado/adr)
+    (get-directory-files project-config :dado/implementation)
+    (reduce into [] (additional-context-fn))]))
 
 (defn- get-prompt
   [project-config]
@@ -81,5 +65,7 @@
    {:id :refactoring/create-agent}
    {:name                :refactoring
     :prompt-fn           (partial get-prompt project-config)
-    :context-fn          (partial get-context additional-context-fn)
+    :context-fn          (partial get-context
+                                  project-config
+                                  additional-context-fn)
     :process-response-fn process-response}))

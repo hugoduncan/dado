@@ -8,17 +8,24 @@
   (let [config-path "dado.edn"]
     (when-not (fs/exists? config-path)
       (throw (ex-info "dado.edn configuration file not found"
-                     {:type :error/configuration
-                      :path config-path})))
+                      {:type :error/configuration
+                       :path config-path})))
     (try
       (edn/read-string (slurp config-path))
       (catch Exception e
         (throw (ex-info "Failed to parse dado.edn"
-                       {:type :error/configuration
-                        :cause e}))))))
+                        {:type  :error/configuration
+                         :cause e}))))))
+
+(def ^:private default-directories
+  {:dado/prompts        "dev/ai/prompts"
+   :dado/adr            "dev/design/adr"
+   :dado/implementation "dev/design/implementation"
+   :dado/scope          "dev/design/scope"})
 
 (defn load-config []
-  (let [config (read-config-file)]
+  (let [config (-> (read-config-file)
+                   (update :directories #(merge default-directories %)))]
     (if (m/validate model/Config config)
       config
       (throw (ex-info "Invalid configuration format"
@@ -32,8 +39,8 @@
   ([config provider-key]
    (get-in config [:ai-providers provider-key])))
 
-(defn dev-dir
-  ([]
-   (dev-dir (load-config)))
-  ([config]
-   (:dev-dir config)))
+(defn get-directory
+  "Gets configured directory path for given key.
+   Returns path string if found, nil if not configured."
+  [config dir-key]
+  (get-in config [:directories dir-key]))

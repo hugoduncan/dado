@@ -12,7 +12,7 @@
       (spit (fs/file prompt-dir "template1.md") "Hello {{name}}")
       (spit (fs/file prompt-dir "template2.md") "Your request is: {{request}}")
 
-      (let [project-config {:dev-dir (str temp-dir)}]
+      (let [project-config {:directories {:dado/prompts (str prompt-dir)}}]
         (testing "successful prompt construction from project templates"
           (let [result (prompt/construct-prompt
                         project-config

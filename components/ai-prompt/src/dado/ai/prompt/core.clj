@@ -7,7 +7,8 @@
    [selmer.parser :as selmer]
    [selmer.util :as selmer-util]
    [taoensso.telemere :as t]
-   [taoensso.truss :refer [have]]))
+   [taoensso.truss :refer [have]]
+   [dado.project-config.interface :as project-config]))
 
 (defn missing-value-fn [tag context-map]
   (throw
@@ -18,7 +19,7 @@
 (selmer-util/set-missing-value-formatter! missing-value-fn)
 
 (defn- project-prompt-dir [project-config]
-  (fs/path (have (:dev-dir project-config)) "ai" "prompts"))
+  (fs/path (have (project-config/get-directory project-config :dado/prompts))))
 
 (defn- resource-template-path [template-name]
   (str "dado/ai/prompts/" template-name ".md"))

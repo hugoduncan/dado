@@ -15,9 +15,8 @@
   ([config provider-key]
    (core/ai-provider-config config provider-key)))
 
-(defn dev-dir
-  "Get configured dev directory path."
-  ([]
-   (core/dev-dir))
-  ([config]
-   (core/dev-dir config)))
+(defn get-directory
+  "Gets configured directory path for given key.
+   Returns path string if found, nil if not configured."
+  [config dir-key]
+  (core/get-directory config dir-key))

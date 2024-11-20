@@ -15,12 +15,29 @@ A dedicated Project Configuration component will:
 - Store configuration in EDN format in a `dado.edn` file at the root of the
   project directory
 - The project directory is assumed to be the working directory
-- The configuration data includes
-  - AI provider specific configuration, per AI provider
-  - Path to the `dev` directory, where project context and design
-    documents are stored
+  - Project directory structure configuration under `:directories` key
+  - Standard directory locations:
+    - `:dado/prompts` -> "dev/ai/prompts"
+    - `:dado/adr` -> "dev/design/adr"
+    - `:dado/implementation` -> "dev/design/implementation"
+    - `:dado/scope` -> "dev/design/scope"
+- All paths in `:directories` must be relative paths
+- Directory paths can be customized but must maintain expected structure
 - Provide validation for the configuration format
 - Support environment variable overrides for sensitive data, such as API keys
+
+Example configuration:
+```edn
+{:directories
+ {:dado/prompts "dev/ai/prompts"
+  :dado/adr "dev/design/adr"
+  :dado/implementation "dev/design/implementation"
+  :dado/scope "dev/design/scope"
+  :custom/docs "docs/custom"}
+ :ai-providers
+ {:claude {:api-key "..."}}
+}
+```
 
 ## Consequences
 
