@@ -3,11 +3,11 @@
   (:require
    [babashka.fs :as fs]
    [clojure.java.io :as io]
+   [dado.ai.agent.model :as model]
+   [dado.repl.message-loop.interface :as message-loop]
    [malli.core :as m]
-   [taoensso.telemere :as t]
-   [taoensso.truss :as truss :refer [have]]
    [malli.error :as me]
-   [dado.ai.agent.model :as model]))
+   [taoensso.telemere :as t]))
 
 (def agent? (m/validator model/Agent))
 
@@ -56,9 +56,18 @@
    Throws :error/document-not-found if docs missing."
   [project-config agent doc-name]
   (t/trace! {:id :agent/documents-loaded}
-    (if-let [doc (find-and-load-document project-config agent doc-name)]
-      doc
-      (throw (ex-info "Document not found in search paths"
-                     {:type :error/document-not-found
-                      :agent (:name agent)
-                      :document doc-name})))))
+            (if-let [doc (find-and-load-document project-config agent doc-name)]
+              doc
+              (throw (ex-info "Document not found in search paths"
+                              {:type     :error/document-not-found
+                               :agent    (:name agent)
+                               :document doc-name})))))
+
+(defn message-loop
+  "Runs interactive message loop with given agent and message thread."
+  [project-config agent msg-thread]
+  (message-loop/message-loop
+   project-config
+   msg-thread
+   (:prompt-fn agent)
+   (:context-fn agent)))

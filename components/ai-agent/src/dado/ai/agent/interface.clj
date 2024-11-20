@@ -18,7 +18,7 @@
   "Loads document content for given name following fallback path.
    Returns map with :content and :path keys.
    Throws :error/document-not-found if docs missing.
-   
+
    Search paths (in order):
    1. <dev-dir>/dado/ai/agents/<agent-name>/
    2. <dev-dir>/dado/ai/agents/common/
@@ -26,3 +26,13 @@
    4. dado/ai/agents/common/ in resources"
   [project-config agent doc-name]
   (core/load-agent-document project-config agent doc-name))
+
+(defn message-loop
+  "Runs interactive message loop with given agent and message thread.
+   Returns final message thread when user enters 'EXIT'.
+
+   Arguments:
+   - agent: Valid agent configuration
+   - msg-thread: Initial message thread"
+  [project-config agent msg-thread]
+  (core/message-loop project-config agent msg-thread))
