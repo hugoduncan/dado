@@ -163,33 +163,46 @@
   "Extracts file blocks from a response content string"
   [response]
   {:pre [(have? model/response-message? response)]}
-  (t/trace! {:id :message/code-extracted}
-            (let [matches (re-seq file-block-regex (:content response))]
-              (map (fn [[_ lang name content]]
-                     {:language lang
-                      :name     name
-                      :content  (str/trim content)
-                      :metadata {:block-type :text
-                                 :name       name}})
-                   matches))))
+  (t/trace!
+   {:id :message/code-extracted}
+   (let [matches (re-seq file-block-regex (:content response))]
+     (map (fn [[_ lang name content]]
+            {:language lang
+             :name     name
+             :content  (str/trim content)
+             :metadata {:block-type :text
+                        :name       name}})
+          matches))))
 
 (defn extract-simplified-diffs
   "Extracts simplified diff blocks from a response content string"
   [response]
   {:pre [(have? model/response-message? response)]}
-  (t/trace! {:id :message/diff-extracted}
-            (extractor/extract-simplified-diffs (:content response))))
+  (t/trace!
+   {:id :message/diff-extracted}
+   (apply str/join "\n"
+          (mapv
+           (comp extractor/extract-simplified-diffs :text)
+           (:content response)))))
 
 (defn extract-file-operation-directives
   "Extracts File Operation Directives from a response content string"
   [response]
   {:pre [(have? model/response-message? response)]}
-  (t/trace! {:id :message/diff-extracted}
-            (extractor/extract-file-operation-directives (:content response))))
+  (t/trace!
+   {:id :message/diff-extracted}
+   (apply str/join "\n"
+          (mapv
+           (comp extractor/extract-file-operation-directives  :text)
+           (:content response)))))
 
 (defn extract-updated-namespaces
   "Extracts updated namespaces list from an AI response message"
   [response]
   {:pre [(have? model/response-message? response)]}
-  (t/trace! {:id :message/updated-namespaces-extracted}
-            (extractor/extract-updated-namespaces (:content response))))
+  (t/trace!
+   {:id :message/updated-namespaces-extracted}
+   (apply str/join "\n"
+          (mapv
+           (comp extractor/extract-updated-namespaces  :text)
+           (:content response)))))
