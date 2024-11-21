@@ -71,9 +71,10 @@ We will create an Implement Namespace Action component that:
    a. Validate inputs and ADR
    b. Create component directory structure
    c. Generate component files
-   d. Add dependencies to deps.edn
-   e. Create test files
-   f. Return results map
+   d. Create test files
+   e. Create the component's deps.edn
+   f. Add the component to the project's deps.edn
+   g. Return results map
 
 7. Required Validation Rules:
    - Component name must be valid

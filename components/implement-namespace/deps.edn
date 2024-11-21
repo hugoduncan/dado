@@ -1,0 +1,9 @@
+{:paths ["src" "resources"]
+ :deps  {metosin/malli                     {:mvn/version "0.11.0"}
+         com.taoensso/truss                {:mvn/version "1.9.0"}
+         com.taoensso/telemere             {:mvn/version "1.0.0-RC1"}
+         babashka/fs                        {:mvn/version "0.4.19"}
+         org.hugoduncan/dado.ai-agent      {:local/root "../ai-agent"}
+         org.hugoduncan/dado.ai-message    {:local/root "../ai-message"}
+         org.hugoduncan/dado.patch         {:local/root "../patch"}
+         org.hugoduncan/dado.project-config {:local/root "../project-config"}}}
