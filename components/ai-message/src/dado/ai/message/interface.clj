@@ -49,6 +49,26 @@
   [message-thread file-sequence]
   (core/add-context-file-sequence message-thread file-sequence))
 
+(defn register-tools
+  "Registers tools for use in message thread.
+   Tools must conform to AI Tool schema.
+   Returns updated message thread with tools registered.
+   Throws if message thread or tools are invalid."
+  [message-thread tools]
+  (core/register-tools message-thread tools))
+
+(defn add-tool
+  "Adds a tool to the message thread.
+   Returns updated message thread with tool added.
+   Throws if message thread or tool are invalid."
+  [message-thread tool]
+  (core/add-tool message-thread tool))
+
+(defn registered-tools
+  "Return the registered tools from the message thread. "
+  [message-thread]
+  (core/registered-tools message-thread))
+
 (defn set-context-files
   "Set the file contexts on the message thread context.
    Takes a sequence of sequences of file paths.
@@ -66,6 +86,13 @@
    Throws if message thread or response is invalid."
   [message-thread response]
   (core/add-response message-thread response))
+
+(defn extract-tool-calls
+  "Extracts tool calls from an AI response message.
+   Returns sequence of file block maps containing language, name and content.
+   Throws if response is invalid."
+  [response]
+  (core/extract-tool-calls response))
 
 (defn extract-file-blocks
   "Extracts file blocks from an AI response message.
@@ -95,6 +122,15 @@
    Throws if response is invalid."
   [response]
   (core/extract-updated-namespaces response))
+
+
+#_(defn add-tool-result
+    "Adds a tool execution result to a tool call in the message thread.
+   Returns updated message thread with tool result added.
+   Throws if message thread or tool call ID is invalid."
+    [message-thread tool-call-id result]
+    (core/add-tool-result message-thread tool-call-id result))
+
 ;; Expose validators for use by other components
 (def message? model/message?)
 (def message-thread? model/message-thread?)
@@ -103,27 +139,6 @@
 
 ;; Expose schemas for other components
 (def message-schema model/Message)
-(defn register-tools
-  "Registers tools for use in message thread.
-   Tools must conform to AI Tool schema.
-   Returns updated message thread with tools registered.
-   Throws if message thread or tools are invalid."
-  [message-thread tools]
-  (core/register-tools message-thread tools))
-
-#_(defn add-tool-call
-    "Adds a tool call to the message thread.
-   Returns updated message thread with tool call added.
-   Throws if message thread or tool parameters are invalid."
-    [message-thread tool-id params]
-    (core/add-tool-call message-thread tool-id params))
-
-#_(defn add-tool-result
-    "Adds a tool execution result to a tool call in the message thread.
-   Returns updated message thread with tool result added.
-   Throws if message thread or tool call ID is invalid."
-    [message-thread tool-call-id result]
-    (core/add-tool-result message-thread tool-call-id result))
 
 (def message-thread-schema model/MessageThread)
 (def response-message-schema model/ResponseMessage)

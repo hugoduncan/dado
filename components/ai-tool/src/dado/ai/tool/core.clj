@@ -40,20 +40,17 @@
     :error map?       ; Error details if execution failed
     :metrics map?}    ; Execution metrics (duration etc)
    Throws :error/tool-execution for validation/execution errors."
-  [tool-id params]
-  (t/trace! {:id :tool/executed}
-    (if-let [tool (lookup-tool tool-id)]
-      (try
-        (let [result ((:execute-fn tool) params)]
-          {:result result})
-        (catch Exception e
-          (throw (ex-info "Tool execution failed"
-                         {:type :error/tool-execution
-                          :tool-id tool-id
-                          :cause e}))))
-      (throw (ex-info "Tool not found"
-                     {:type :error/tool-execution
-                      :tool-id tool-id})))))
+  [tool params]
+  (t/trace!
+   {:id :tool/executed}
+   (try
+     (let [result ((:execute-fn tool) params)]
+       {:result result})
+     (catch Exception e
+       (throw (ex-info "Tool execution failed"
+                       {:type    :error/tool-execution
+                        :tool-id (:id  tool)
+                        :cause   e}))))))
 
 (defn validate-tool
   "Validates tool map structure.
@@ -61,8 +58,24 @@
    Throws :error/tool-validation if invalid."
   [tool-map]
   (t/trace! {:id :tool/validated}
-    (if (tool? tool-map)
-      tool-map
-      (throw (ex-info "Invalid tool configuration"
-                     {:type :error/tool-validation
-                      :data (me/humanize (m/explain model/Tool tool-map))})))))
+            (if (tool? tool-map)
+              tool-map
+              (throw (ex-info "Invalid tool configuration"
+                              {:type :error/tool-validation
+                               :data (me/humanize (m/explain model/Tool tool-map))})))))
+
+;; NOTE Prompt used by claude for tools
+
+;; In this environment you have access to a set of tools you can use to answer
+;; the user's question.
+;; {{ FORMATTING INSTRUCTIONS }}
+
+;; String and scalar parameters should be specified as is, while lists and
+;; objects should use JSON format. Note that spaces for string values are not
+;; stripped. The output is not expected to be valid XML and is parsed with
+;; regular expressions.
+
+;; Here are the functions available in JSONSchema format:
+;; {{ TOOL DEFINITIONS IN JSON SCHEMA }}
+;; {{ USER SYSTEM PROMPT }}
+;; {{ TOOL CONFIGURATION }}

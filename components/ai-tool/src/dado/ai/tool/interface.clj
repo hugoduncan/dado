@@ -33,12 +33,12 @@
     :error map?       ; Error details if execution failed
     :metrics map?}    ; Execution metrics (duration etc)
    Throws :error/tool-execution for validation/execution errors."
-  [tool-id params]
-  (core/execute-tool! tool-id params))
+  [tool params]
+  (core/execute-tool! tool params))
 
 (defn validate-tool
   "Validates tool map structure.
    Returns tool map if valid.
    Throws :error/tool-validation if invalid."
-  [tool-map]
-  (core/validate-tool tool-map))
+  [tool]
+  (core/validate-tool tool))

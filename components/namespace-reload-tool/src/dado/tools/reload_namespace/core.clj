@@ -41,6 +41,18 @@
                   {:reloaded reloaded
                    :errors   errors})))))
 
+(def description
+  "This tool reloads a list of clojure namespaces.
+
+  Use this to reload namespaces so the user has the latest code installed.
+
+  The `namespaces` parameter is a list of namespaces in dependency order.  If a
+  namespace `a` depends on namespace `b`, then `b` should be listed before `a`.
+
+  If the tool fails to reload a namespace, the failed namespace will be returned
+  in a list passsed on the `:failed-namespaces` key.
+")
+
 (def prompt-template
   "Tool for reloading Clojure namespaces.
 
@@ -84,7 +96,7 @@
    :description  "Reloads specified Clojure namespaces"
    :structured-description
    {:claude
-    {:description "Tool for reloading Clojure namespaces"}}
+    {:description description}}
    :parameters
    [{:name        "namespaces"
      :type        :string

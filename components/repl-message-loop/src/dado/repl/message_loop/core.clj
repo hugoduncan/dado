@@ -1,9 +1,11 @@
 (ns dado.repl.message-loop.core
   (:require [dado.ai.claude.interface :as claude]
             [dado.ai.message.interface :as ai-message]
+            [dado.ai.message.interface :as msg]
             [dado.patch.interface :as patch]
             [taoensso.telemere :as t]
-            [taoensso.truss :as truss :refer [have?]]))
+            [taoensso.truss :as truss :refer [have have?]]
+            [dado.ai.tool.interface :as tool]))
 
 (defn- get-user-input
   "Get input from user, return nil if empty/whitespace-only"
@@ -33,6 +35,17 @@
       (ai-message/update-system-prompt (prompt-fn))
       (ai-message/set-context-files (context-files-fn))))
 
+(defn- execute-tool-calls!
+  [msg-thread tool-calls]
+  (let [tools (reduce
+               (fn [tools tool]
+                 (assoc tools (have (:id tool)) tool))
+               {}
+               (ai-message/registered-tools msg-thread))]
+    (doseq [tool-call tool-calls]
+      (let [tool (have (tools (have (:id tool-call))))]
+        (tool/execute-tool! tool (have (:parameters tool-call)))))))
+
 (defn message-loop
   "Implementation of the interactive message loop.
    See interface ns for docs."
@@ -47,32 +60,37 @@
 
   (t/event! :message-loop/started {:config (dissoc config :api-key)})
 
-  (loop [thread message-thread]
+  (loop [msg-thread message-thread]
     (print "> ")(flush)
 
     (if-let [input (get-user-input)]
       (if (= input "EXIT")
         (do
           (t/event! :message-loop/exited)
-          thread)
+          msg-thread)
 
-        (let [_      (println input)
+        (let [_          (println input)
               ;; Add user message
-              thread (ai-message/add-message thread
-                                             (ai-message/create-message :user input))
-              _      (t/event! :message-loop/message-received)
+              msg-thread (ai-message/add-message
+                          msg-thread
+                          (ai-message/create-message :user input))
+              _          (t/event! :message-loop/message-received)
 
               ;; Refresh context and get AI response
-              thread   (refresh-thread-context thread prompt-fn context-files-fn)
+              thread   (refresh-thread-context msg-thread prompt-fn context-files-fn)
               _        (t/event! :message-loop/context-refreshed)
               response (claude/send! (-> config :ai-providers :claude) thread)
               _        (println "-> " (:content response))
               _        (t/event! :message-loop/response-processed)
 
-              ;; Extract and apply any diffs
+              ;; Extract and apply tools
+              tool-calls         (ai-message/extract-tool-calls response)
               simplified-diffs   (ai-message/extract-simplified-diffs response)
               fods               (ai-message/extract-file-operation-directives response)
               updated-namespaces (ai-message/extract-updated-namespaces response)]
+
+          ;; Reload any updated namespaces
+          (execute-tool-calls! msg-thread tool-calls)
 
           (when (seq simplified-diffs)
             (patch/apply-simplified-diff-patch! simplified-diffs)
@@ -90,4 +108,4 @@
           (recur (ai-message/add-response thread response))))
 
       ;; Empty input, continue loop
-      (recur thread))))
+      (recur msg-thread))))

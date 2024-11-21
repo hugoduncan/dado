@@ -103,24 +103,27 @@
   "Registers tools for use in message thread"
   [message-thread tools]
   {:pre [(have? model/message-thread? message-thread)
-         (have? [:vector tool/Tool] tools)]}
-  (t/trace! {:id :message/tools-registered}
-            (update-in message-thread [:metadata :tools] (fnil into []) tools)))
+         (have? tool/validate-tool :in tools)]}
+  (t/trace!
+   {:id :message/tools-registered}
+   (assoc-in message-thread [:metadata :tools]  tools)))
 
-(defn add-tool-call
-  "Adds a tool call to the message thread"
-  [message-thread tool-id params]
+(defn add-tool
+  "Adds a tool to the message thread"
+  [message-thread tool]
   {:pre [(have? model/message-thread? message-thread)
-         (have? keyword? tool-id)
-         (have? map? params)]}
-  (t/trace! {:id :message/tool-call-added}
-            (let [tool-call {:id (str (java.util.UUID/randomUUID))
-                            :tool tool-id
-                            :parameters params}]
-              (update-in message-thread
-                        [:metadata :tool-calls]
-                        (fnil conj [])
-                        tool-call))))
+         (have? tool/validate-tool tool)]}
+  (t/trace!
+   {:id :message/tool-call-added}
+   (update-in message-thread
+              [:metadata :tools]
+              (fnil conj [])
+              tool)))
+
+(defn registered-tools
+  "Return the registered tools from the message thread. "
+  [message-thread]
+  (get-in message-thread [:metadata :tools]))
 
 (defn add-tool-result
   "Adds a tool execution result to a tool call in the message thread"
@@ -129,12 +132,12 @@
          (have? string? tool-call-id)]}
   (t/trace! {:id :message/tool-result-added}
             (update-in message-thread
-                      [:metadata :tool-calls]
-                      (fn [calls]
-                        (mapv #(if (= tool-call-id (:id %))
-                               (assoc % :output result)
-                               %)
-                             calls)))))
+                       [:metadata :tool-calls]
+                       (fn [calls]
+                         (mapv #(if (= tool-call-id (:id %))
+                                  (assoc % :output result)
+                                  %)
+                               calls)))))
 
 (defn add-response
   "Adds a response message to the message thread"
@@ -148,6 +151,11 @@
               true (update :messages conj (dissoc response :usage))
               (:tool-calls response)
               (update-in [:metadata :tool-calls] (fnil into []) (:tool-calls response)))))
+
+(defn extract-tool-calls
+  "Extracts tool calls from an AI response message."
+  [response]
+  (filterv (comp #(partial = :tool-call %) :type) (:content response)))
 
 (def file-block-regex #"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```")
 
