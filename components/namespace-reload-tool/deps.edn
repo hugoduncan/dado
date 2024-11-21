@@ -1,0 +1,3 @@
+{:paths ["src" "resources"]
+ :deps {org.hugoduncan/dado.ai-tool {:local/root "../ai-tool"}
+        com.taoensso/telemere {:mvn/version "1.0.0-RC1"}}}
