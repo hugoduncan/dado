@@ -216,3 +216,7 @@ Example:
     ;; Process payment
     )
 ```
+
+## Formatting
+
+- Do NOT uses tabs, always uses spaces
