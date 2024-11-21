@@ -20,6 +20,7 @@
 (def ^:private default-directories
   {:dado/prompts        "dev/ai/prompts"
    :dado/adr            "dev/design/adr"
+   :dado/architecture   "dev/design/architecture"
    :dado/implementation "dev/design/implementation"
    :dado/scope          "dev/design/scope"})
 

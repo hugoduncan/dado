@@ -19,6 +19,7 @@ A dedicated Project Configuration component will:
   - Standard directory locations:
     - `:dado/prompts` -> "dev/ai/prompts"
     - `:dado/adr` -> "dev/design/adr"
+	- `:dado/architecture` ->   "dev/design/architecture"
     - `:dado/implementation` -> "dev/design/implementation"
     - `:dado/scope` -> "dev/design/scope"
 - All paths in `:directories` must be relative paths
@@ -29,14 +30,15 @@ A dedicated Project Configuration component will:
 Example configuration:
 ```edn
 {:directories
- {:dado/prompts "dev/ai/prompts"
-  :dado/adr "dev/design/adr"
+ {:dado/prompts        "dev/ai/prompts"
+  :dado/adr            "dev/design/adr"
+  :dado/architecture   "dev/design/architecture"
   :dado/implementation "dev/design/implementation"
-  :dado/scope "dev/design/scope"
-  :custom/docs "docs/custom"}
+  :dado/scope          "dev/design/scope"
+  :custom/docs         "docs/custom"}
  :ai-providers
  {:claude {:api-key "..."}}
-}
+ }
 ```
 
 ## Consequences
