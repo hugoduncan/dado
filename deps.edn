@@ -1,6 +1,7 @@
 {:deps
  {;; components
   org.hugoduncan/dado.ai-agent                {:local/root "components/ai-agent"}
+  org.hugoduncan/dado.ai-tool                 {:local/root "components/ai-tool"}
   org.hugoduncan/dado.ai-architect-agent      {:local/root "components/ai-architect-agent"}
   org.hugoduncan/dado.ai-claude               {:local/root "components/ai-claude"}
   org.hugoduncan/dado.ai-prompt               {:local/root "components/ai-prompt"}
