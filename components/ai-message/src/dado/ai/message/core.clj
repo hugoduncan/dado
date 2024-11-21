@@ -1,6 +1,7 @@
 (ns dado.ai.message.core
   (:require [babashka.fs :as fs]
             [dado.ai.message.model :as model]
+            [dado.ai.tool.interface :as tool]
             [taoensso.telemere :as t]
             [taoensso.truss :refer [have?]]
             [malli.core :as m]
@@ -98,6 +99,43 @@
    (assoc-in message-thread [:metadata :context :files] [])
    context-file-sequences))
 
+(defn register-tools
+  "Registers tools for use in message thread"
+  [message-thread tools]
+  {:pre [(have? model/message-thread? message-thread)
+         (have? [:vector tool/Tool] tools)]}
+  (t/trace! {:id :message/tools-registered}
+            (update-in message-thread [:metadata :tools] (fnil into []) tools)))
+
+(defn add-tool-call
+  "Adds a tool call to the message thread"
+  [message-thread tool-id params]
+  {:pre [(have? model/message-thread? message-thread)
+         (have? keyword? tool-id)
+         (have? map? params)]}
+  (t/trace! {:id :message/tool-call-added}
+            (let [tool-call {:id (str (java.util.UUID/randomUUID))
+                            :tool tool-id
+                            :parameters params}]
+              (update-in message-thread
+                        [:metadata :tool-calls]
+                        (fnil conj [])
+                        tool-call))))
+
+(defn add-tool-result
+  "Adds a tool execution result to a tool call in the message thread"
+  [message-thread tool-call-id result]
+  {:pre [(have? model/message-thread? message-thread)
+         (have? string? tool-call-id)]}
+  (t/trace! {:id :message/tool-result-added}
+            (update-in message-thread
+                      [:metadata :tool-calls]
+                      (fn [calls]
+                        (mapv #(if (= tool-call-id (:id %))
+                               (assoc % :output result)
+                               %)
+                             calls)))))
+
 (defn add-response
   "Adds a response message to the message thread"
   [message-thread response]
@@ -106,7 +144,10 @@
                 response
                 :data (me/humanize (m/explain model/ResponseMessage response)))]}
   (t/trace! {:id :message/response-added}
-            (update message-thread :messages conj (dissoc response :usage))))
+            (cond-> message-thread
+              true (update :messages conj (dissoc response :usage))
+              (:tool-calls response)
+              (update-in [:metadata :tool-calls] (fnil into []) (:tool-calls response)))))
 
 (def file-block-regex #"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```")
 

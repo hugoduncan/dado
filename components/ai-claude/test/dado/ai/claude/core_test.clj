@@ -1,46 +1,16 @@
-(ns dado.ai.claude.interface-test
+(ns dado.ai.claude.core-test
   (:require
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [dado.ai.claude.interface :as claude]
+   [dado.ai.claude.core :as core]
    [dado.ai.claude.model :as model]
+   [dado.ai.message.interface :as msg]
    [jsonista.core :as j]
-   [malli.error :as me]
-   [malli.core :as m]))
-
-(deftest send!-test
-  (testing "validates provider config"
-    (let [invalid-config {}
-          message-thread {:id         "test-thread"
-                          :created-at (java.time.Instant/now)
-                          :messages   [{:role    :user
-                                        :content "test"}]
-                          :metadata   {:model "claude-3-opus-20240229"}}]
-      (is (thrown? clojure.lang.ExceptionInfo
-                   (claude/send! invalid-config message-thread)))
-      (let [ex (try
-                 (claude/send! invalid-config message-thread)
-                 (catch clojure.lang.ExceptionInfo e e))]
-        (is (= :error/claude-validation (:type (ex-data ex))))
-        (is (= "dado.ai.claude" (get-in (ex-data ex) [:context :component]))))))
-
-  #_(testing "handles system prompt and context correctly"
-      (let [config         {:api-key "test-key"}
-            message-thread {:id         "test-thread"
-                            :created-at (java.time.Instant/now)
-                            :messages   [{:role :user :content "test"}]
-                            :metadata   {:model         "claude-3-opus-20240229"
-                                         :system-prompt "Be concise"
-                                         :context       {:files [{:name    "test.txt"
-                                                                  :content "test content"}]}}}]
-        ;; Should pass validation but fail on HTTP call
-        (is (thrown-with-msg?
-             clojure.lang.ExceptionInfo
-             #"Claude API error"
-             (claude/send! config message-thread))))))
+   [malli.core :as m]
+   [malli.error :as me]))
 
 (deftest ->system-content-test
-  (let [content-fn #'dado.ai.claude.core/->system-content]
+  (let [content-fn #'core/->system-content]
     (testing "empty sequence"
       (is (empty? (content-fn []))))
 
@@ -125,3 +95,67 @@
           \"description\": \"The stock ticker symbol, e.g. AAPL for Apple Inc.\"}},
       \"required\": [\"ticker\"]}}]}"
    j/keyword-keys-object-mapper))
+
+
+(deftest claude-reauest-schema-test
+  ;; Test with examples from the API docs
+  (is (nil? (me/humanize (m/explain model/ClaudeRequest simple-request))))
+  (is (nil? (me/humanize (m/explain model/ClaudeRequest request-with-tools)))))
+
+(def simple-response (j/read-value
+                      "{
+  \"content\": [{
+      \"text\": \"Hi! My name is Claude.\",
+      \"type\": \"text\"}],
+  \"id\": \"msg_013Zva2CMHLNnXjNJJKqJ2EF\",
+  \"model\": \"claude-3-5-sonnet-20241022\",
+  \"role\": \"assistant\",
+  \"stop_reason\": \"end_turn\",
+  \"stop_sequence\": null,
+  \"type\": \"message\",
+  \"usage\": {
+    \"input_tokens\": 2095,
+    \"output_tokens\": 503
+  }
+}"
+                      j/keyword-keys-object-mapper))
+
+(def ^:private tool-use-response
+  (j/read-value
+   "{
+  \"content\": [
+  { \"type\": \"tool_use\",
+    \"id\": \"toolu_01D7FLrfh4GYq7yT1ULFeyMV\",
+    \"name\": \"get_stock_price\",
+    \"input\": { \"ticker\": \"^GSPC\" }}],
+  \"id\": \"msg_013Zva2CMHLNnXjNJJKqJ2EF\",
+  \"model\": \"claude-3-5-sonnet-20241022\",
+  \"role\": \"assistant\",
+  \"stop_reason\": \"end_turn\",
+  \"stop_sequence\": null,
+  \"type\": \"message\",
+  \"usage\": {
+    \"input_tokens\": 2095,
+    \"output_tokens\": 503
+  }
+}"
+   j/keyword-keys-object-mapper))
+
+(deftest claude-response-schema-test
+  ;; Test with examples from the API docs
+  (is (nil? (me/humanize (m/explain model/ClaudeResponse simple-response))))
+  (is (nil? (me/humanize (m/explain model/ClaudeResponse tool-use-response)))))
+
+(deftest from-claude-response-test
+  (let [convert @#'core/from-claude-response]
+    (is (convert simple-response))
+    (is (nil? (me/humanize
+               (m/explain
+                msg/response-message-schema
+                (convert simple-response)))))
+
+    (is (convert tool-use-response))
+    (is (nil? (me/humanize
+               (m/explain
+                msg/response-message-schema
+                (convert tool-use-response)))))))

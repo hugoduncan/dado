@@ -7,6 +7,7 @@
   [:map
    [:name string?]
    [:type keyword?]
+   [:enum {:optional true} [:vector any?]]
    [:description string?]
    [:required? boolean?]
    [:default {:optional true} any?]])

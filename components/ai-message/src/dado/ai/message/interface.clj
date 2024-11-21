@@ -1,6 +1,7 @@
 (ns dado.ai.message.interface
   (:require [dado.ai.message.core :as core]
-            [dado.ai.message.model :as model]))
+            [dado.ai.message.model :as model]
+            [dado.ai.tool.model :as tool]))
 
 (defn create-message
   "Creates a new message with the specified role and content.
@@ -102,6 +103,29 @@
 
 ;; Expose schemas for other components
 (def message-schema model/Message)
+(defn register-tools
+  "Registers tools for use in message thread.
+   Tools must conform to AI Tool schema.
+   Returns updated message thread with tools registered.
+   Throws if message thread or tools are invalid."
+  [message-thread tools]
+  (core/register-tools message-thread tools))
+
+#_(defn add-tool-call
+    "Adds a tool call to the message thread.
+   Returns updated message thread with tool call added.
+   Throws if message thread or tool parameters are invalid."
+    [message-thread tool-id params]
+    (core/add-tool-call message-thread tool-id params))
+
+#_(defn add-tool-result
+    "Adds a tool execution result to a tool call in the message thread.
+   Returns updated message thread with tool result added.
+   Throws if message thread or tool call ID is invalid."
+    [message-thread tool-call-id result]
+    (core/add-tool-result message-thread tool-call-id result))
+
 (def message-thread-schema model/MessageThread)
 (def response-message-schema model/ResponseMessage)
 (def file-block-schema model/FileBlock)
+(def tool-call-schema model/ToolCall)

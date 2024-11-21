@@ -5,8 +5,9 @@
    [clojure.string :as str]
    [dado.actions.implement-namespace.model :as model]
    [dado.ai.agent.interface :as agent]
-   [dado.ai.message.interface :as ai-message]
-   [dado.patch.interface :as patch]
+   [dado.ai.agents.refactoring.interface :as refactoring]
+   [dado.ai.message.interface :as msg]
+   [dado.ai.prompt.interface :as prompt]
    [dado.project-config.interface :as project-config]
    [malli.core :as m]
    [malli.error :as me]
@@ -65,15 +66,31 @@
 
 (defn- interactive-implementation
   "Handles interactive implementation using AI agent"
-  [config adr-content component-info]
+  [project-config adr-name]
   (t/trace! {:id :implement/interactive}
             (try
-              ;; Implementation note: This would use the AI agent to guide implementation
+              (let [requested-file-paths (atom [])
+                    additonal-context
+                    (fn  []
+                      [(prompt/implementation-paths "ai-agent")
+                       (prompt/implementation-paths "ai-refactoring-agent")
+                       (prompt/interface-paths "repl-message-loop")
+                       (prompt/implementation-paths "implement-namespace")
+                       ["deps.edn"]
+                       @requested-file-paths])
+                    refactoring-agent
+                    (refactoring/create-agent
+                     (project-config/load-config)
+                     #'additonal-context)]
+                (agent/message-loop
+                 (project-config/load-config)
+                 refactoring-agent
+                 (msg/create-message-thread "claude-3-5-sonnet-20241022")))
               nil
               (catch Exception e
                 (throw (ex-info "Interactive implementation failed"
-                              {:type :error/implement-namespace
-                               :cause e}))))))
+                                {:type  :error/implement-namespace
+                                 :cause e}))))))
 
 (defn- non-interactive-implementation
   "Handles non-interactive implementation from ADR spec"
@@ -90,26 +107,13 @@
 (defn execute
   "Implements namespace from ADR specification"
   [config adr-name options]
-  {:pre [(have? options? (merge default-options options)
-                :data (me/humanize (m/explain model/Options options)))]
+  {:pre  [(have? options? (merge default-options options)
+                 :data (me/humanize (m/explain model/Options options)))]
    :post [(have? implementation-result? %
                  :data (me/humanize (m/explain model/ImplementationResult %)))]}
   (t/trace!
    {:id :implement/started}
-   (let [options (merge default-options options)
-         adr-content (read-adr config adr-name)
-         validation (validate-adr-completeness adr-content)]
-     
-     (when-not (:valid? validation)
-       (throw (ex-info "Invalid ADR specification"
-                      {:type :error/implement-namespace
-                       :errors (:errors validation)})))
-
-     (let [component-info (extract-component-info adr-content)]
-       (when-not component-info
-         (throw (ex-info "Could not extract component info from ADR"
-                        {:type :error/implement-namespace})))
-
-       (if (= :interactive (:mode options))
-         (interactive-implementation config adr-content component-info)
-         (non-interactive-implementation config adr-content component-info))))))
+   (let [options (merge default-options options)]
+     (if (= :interactive (:mode options))
+       (interactive-implementation config adr-name)
+       (non-interactive-implementation config adr-name)))))

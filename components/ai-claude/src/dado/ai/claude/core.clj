@@ -5,7 +5,8 @@
             [taoensso.truss :refer [have?]]
             [malli.core :as m]
             [malli.error :as me]
-            [dado.ai.claude.model :as model]))
+            [dado.ai.claude.model :as model]
+            [dado.project-config.interface :as config]))
 
 (def ^:private default-api-url "https://api.anthropic.com/v1/messages")
 (def ^:private default-model-name "claude-3-5-sonnet-20241022")
@@ -52,35 +53,71 @@
           (mapcat #(file-sequence->content-maps false %) normal-sequences))
          vec)))
 
+(defn- to-claude-tool [{:keys [id name description parameters]}]
+  {:name         name
+   :description  description
+   :input_schema {:type       "object"
+                  :properties parameters}
+   :required     (vec (keep #(when (:required %) (:name %))))})
+
 (defn- to-claude-request [message-thread config]
+  {:post [(have? model/claude-request? %
+                 :data (me/humanize (m/explain model/ClaudeRequest %)))]}
   (t/trace!
    {:id :dado.ai.claude/request-translation}
-   (let [{:keys [model-name max-tokens]} config
-         {:keys [system-prompt context]} (:metadata message-thread)
-         system-content                  (if (seq (:files context))
-                                           (vec
-                                            (concat
-                                             (when system-prompt
-                                               [{:type "text"
-                                                 :text system-prompt}])
-                                             (->system-content (:files context))))
-                                           ;; Just system prompt as string if no files
-                                           system-prompt)]
+   (let [{:keys [model-name max-tokens]}       config
+         {:keys [system-prompt context tools]} (:metadata message-thread)
+         system-content                        (if (seq (:files context))
+                                                 (vec
+                                                  (concat
+                                                   (when system-prompt
+                                                     [{:type "text"
+                                                       :text system-prompt}])
+                                                   (->system-content (:files context))))
+                                                 ;; Just system prompt as string if no files
+                                                 system-prompt)]
      (cond-> {:model      (or model-name default-model-name)
               :messages   (mapv to-claude-message (:messages message-thread))
               :max_tokens (or max-tokens default-max-tokens)}
-       system-content (assoc :system system-content)))))
+       system-content (assoc :system system-content)
+       (seq tools)    (assoc :tools (mapv to-claude-tool tools))))))
+
+(defn- from-claude-content-map [content-map]
+  (condp = (:type content-map)
+    nil        {:type :text :text (:text content-map)}
+    "text"     {:type :text :text (:text content-map)}
+    "tool_use" {:type       :tool-call
+                :id         (:id content-map)
+                :tool       (keyword (:name content-map))
+                :parameters (:input content-map)}))
+
+(defn- from-claude-content [content]
+  (cond
+    (string? content)
+    [{:type :text :text content}]
+    :else
+    (mapv from-claude-content-map content)))
 
 (defn- from-claude-response [response]
-  (t/log! :debug {:response response})
-  (let [content (get-in response [:content 0 :text])]
-    {:role          :assistant
-     :content       content
-     :finish-reason :stop ;; TODO: map actual finish reason
-     :usage         {:prompt-chars     (get-in response ["usage" "input_tokens"])
-                     :completion-chars (get-in response ["usage" "output_tokens"])
-                     :total-chars      (+ (get-in response ["usage" "input_tokens"] 0)
-                                          (get-in response ["usage" "output_tokens"] 0))}}))
+  (t/log! :warn {:response response})
+  (let [content (from-claude-content (:content response))
+        usage   (:usage response)]
+    (cond-> {:role          :assistant
+             :content       content
+             :finish-reason (case (:stop_reason response)
+                              "tool_use" :tool-call
+                              "end_turn" :end-turn
+                              "stop" :stop
+                              "length" :length
+                              "content_filter" :content-filter)
+             :usage
+             {:prompt-chars     (:input_tokens usage)
+              :completion-chars (:output_tokens usage)
+              :cache-creation-input-tokens (:cache_creation_input_tokens usage)
+              :cache-read-input-tokens (:cache_read_input_tokens usage)
+              :total-chars      (+ (:input_tokens usage 0)
+                                   (:output_tokens usage 0))}}
+      #_#_ (seq tool-calls) (assoc :tool-calls tool-calls))))
 
 (defn send! [config message-thread]
   ;; Pre-condition for message-thread format - this is internal validation

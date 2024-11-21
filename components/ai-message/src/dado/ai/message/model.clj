@@ -1,20 +1,33 @@
 (ns dado.ai.message.model
-  (:require [malli.core :as m]))
+  (:require [malli.core :as m]
+            [dado.ai.tool.model :as tool]))
 
 (def Role
   [:enum :user :system :assistant])
 
+(def ContentMap
+  [:map
+   [:type {:optional true} [:enum :text]
+    :text :string]])
+
 (def Message
   [:map
    [:role Role]
-   [:content string?]
+   [:content [:or :string [:vector ContentMap]]]
    [:name {:optional true} string?]])
+
+(def ToolCall
+  [:map
+   [:type [:= :tool-call]]
+   [:id :string]
+   [:tool :keyword]
+   [:parameters [:map-of :keyword any?]]])
 
 (def MessageThread
   [:map
    [:id string?]
    [:created-at inst?]
-   [:messages [:vector Message]]
+   [:messages [:vector [:or Message ToolCall]]]
    [:metadata [:map
                [:model string?]
                [:system-prompt {:optional true} string?]
@@ -24,13 +37,16 @@
                           [:vector
                            [:map
                             [:name string?]
-                            [:content string?]]]]]]]]]])
+                            [:content string?]]]]]]]
+               [:tools {:optional true} [:vector tool/Tool]]
+               ]]])
 
 (def ResponseMessage
   [:map
    [:role [:= :assistant]]
-   [:content string?]
-   [:finish-reason [:enum :stop :length :content-filter]]
+   [:content [:vector [:or ContentMap ToolCall]]]
+   [:finish-reason [:enum :stop :length :content-filter :tool-call :end-turn]]
+   [:tool-calls {:optional true} [:vector ToolCall]]
    #_[:usage [:map
               [:prompt-chars pos-int?]
               [:completion-chars pos-int?]
