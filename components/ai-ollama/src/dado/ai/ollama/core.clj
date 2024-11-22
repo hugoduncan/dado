@@ -1,5 +1,6 @@
 (ns dado.ai.ollama.core
   (:require
+   [clojure.string :as str]
    [dado.ai.message.interface :as message]
    [dado.ai.ollama.model :as model]
    [hato.client :as http]
@@ -7,7 +8,7 @@
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
-   [taoensso.truss :refer [have have?]]))
+   [taoensso.truss :refer [have?]]))
 
 (def ^:private default-api-url "http://localhost:11434/api/chat")
 (def ^:private default-model-name "llama3.2:latest")
@@ -23,6 +24,19 @@
                    (map :text)
                    (clojure.string/join "\n")))})
 
+(defn- context-files->prompt-string
+  "Convert context file sequences to a string"
+  [file-sequences]
+  (str/join
+   "\n"
+   (for [files                  file-sequences
+         {:keys [name content]} files]
+     (t/trace!
+      {:id    :ollama/context-files->messages
+       :level :warn
+       :data  {:file (str name)}}
+      (str "<document path=\"" name "\">\n" content "\n</document>")))))
+
 (defn- to-ollama-request [message-thread config]
   {:post [(have? model/ollama-request?
                  % :data (me/humanize (m/explain model/OllamaRequest %)))]}
@@ -32,20 +46,29 @@
    (let [{:keys [model-name]}        config
          {:keys [messages metadata]} message-thread
          system-prompt               (get metadata :system-prompt)
+         context-files               (get-in metadata [:context :files])
+
          messages
          (cond-> []
            ;; Add system prompt as first message if present
-           system-prompt (conj {:role    "system"
-                                :content system-prompt})
+           system-prompt (conj
+                          {:role "system"
+                           :content
+                           (str
+                            system-prompt
+                            "\n Use this data in constructing your reply:"
+                            (context-files->prompt-string context-files))})
+           ;; Add context files as user messages
+
            ;; Add conversation messages
-           true          (into (mapv to-ollama-message messages)))]
+           true (into (mapv to-ollama-message messages)))]
      {:model    (or model-name default-model-name)
       :messages messages
       :stream   false})))
 
 (defn- from-ollama-response [response]
   (t/trace!
-   {:id :ollama/response :level :warn :data {:response response}}
+   {:id :ollama/response :data {:response response}}
    {:role          :assistant
     :content       [{:type :text
                      :text (get-in response [:message :content])}]
@@ -63,26 +86,28 @@
                         message/message-thread-schema
                         message-thread)))]}
   ;; Validate config first - this is user input
-  (when-let [config-errors (m/explain model/OllamaConfig config)]
-    (throw (ex-info "Invalid Ollama configuration"
-                    {:type    :error/ollama-validation
-                     :context {:component "dado.ai.ollama"
-                             :errors    (me/humanize config-errors)}})))
+  (when-not  (model/ollama-config? config)
+    (throw (ex-info
+            "Invalid Ollama configuration"
+            {:type    :error/ollama-validation
+             :context {:component "dado.ai.ollama"
+                       :errors    (me/humanize
+                                   (m/explain model/OllamaConfig config))}})))
 
   (let [{:keys [api-url]} config
         request-body      (to-ollama-request message-thread config)
-        url              (or api-url default-api-url)]
+        url               (or api-url default-api-url)]
     (t/trace!
      {:id :dado.ai.ollama/api-call}
      (let [response (-> (http/post
-                        url
-                        {:headers {"content-type" "application/json"}
-                         :body    (j/write-value-as-string request-body)})
-                       :body
-                       (j/read-value j/keyword-keys-object-mapper))]
+                         url
+                         {:headers {"content-type" "application/json"}
+                          :body    (j/write-value-as-string request-body)})
+                        :body
+                        (j/read-value j/keyword-keys-object-mapper))]
        (if (:error response)
          (throw (ex-info "Ollama API error"
                          {:type    :error/ollama-response
                           :context {:component "dado.ai.ollama"
-                                  :error     (:error response)}}))
+                                    :error     (:error response)}}))
          (from-ollama-response response))))))

@@ -1,5 +1,6 @@
 (ns dado.ai.ollama.core-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing]]
             [dado.ai.ollama.core :as core]
             [dado.ai.ollama.model :as model]
             [jsonista.core :as j]
@@ -15,7 +16,30 @@
 
 (deftest ollama-request-schema-test
   (testing "request schema validation"
-    (is (nil? (me/humanize (m/explain model/OllamaRequest simple-request))))))
+    (is (nil? (me/humanize (m/explain model/OllamaRequest simple-request)))))
+
+  (testing "converts system prompt and context files"
+    (let [msg-thread {:id         "test"
+                     :created-at  (java.time.Instant/now)
+                     :messages    [{:role    :user
+                                  :content "test message"}]
+                     :metadata    {:model "llama2:3.2"
+                                 :system-prompt "Be helpful"
+                                 :context {:files [[{:name    "test.txt"
+                                                   :content "test content"}]]}}}
+          request   (#'dado.ai.ollama.core/to-ollama-request msg-thread {:model-name "llama2:3.2"})
+          messages (:messages request)]
+
+      ;; Check message order and content
+      (is (= "system" (:role (first messages))) "First message should be system prompt")
+      (is (= "Be helpful" (:content (first messages))))
+
+      (is (= "user" (:role (second messages))) "Second message should be context file")
+      (is (str/includes? (:content (second messages)) "test.txt"))
+      (is (str/includes? (:content (second messages)) "test content"))
+
+      (is (= "user" (:role (nth messages 2))) "Third message should be user message")
+      (is (= "test message" (:content (nth messages 2)))))))
 
 (def simple-response
   (j/read-value
