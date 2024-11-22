@@ -79,3 +79,4 @@
 ;; Validators
 (def claude-config? (m/validator ClaudeConfig))
 (def claude-request? (m/validator ClaudeRequest))
+(def claude-message? (m/validator ClaudeMessage))

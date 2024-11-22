@@ -98,7 +98,9 @@
                     (println input)
                     [:process (message/add-message
                                msg-thread
-                               (message/create-message :user input))]))))
+                               (-> (message/create-message :user)
+                                   (message/add-message-content
+                                    (message/text-content input))))]))))
             [:process msg-thread])]
 
       (cond

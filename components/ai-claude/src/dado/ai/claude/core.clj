@@ -17,21 +17,32 @@
 (defn- to-claude-role [role]
   (name role))
 
+(defn- to-claude-content-map [content]
+  (t/trace!
+   {:id :claude/content-map :data {:content content}}
+   (cond
+     (string? content)
+     content
+
+     (= :tool-result  (:type content))
+     (assoc content :type :tool_result)
+
+     :else
+     (update content :type (fnil name "text")))))
+
 (defn- to-claude-content [content]
-  (cond
-    (string? content)
-    content
+  (t/trace!
+   {:id :claude/content :data {:content content}}
+   (mapv to-claude-content-map content)))
 
-    (= :tool-result  (:type content))
-    (assoc content :type :tool_result)
-
-    :else
-    content))
-
-(defn- to-claude-message [{:keys [role content name]}]
-  (cond-> {:role (to-claude-role role)
-           :content (to-claude-content content)}
-    name (assoc :name name)))
+(defn- to-claude-message [{:keys [role content name] :as message}]
+  (t/trace!
+   {:id :claude/message :data {:message message}}
+   (let [msg (cond-> {:role (to-claude-role role)
+                      :content (to-claude-content content)}
+               name (assoc :name name))]
+     (have model/claude-message?
+           msg :data (me/humanize (m/explain model/ClaudeMessage msg))))))
 
 (defn- file-sequence->content-maps
   [add-cache? file-sequence]
