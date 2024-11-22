@@ -5,10 +5,19 @@
 (def Role
   [:enum :user :system :assistant])
 
-(def ContentMap
+(def SimpleContentMap
   [:map
    [:type {:optional true} [:enum :text]
     :text :string]])
+
+(def ContentMap
+  [:or
+   SimpleContentMap
+   [:map
+    [:type [:= :tool-result]]
+    [:tool-use-id :string]
+    [:content [:or :string [:vector SimpleContentMap]]]
+    [:is-error {:optional true} :boolean]]])
 
 (def Message
   [:map

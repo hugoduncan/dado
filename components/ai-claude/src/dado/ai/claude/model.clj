@@ -24,10 +24,6 @@
               [:vector ClaudeContent]]]
    [:name {:optional true} :string]])
 
-;; (require 'malli.generator)
-;; (malli.generator/generate ClaudeMessage)
-;; (malli.generator/generate ClaudeRequest)
-
 (def ClaudeTool
   [:map
    [:name :string]
@@ -38,8 +34,8 @@
   [:map
    [:type [:= "tool_result"]]
    [:tool_use_id :string]
-   [:content {:optional true} ClaudeContent]
-   [:is_error {:optional true} boolean?]])
+   [:content {:optional true} [:or :string [:vector ClaudeContent]]]
+   [:is_error {:optional true} :boolean]])
 
 (def ClaudeRequest
   [:map

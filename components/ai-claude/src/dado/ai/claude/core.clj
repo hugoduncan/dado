@@ -1,6 +1,5 @@
 (ns dado.ai.claude.core
   (:require
-   [dado.project-config.interface :as config]
    [dado.ai.message.interface :as message]
    [hato.client :as http]
    [jsonista.core :as j]
@@ -18,9 +17,20 @@
 (defn- to-claude-role [role]
   (name role))
 
+(defn- to-claude-content [content]
+  (cond
+    (string? content)
+    content
+
+    (= :tool-result  (:type content))
+    (assoc content :type :tool_result)
+
+    :else
+    content))
+
 (defn- to-claude-message [{:keys [role content name]}]
   (cond-> {:role (to-claude-role role)
-           :content content}
+           :content (to-claude-content content)}
     name (assoc :name name)))
 
 (defn- file-sequence->content-maps
@@ -56,14 +66,14 @@
           (mapcat #(file-sequence->content-maps false %) normal-sequences))
          vec)))
 
-(defn- to-claude-parameters [parameters]
-  (reduce
-   (fn [res parameter]
-     (assoc res (keyword (:name parameter))
-            {:description (:description parameter)
-             :type        (json-schema/transform (:type parameter))})
-     {})
-   parameters))
+#_(defn- to-claude-parameters [parameters]
+    (reduce
+     (fn [res parameter]
+       (assoc res (keyword (:name parameter))
+              {:description (:description parameter)
+               :type        (json-schema/transform (:type parameter))})
+       {})
+     parameters))
 
 (defn- to-claude-tool [{:keys [id name description parameters]}]
   {:name         (clojure.core/name id)
