@@ -1,0 +1,6 @@
+{:paths ["src" "resources"]
+ :deps  {com.taoensso/telemere {:mvn/version "v1.0.0-RC1"}
+         com.taoensso/truss    {:mvn/version "1.12.0"}
+         hato/hato             {:mvn/version "1.0.0"}
+         metosin/malli         {:mvn/version "0.14.0"}
+         metosin/jsonista      {:mvn/version "0.3.8"}}}
