@@ -38,7 +38,7 @@
   [{:keys [namespaces] :as parameters}]
   (t/trace!
    {:id :reload/started :level :warn :data {:parameters parameters}}
-   (let [ns-syms (j/read-value namespaces)]
+   (let [ns-syms (if (string? namespaces) (j/read-value namespaces) namespaces)]
      (loop [remaining ns-syms
             reloaded  []
             errors    []]
