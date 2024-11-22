@@ -71,6 +71,7 @@
                [:name string?]]]])
 
 ;; Create validators that will be used in pre/post conditions
+(def role? (m/validator Role))
 (def message? (m/validator Message))
 (def message-thread? (m/validator MessageThread))
 (def response-message? (m/validator ResponseMessage))

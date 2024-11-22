@@ -2,13 +2,37 @@
   (:require [dado.ai.message.core :as core]
             [dado.ai.message.model :as model]))
 
+(defn text-content
+  "Creates a text content map from a string.
+   Returns a content map with :type :text and :text containing the string."
+  [text]
+  (core/text-content text))
+
+(defn tool-result-content
+  "Creates a tool result content map.
+   Options:
+   - :tool-use-id - ID of the tool use (required)
+   - :content - Content of the result (required)
+   - :is-error - Boolean indicating if this is an error result (optional)
+   Returns a content map for a tool result"
+  [options]
+  (core/tool-result-content options))
+
 (defn create-message
-  "Creates a new message with the specified role and content.
+  "Creates a new message with the specified role and no content.
    Optionally accepts a name for the message sender.
-   Returns a validated message map.
-   Throws if role or content are invalid."
-  [role content & {:keys [name]}]
-  (core/create-message role content :name name))
+   Returns a validated message map with empty content vector.
+   Throws if role is invalid."
+  [role & {:keys [name]}]
+  (core/create-message role :name name))
+
+(defn add-message-content
+  "Adds content to a message.
+   Content must be a valid content map (see text-content, tool-result-content).
+   Returns updated message with content added.
+   Throws if message or content is invalid."
+  [message content]
+  (core/add-message-content message content))
 
 (defn create-message-thread
   "Creates a new message thread with the specified model and optional system prompt.

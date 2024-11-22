@@ -3,20 +3,70 @@
             [dado.ai.message.interface :as message]
             [malli.generator :as mg]))
 
+(deftest text-content-test
+  (testing "creates text content map"
+    (let [content (message/text-content "test text")]
+      (is (= :text (:type content)))
+      (is (= "test text" (:text content))))))
+
+(deftest tool-result-content-test
+  (testing "creates tool result content map"
+    (let [content (message/tool-result-content
+                  {:tool-use-id "test-id"
+                   :content "result"})]
+      (is (= :tool-result (:type content)))
+      (is (= "test-id" (:tool-use-id content)))
+      (is (= "result" (:content content)))
+      (is (nil? (:is-error content)))))
+
+  (testing "includes is-error when specified"
+    (let [content (message/tool-result-content
+                  {:tool-use-id "test-id"
+                   :content "error"
+                   :is-error true})]
+      (is (:is-error content)))))
+
 (deftest create-message-test
   (testing "creates valid message"
-    (let [msg (message/create-message :user "test content")]
+    (let [msg (message/create-message :user)]
       (is (= :user (:role msg)))
-      (is (= "test content" (:content msg)))))
+      (is (= [] (:content msg)))))
 
   (testing "creates message with name"
-    (let [msg (message/create-message :system "test content" :name "config")]
-      (is (= "config" (:name msg)))))
+    (let [msg (message/create-message :system :name "config")]
+      (is (= "config" (:name msg)))
+      (is (= [] (:content msg)))))
 
-  (testing "validates message format"
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                          #"Invalid message format"
-                          (message/create-message :invalid "content")))))
+  (testing "validates message role"
+    (is (thrown-with-msg?
+         clojure.lang.ExceptionInfo
+         #"model/role?"
+         (message/create-message :invalid)))))
+
+(deftest add-message-content-test
+  (testing "adds text content"
+    (let [msg (message/create-message :user)
+          content (message/text-content "test text")
+          result (message/add-message-content msg content)]
+      (is (= [content] (:content result)))))
+
+  (testing "adds tool result content"
+    (let [msg (message/create-message :assistant)
+          content (message/tool-result-content
+                  {:tool-use-id "test"
+                   :content "result"})
+          result (message/add-message-content msg content)]
+      (is (= [content] (:content result)))))
+
+  (testing "preserves existing content"
+    (let [msg (message/create-message :user)
+          content1 (message/text-content "first")
+          content2 (message/text-content "second")
+          result (-> msg
+                    (message/add-message-content content1)
+                    (message/add-message-content content2))]
+      (is (= [content1 content2] (:content result))))))
+
 
 (deftest add-message-test
   (testing "adds message to thread"
@@ -34,28 +84,37 @@
 
 (deftest extract-file-blocks-test
   (testing "extracts code blocks"
-    (let [response {:content "```python\n# test.py\nprint('hello')\n```"}
+    (let [response {:role          :assistant,
+                    :finish-reason :end-turn
+                    :content
+                    [{:text "```python\n# test.py\nprint('hello')\n```"}]}
           blocks   (message/extract-file-blocks response)]
       (is (= 1 (count blocks)))
       (is (= "python" (:language (first blocks))))
       (is (= "test.py" (get-in (first blocks) [:metadata :name]))))
-    (let [response {:content "```clojure\n;; test.clj\n(print 'hello')\n```"}
-          blocks   (message/extract-file-blocks response)]
+    (let [response
+          {:role          :assistant
+           :finish-reason :end-turn
+           :content       [{:text
+                            "```clojure\n;; test.clj\n(print 'hello')\n```"}]}
+          blocks (message/extract-file-blocks response)]
       (is (= 1 (count blocks)))
       (is (= "clojure" (:language (first blocks))))
       (is (= "test.clj" (get-in (first blocks) [:metadata :name]))))))
 
 (deftest extract-updated-namespaces-test
   (testing "extracts updated namespaces"
-    (let [response   {:role          :assistant
-                      :content       "```updated-namespaces\nmy.project.model\nmy.project.core\n```"
-                      :finish-reason :stop}
+    (let [response
+          {:role          :assistant
+           :content       [{:text
+                            "```updated-namespaces\nmy.project.model\nmy.project.core\n```"}]
+           :finish-reason :stop}
           namespaces (message/extract-updated-namespaces response)]
       (is (= ["my.project.model" "my.project.core"] namespaces))))
 
   (testing "returns empty sequence when no namespaces found"
     (let [response   {:role          :assistant
-                      :content       "no namespaces here"
+                      :content       [{:text "no namespaces here"}]
                       :finish-reason :stop}
           namespaces (message/extract-updated-namespaces response)]
       (is (empty? namespaces))))
@@ -129,16 +188,18 @@
           (.delete temp-file)))))
 
   (testing "add-context-file-sequence starts new sequence"
-    (let [thread    {:id         "test"
-                     :created-at (java.time.Instant/now)
-                     :messages   []
-                     :metadata   {:model   "test-model"
-                                  :context {:files [[{:name    "existing.txt"
-                                                      :content "existing"}]]}}}
-          temp-file (java.io.File/createTempFile "test" ".txt")]
+    (let [msg-thread {:id         "test"
+                      :created-at (java.time.Instant/now)
+                      :messages   []
+                      :metadata   {:model   "test-model"
+                                   :context {:files [[{:name    "existing.txt"
+                                                       :content "existing"}]]}}}
+          temp-file  (java.io.File/createTempFile "test" ".txt")]
       (try
         (spit temp-file "test content")
-        (let [result (message/add-context-file-sequence thread (.getPath temp-file))]
+        (let [result (message/add-context-file-sequence
+                      msg-thread
+                      [(.getPath temp-file)])]
           (is (= [[{:name    "existing.txt"
                     :content "existing"}]
                   [{:name    (str temp-file)
@@ -196,7 +257,7 @@
         (is (thrown? java.io.FileNotFoundException
                      (message/add-context-file thread "non-existent.txt")))
         (is (thrown? java.io.FileNotFoundException
-                     (message/add-context-file-sequence thread "non-existent.txt")))
+                     (message/add-context-file-sequence thread ["non-existent.txt"])))
         (is (thrown? java.io.FileNotFoundException
                      (message/set-context-files thread [["non-existent.txt"]])))))
 
