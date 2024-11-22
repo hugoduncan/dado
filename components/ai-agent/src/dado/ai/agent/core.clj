@@ -65,9 +65,9 @@
 
 (defn message-loop
   "Runs interactive message loop with given agent and message thread."
-  [project-config agent msg-thread]
+  [ai-port-fn agent msg-thread]
   (message-loop/message-loop
-   project-config
+   ai-port-fn
    msg-thread
    (:prompt-fn agent)
    (:context-fn agent)))

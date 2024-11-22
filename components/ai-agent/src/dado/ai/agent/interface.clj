@@ -34,5 +34,5 @@
    Arguments:
    - agent: Valid agent configuration
    - msg-thread: Initial message thread"
-  [project-config agent msg-thread]
-  (core/message-loop project-config agent msg-thread))
+  [ai-port-fn agent msg-thread]
+  (core/message-loop ai-port-fn agent msg-thread))
