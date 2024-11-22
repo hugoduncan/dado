@@ -1,7 +1,6 @@
 (ns dado.tools.reload-namespace.core
   "Core implementation of namespace reload tool"
   (:require
-   [clojure.string :as str]
    [jsonista.core :as j]
    [taoensso.telemere :as t]
    [malli.core :as m]))
@@ -21,16 +20,16 @@
   "Attempts to reload a single namespace.
    Returns [true nil] on success,
    [false error-info] on failure."
-  [ns-sym-str]
+  [ns-sym]
   (t/trace!
-   {:id :reload/attempt :data {:ns-sym ns-sym-str}}
+   {:id :reload/attempt :data {:ns-sym ns-sym}}
    (try
-     (require (symbol ns-sym-str) :reload)
-     (t/event! :reload/success {:data {:ns ns-sym-str}})
+     (require  ns-sym :reload)
+     (t/event! :reload/success {:data {:ns ns-sym}})
      [true nil]
      (catch Exception e
-       (t/event! :reload/failed {:data {:ns ns-sym-str :error (ex-message e)}})
-       [false {:ns ns-sym-str :error (ex-message e)}]))))
+       (t/event! :reload/failed {:data {:ns ns-sym :error (ex-message e)}})
+       [false {:ns ns-sym :error (ex-message e)}]))))
 
 (defn reload-namespaces
   "Reloads specified namespaces.
@@ -43,9 +42,10 @@
             reloaded  []
             errors    []]
        (if (seq remaining)
-         (let [[success? error] (reload-namespace (first remaining))]
+         (let [ns-sym           (symbol (first remaining))
+               [success? error] (reload-namespace ns-sym)]
            (recur (rest remaining)
-                  (cond-> reloaded success? (conj (first remaining)))
+                  (cond-> reloaded success? (conj ns-sym))
                   (cond-> errors (not success?) (conj error))))
          {:reloaded reloaded
           :errors   errors})))))

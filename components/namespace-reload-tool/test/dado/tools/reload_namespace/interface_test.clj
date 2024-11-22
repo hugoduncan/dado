@@ -9,6 +9,8 @@ clojure.string
 does.not.exist
 ```")
 
+(def test-json-input "[\"clojure.string\", \"does.not.exist\"]")
+
 (deftest create-tool-test
   (testing "creates valid tool configuration"
     (let [tool-config (sut/create-tool)]
@@ -25,7 +27,7 @@ does.not.exist
   (testing "tool execution"
     (let [tool-config (sut/create-tool)
           execute-fn  (:execute-fn tool-config)
-          result      (execute-fn test-input)]
+          result      (execute-fn {:namespaces test-json-input})]
       (is (= ['clojure.string] (:reloaded result)))
       (is (= 1 (count (:errors result))))
       (is (= 'does.not.exist (:ns (first (:errors result))))))))
