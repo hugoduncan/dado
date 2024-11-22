@@ -57,7 +57,7 @@
    Returns tool map if valid.
    Throws :error/tool-validation if invalid."
   [tool-map]
-  (t/trace! {:id :tool/validated}
+  (t/trace! {:id :tool/validated :data {:tool tool-map}}
             (if (tool? tool-map)
               tool-map
               (throw (ex-info "Invalid tool configuration"

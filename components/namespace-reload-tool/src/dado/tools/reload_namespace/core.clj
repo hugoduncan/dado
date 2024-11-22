@@ -1,45 +1,54 @@
 (ns dado.tools.reload-namespace.core
   "Core implementation of namespace reload tool"
-  (:require [clojure.string :as str]
-            [taoensso.telemere :as t]))
+  (:require
+   [clojure.string :as str]
+   [jsonista.core :as j]
+   [taoensso.telemere :as t]
+   [malli.core :as m]))
 
 (defn- parse-namespaces
   "Parse namespace symbols from Updated Namespaces List format string.
    Returns sequence of namespace symbols."
   [input]
-  (->> (str/split-lines input)
-       (remove str/blank?)
-       (map symbol)))
+  (t/trace!
+   {:id :reloac/parse-ns :data {:input input}}
+   (j/read-value input)
+   #_(->> (str/split-lines input)
+          (remove str/blank?)
+          (map symbol))))
 
 (defn- reload-namespace
   "Attempts to reload a single namespace.
    Returns [true nil] on success,
    [false error-info] on failure."
-  [ns-sym]
-  (try
-    (require ns-sym :reload)
-    (t/event! :reload/success {:ns ns-sym})
-    [true nil]
-    (catch Exception e
-      (t/event! :reload/failed {:ns ns-sym :error (ex-message e)})
-      [false {:ns ns-sym :error (ex-message e)}])))
+  [ns-sym-str]
+  (t/trace!
+   {:id :reload/attempt :data {:ns-sym ns-sym-str}}
+   (try
+     (require (symbol ns-sym-str) :reload)
+     (t/event! :reload/success {:data {:ns ns-sym-str}})
+     [true nil]
+     (catch Exception e
+       (t/event! :reload/failed {:data {:ns ns-sym-str :error (ex-message e)}})
+       [false {:ns ns-sym-str :error (ex-message e)}]))))
 
 (defn reload-namespaces
   "Reloads specified namespaces.
    Returns map of results with :reloaded and :errors keys."
-  [namespaces-str]
-  (t/trace! {:id :reload/started}
-            (let [ns-syms (parse-namespaces namespaces-str)]
-              (loop [remaining ns-syms
-                     reloaded  []
-                     errors    []]
-                (if (seq remaining)
-                  (let [[success? error] (reload-namespace (first remaining))]
-                    (recur (rest remaining)
-                           (cond-> reloaded success? (conj (first remaining)))
-                           (cond-> errors (not success?) (conj error))))
-                  {:reloaded reloaded
-                   :errors   errors})))))
+  [{:keys [namespaces] :as parameters}]
+  (t/trace!
+   {:id :reload/started :data {:parameters parameters}}
+   (let [ns-syms namespaces]
+     (loop [remaining ns-syms
+            reloaded  []
+            errors    []]
+       (if (seq remaining)
+         (let [[success? error] (reload-namespace (first remaining))]
+           (recur (rest remaining)
+                  (cond-> reloaded success? (conj (first remaining)))
+                  (cond-> errors (not success?) (conj error))))
+         {:reloaded reloaded
+          :errors   errors})))))
 
 (def description
   "This tool reloads a list of clojure namespaces.
@@ -93,18 +102,13 @@
   []
   {:id           :tool/reload-namespace
    :name         "Namespace Reload Tool"
-   :description  "Reloads specified Clojure namespaces"
-   :structured-description
-   {:claude
-    {:description description}}
-   :parameters
-   [{:name        "namespaces"
-     :type        :string
-     :description "Namespaces to reload, in Updated Namespaces List format"
-     :required?   true}]
-   :returns
-   {:type        :map
-    :description "Results map with :reloaded and :errors keys"}
+   :description  description
+   :parameters   [:map
+                  [:namespaces
+                   {:description "A list of namespaces to reload"}
+                   [:vector :string]]]
+   :returns      {:type        :map
+                  :description "Results map with :reloaded and :errors keys"}
    :prompt-fn    make-prompt
    :recognize-fn recognize-reload-request?
    :execute-fn   reload-namespaces})

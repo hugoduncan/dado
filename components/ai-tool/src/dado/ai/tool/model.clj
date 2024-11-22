@@ -2,15 +2,15 @@
   "Data models for AI tools"
   (:require [malli.core :as m]))
 
-(def Parameter
-  "Schema for tool parameter specification"
-  [:map
-   [:name string?]
-   [:type keyword?]
-   [:enum {:optional true} [:vector any?]]
-   [:description string?]
-   [:required? boolean?]
-   [:default {:optional true} any?]])
+#_(def Parameter
+    "Schema for tool parameter specification"
+    [:map
+     [:name string?]
+     [:type any?]
+     [:enum {:optional true} [:vector any?]]
+     [:description string?]
+     [:required? boolean?]
+     [:default {:optional true} any?]])
 
 (def ToolReturn
   "Schema for tool return value specification"
@@ -24,8 +24,7 @@
    [:id keyword?]
    [:name string?]
    [:description string?]
-   [:structured-description map?]
-   [:parameters [:sequential Parameter]]
+   [:parameters [:fn (comp m/schema? m/schema)]]
    [:returns ToolReturn]
    [:prompt-fn fn?]
    [:recognize-fn fn?]

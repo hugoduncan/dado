@@ -37,13 +37,19 @@
 
 (defn- execute-tool-calls!
   [msg-thread tool-calls]
+  (prn :tool-callsZ tool-calls)
+  (prn :registeredAA (ai-message/registered-tools msg-thread))
   (let [tools (reduce
                (fn [tools tool]
-                 (assoc tools (have (:id tool)) tool))
+                 ;; tool in Tool format
+                 (prn :toolY)
+                 (assoc tools (have (name (:id tool))) tool))
                {}
                (ai-message/registered-tools msg-thread))]
+    (t/event! :tools {:level :warn :data {:tools tools}})
     (doseq [tool-call tool-calls]
-      (let [tool (have (tools (have (:id tool-call))))]
+      (t/event! :tool-call {:level :warn :data {:tool-call tool-call}})
+      (let [tool (have (tools (name (have (:tool tool-call)))))]
         (tool/execute-tool! tool (have (:parameters tool-call)))))))
 
 (defn message-loop
@@ -77,11 +83,18 @@
               _          (t/event! :message-loop/message-received)
 
               ;; Refresh context and get AI response
-              thread   (refresh-thread-context msg-thread prompt-fn context-files-fn)
-              _        (t/event! :message-loop/context-refreshed)
-              response (claude/send! (-> config :ai-providers :claude) thread)
-              _        (println "-> " (:content response))
-              _        (t/event! :message-loop/response-processed)
+              thread       (refresh-thread-context msg-thread prompt-fn context-files-fn)
+              _            (t/event! :message-loop/context-refreshed)
+              #_#_response {:role :assistant, :content [{:type :text, :text "I'll use the namespace reload tool to reload the dado.ai.claude.model namespace."} {:type :tool-call, :id "toolu_01D1r2VziQGfBZJQhcbasQs1", :tool :reload-namespace, :parameters {:namespaces "dado.ai.claude.model"}}], :finish-reason :tool-call, :usage {:prompt-chars 19718, :completion-chars 90, :cache-creation-input-tokens 25637, :cache-read-input-tokens 0, :total-chars 19808}}
+              response     (claude/send! (-> config :ai-providers :claude) thread)
+              _            (t/event!
+                            :message-loop/response-processed
+                            {:level :warn
+                             :data  {:response response}})
+              _            (doseq [content (->> response
+                                                :content
+                                                (filterv (comp (partial = :text) :type)))]
+                             (println "-> " (:text response)))
 
               ;; Extract and apply tools
               tool-calls         (ai-message/extract-tool-calls response)

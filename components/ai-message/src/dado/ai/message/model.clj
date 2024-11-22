@@ -19,7 +19,7 @@
 (def ToolCall
   [:map
    [:type [:= :tool-call]]
-   [:id :string]
+   [:id :string] ; TODO rename :call-id
    [:tool :keyword]
    [:parameters [:map-of :keyword any?]]])
 

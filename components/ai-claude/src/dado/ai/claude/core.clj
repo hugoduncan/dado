@@ -1,12 +1,15 @@
 (ns dado.ai.claude.core
-  (:require [hato.client :as http]
-            [jsonista.core :as j]
-            [taoensso.telemere :as t]
-            [taoensso.truss :refer [have?]]
-            [malli.core :as m]
-            [malli.error :as me]
-            [dado.ai.claude.model :as model]
-            [dado.project-config.interface :as config]))
+  (:require
+   [dado.project-config.interface :as config]
+   [dado.ai.message.interface :as message]
+   [hato.client :as http]
+   [jsonista.core :as j]
+   [malli.core :as m]
+   [malli.error :as me]
+   [malli.json-schema :as json-schema]
+   [taoensso.telemere :as t]
+   [taoensso.truss :refer [have have?]]
+   [dado.ai.claude.model :as model]))
 
 (def ^:private default-api-url "https://api.anthropic.com/v1/messages")
 (def ^:private default-model-name "claude-3-5-sonnet-20241022")
@@ -53,18 +56,30 @@
           (mapcat #(file-sequence->content-maps false %) normal-sequences))
          vec)))
 
+(defn- to-claude-parameters [parameters]
+  (reduce
+   (fn [res parameter]
+     (assoc res (keyword (:name parameter))
+            {:description (:description parameter)
+             :type        (json-schema/transform (:type parameter))})
+     {})
+   parameters))
+
 (defn- to-claude-tool [{:keys [id name description parameters]}]
-  {:name         name
+  {:name         (clojure.core/name id)
    :description  description
-   :input_schema {:type       "object"
-                  :properties parameters}
-   :required     (vec (keep #(when (:required %) (:name %))))})
+   :input_schema (json-schema/transform parameters)
+   ;; {:type       "object"
+   ;;  :properties (to-claude-parameters  parameters)
+   ;;  :required   (vec (keep #(when (:required %) (:name %)) parameters))}
+   })
 
 (defn- to-claude-request [message-thread config]
   {:post [(have? model/claude-request? %
                  :data (me/humanize (m/explain model/ClaudeRequest %)))]}
   (t/trace!
-   {:id :dado.ai.claude/request-translation}
+   {:id   :dado.ai.claude/request-translation
+    :data {:message-thread message-thread}}
    (let [{:keys [model-name max-tokens]}       config
          {:keys [system-prompt context tools]} (:metadata message-thread)
          system-content                        (if (seq (:files context))
@@ -121,11 +136,11 @@
 
 (defn send! [config message-thread]
   ;; Pre-condition for message-thread format - this is internal validation
-  {:pre [(have? model/claude-request? (to-claude-request message-thread config)
+  {:pre [(have? message/message-thread? message-thread
                 :data (me/humanize
                        (m/explain
-                        model/ClaudeRequest
-                        (to-claude-request message-thread config))))]}
+                        message/message-thread-schema
+                        message-thread)))]}
   ;; Validate config first - this is user input
   (when-let [config-errors (m/explain model/ClaudeConfig config)]
     (throw (ex-info "Invalid Claude configuration"
@@ -136,6 +151,7 @@
   (let [{:keys [api-key api-url]} config
         request-body              (to-claude-request message-thread config)
         url                       (or api-url default-api-url)]
+    #_(have false :data {:request-body request-body})
     (t/trace!
      {:id :dado.ai.claude/api-call}
      (let [response (-> (http/post

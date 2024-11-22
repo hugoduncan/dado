@@ -32,10 +32,7 @@
   [:map
    [:name :string]
    [:description :string]
-   [:input_schema [:map
-                   [:type [:= "object"]]
-                   [:properties [:map-of keyword? any?]]
-                   [:required [:vector :string]]]]])
+   [:input_schema any?]])
 
 (def ClaudeToolResult
   [:map

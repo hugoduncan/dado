@@ -155,7 +155,11 @@
 (defn extract-tool-calls
   "Extracts tool calls from an AI response message."
   [response]
-  (filterv (comp #(partial = :tool-call %) :type) (:content response)))
+  (t/trace!
+   {:id :message/tool-calls-extracted}
+   (->> response
+        :content
+        (filterv (comp (partial = :tool-call) :type)))))
 
 (def file-block-regex #"```(\w+)\n[;#]+\s*(.+?)\n([\s\S]*?)```")
 
@@ -180,10 +184,11 @@
   {:pre [(have? model/response-message? response)]}
   (t/trace!
    {:id :message/diff-extracted}
-   (apply str/join "\n"
-          (mapv
-           (comp extractor/extract-simplified-diffs :text)
-           (:content response)))))
+   (->> response
+        :content
+        (filterv (comp (partial = :text) :type))
+        (mapv (comp extractor/extract-simplified-diffs :text))
+        (apply str/join "\n"))))
 
 (defn extract-file-operation-directives
   "Extracts File Operation Directives from a response content string"
@@ -191,10 +196,11 @@
   {:pre [(have? model/response-message? response)]}
   (t/trace!
    {:id :message/diff-extracted}
-   (apply str/join "\n"
-          (mapv
-           (comp extractor/extract-file-operation-directives  :text)
-           (:content response)))))
+   (->> response
+        :content
+        (filterv (comp (partial = :text) :type))
+        (mapv (comp extractor/extract-file-operation-directives  :text))
+        (apply str/join "\n"))))
 
 (defn extract-updated-namespaces
   "Extracts updated namespaces list from an AI response message"
@@ -202,7 +208,8 @@
   {:pre [(have? model/response-message? response)]}
   (t/trace!
    {:id :message/updated-namespaces-extracted}
-   (apply str/join "\n"
-          (mapv
-           (comp extractor/extract-updated-namespaces  :text)
-           (:content response)))))
+   (->> response
+        :content
+        (filterv (comp (partial = :text) :type))
+        (mapv (comp extractor/extract-updated-namespaces  :text))
+        (apply str/join "\n"))))
