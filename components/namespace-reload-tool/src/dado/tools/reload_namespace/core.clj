@@ -2,6 +2,7 @@
   "Core implementation of namespace reload tool"
   (:require
    [clojure.string :as str]
+   [dado.ai.message.interface :as message]
    [jsonista.core :as j]
    [taoensso.telemere :as t]))
 
@@ -55,8 +56,10 @@
 
 (defn- result-content
   [{:keys [reloaded errors] :as +result-map}]
-  (cond-> [{:text (str "Reloaded: " (str/join ", " reloaded))}]
-    (seq errors) (conj {:text (str/join "\n" (mapv format-error errors))})))
+  {:content  (cond-> [{:text (str "Reloaded: " (str/join ", " reloaded))}]
+               (seq errors) (conj (message/text-content
+                                   (str/join "\n" (mapv format-error errors)))))
+   :is-error (boolean (seq errors))})
 
 (def description
   "This tool reloads a list of clojure namespaces.

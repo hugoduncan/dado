@@ -1,11 +1,11 @@
 (ns dado.repl.message-loop.core
   (:require [dado.ai.claude.interface :as claude]
-            [dado.ai.message.interface :as ai-message]
-            [dado.ai.message.interface :as msg]
+            [dado.ai.message.interface :as message]
+            [dado.ai.tool.interface :as tool]
             [dado.patch.interface :as patch]
             [taoensso.telemere :as t]
             [taoensso.truss :as truss :refer [have have?]]
-            [dado.ai.tool.interface :as tool]))
+            [clojure.string :as str]))
 
 (defn- get-user-input
   "Get input from user, return nil if empty/whitespace-only"
@@ -32,78 +32,106 @@
   "Updates thread with current prompt and context files"
   [thread prompt-fn context-files-fn]
   (-> thread
-      (ai-message/update-system-prompt (prompt-fn))
-      (ai-message/set-context-files (context-files-fn))))
+      (message/update-system-prompt (prompt-fn))
+      (message/set-context-files (context-files-fn))))
+
+(defn- execute-tool-call!
+  [tools tool-call]
+  (t/event! :tool-call {:level :warn :data {:tool-call tool-call}})
+  (let [tool (have (tools (name (have (:tool tool-call)))))
+        {:keys [content is-error] :as result}
+        (tool/execute-tool!
+         tool
+         (have (:parameters tool-call)))]
+    (when result
+      (message/tool-result-content
+       {:tool-use-id (have string? (:id tool-call))
+        :content     content
+        :is-error    is-error}))))
 
 (defn- execute-tool-calls!
   [msg-thread tool-calls]
-  (prn :tool-callsZ tool-calls)
-  (prn :registeredAA (ai-message/registered-tools msg-thread))
   (let [tools (reduce
                (fn [tools tool]
                  ;; tool in Tool format
-                 (prn :toolY)
                  (assoc tools (have (name (:id tool))) tool))
                {}
-               (ai-message/registered-tools msg-thread))]
+               (message/registered-tools msg-thread))]
     (t/event! :tools {:level :warn :data {:tools tools}})
-    (doseq [tool-call tool-calls]
-      (t/event! :tool-call {:level :warn :data {:tool-call tool-call}})
-      (let [tool (have (tools (name (have (:tool tool-call)))))]
-        (tool/execute-tool! tool (have (:parameters tool-call)))))))
+    (->> tool-calls
+         (keep (partial execute-tool-call! tools))
+         vec)))
+
+(defn- print-response-text! [response]
+  (doseq [content (->> response
+                       :content
+                       (filterv (comp (partial = :text) :type)))]
+    (println "-> " (:text response))))
 
 (defn message-loop
   "Implementation of the interactive message loop.
    See interface ns for docs."
   [config message-thread prompt-fn context-files-fn]
   ;; Validate inputs
-  (have? ai-message/message-thread? message-thread
+  (have? message/message-thread? message-thread
          :data (malli.error/humanize
-                (malli.core/explain ai-message/message-thread-schema message-thread)))
+                (malli.core/explain message/message-thread-schema message-thread)))
   (have? map? config)
   (have? fn? prompt-fn)
   (have? fn? context-files-fn)
 
   (t/event! :message-loop/started {:config (dissoc config :api-key)})
 
-  (loop [msg-thread message-thread]
-    (print "> ")(flush)
+  (loop [msg-thread message-thread
+         prompt?    true]
 
-    (if-let [input (get-user-input)]
-      (if (= input "EXIT")
+    (let [[action msg-thread]
+          (if prompt?
+            (do
+              (print "> ")(flush)
+              (let [input (get-user-input)]
+                (cond
+                  (= input "EXIT")   [:exit msg-thread]
+                  (str/blank? input) [:skip msg-thread]
+                  :else
+                  (do
+                    (println input)
+                    [:process (message/add-message
+                               msg-thread
+                               (message/create-message :user input))]))))
+            [:process msg-thread])]
+
+      (cond
+        (= :skip action)
+        (recur msg-thread true)
+        (= :exit action)
         (do
           (t/event! :message-loop/exited)
           msg-thread)
-
-        (let [_          (println input)
-              ;; Add user message
-              msg-thread (ai-message/add-message
-                          msg-thread
-                          (ai-message/create-message :user input))
-              _          (t/event! :message-loop/message-received)
+        :else
+        (let [_ (t/event! :message-loop/message-received)
 
               ;; Refresh context and get AI response
-              thread       (refresh-thread-context msg-thread prompt-fn context-files-fn)
-              _            (t/event! :message-loop/context-refreshed)
-              #_#_response {:role :assistant, :content [{:type :text, :text "I'll use the namespace reload tool to reload the dado.ai.claude.model namespace."} {:type :tool-call, :id "toolu_01D1r2VziQGfBZJQhcbasQs1", :tool :reload-namespace, :parameters {:namespaces "dado.ai.claude.model"}}], :finish-reason :tool-call, :usage {:prompt-chars 19718, :completion-chars 90, :cache-creation-input-tokens 25637, :cache-read-input-tokens 0, :total-chars 19808}}
-              response     (claude/send! (-> config :ai-providers :claude) thread)
-              _            (t/event!
-                            :message-loop/response-processed
-                            {:level :warn
-                             :data  {:response response}})
-              _            (doseq [content (->> response
-                                                :content
-                                                (filterv (comp (partial = :text) :type)))]
-                             (println "-> " (:text response)))
+              msg-thread (refresh-thread-context
+                          msg-thread
+                          prompt-fn
+                          context-files-fn)
+              _          (t/event! :message-loop/context-refreshed)
+              response   (claude/send!
+                          (-> config :ai-providers :claude)
+                          msg-thread)
+              _          (t/event!
+                          :message-loop/response-processed
+                          {:level :warn
+                           :data  {:response response}})
+              _          (print-response-text! response)
 
               ;; Extract and apply tools
-              tool-calls         (ai-message/extract-tool-calls response)
-              simplified-diffs   (ai-message/extract-simplified-diffs response)
-              fods               (ai-message/extract-file-operation-directives response)
-              updated-namespaces (ai-message/extract-updated-namespaces response)]
-
-          ;; Reload any updated namespaces
-          (execute-tool-calls! msg-thread tool-calls)
+              tool-calls         (message/extract-tool-calls response)
+              result-contents    (execute-tool-calls! msg-thread tool-calls)
+              simplified-diffs   (message/extract-simplified-diffs response)
+              fods               (message/extract-file-operation-directives response)
+              updated-namespaces (message/extract-updated-namespaces response) ]
 
           (when (seq simplified-diffs)
             (patch/apply-simplified-diff-patch! simplified-diffs)
@@ -118,7 +146,11 @@
             (reload-updated-namespaces! updated-namespaces))
 
           ;; Add response and continue loop
-          (recur (ai-message/add-response thread response))))
-
-      ;; Empty input, continue loop
-      (recur msg-thread))))
+          (if (seq result-contents)
+            (recur (-> msg-thread
+                       (message/add-response response)
+                       (message/add-message
+                        (-> (message/create-message :user)
+                            (message/add-message-content result-contents))))
+                   (not :prompt?))
+            (recur (message/add-response msg-thread response) :prompt?)))))))

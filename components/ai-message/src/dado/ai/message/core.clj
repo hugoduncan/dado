@@ -12,8 +12,7 @@
 (defn text-content
   "Creates a text content map from a string"
   [text]
-  {:type :text
-   :text text})
+  {:text text})
 
 (defn tool-result-content
   "Creates a tool result content map"
