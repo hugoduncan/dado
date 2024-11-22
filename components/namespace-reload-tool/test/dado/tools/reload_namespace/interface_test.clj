@@ -28,6 +28,7 @@ does.not.exist
     (let [tool-config (sut/create-tool)
           execute-fn  (:execute-fn tool-config)
           result      (execute-fn {:namespaces test-json-input})]
-      (is (= ['clojure.string] (:reloaded result)))
-      (is (= 1 (count (:errors result))))
-      (is (= 'does.not.exist (:ns (first (:errors result))))))))
+      (is (= [{:text "Reloaded: clojure.string"}
+              {:text
+               "does.not.exist failed to reload: Could not locate does/not/exist__init.class, does/not/exist.clj or does/not/exist.cljc on classpath."}]
+             result)))))

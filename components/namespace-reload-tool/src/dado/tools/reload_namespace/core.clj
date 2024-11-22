@@ -1,9 +1,9 @@
 (ns dado.tools.reload-namespace.core
   "Core implementation of namespace reload tool"
   (:require
+   [clojure.string :as str]
    [jsonista.core :as j]
-   [taoensso.telemere :as t]
-   [malli.core :as m]))
+   [taoensso.telemere :as t]))
 
 (defn- parse-namespaces
   "Parse namespace symbols from Updated Namespaces List format string.
@@ -29,7 +29,7 @@
      [true nil]
      (catch Exception e
        (t/event! :reload/failed {:data {:ns ns-sym :error (ex-message e)}})
-       [false {:ns ns-sym :error (ex-message e)}]))))
+       [false {:ns ns-sym :message (ex-message e)}]))))
 
 (defn reload-namespaces
   "Reloads specified namespaces.
@@ -49,6 +49,14 @@
                   (cond-> errors (not success?) (conj error))))
          {:reloaded reloaded
           :errors   errors})))))
+
+(defn- format-error [error]
+  (str (:ns error) " failed to reload: " (:message error)))
+
+(defn- result-content
+  [{:keys [reloaded errors] :as +result-map}]
+  (cond-> [{:text (str "Reloaded: " (str/join ", " reloaded))}]
+    (seq errors) (conj {:text (str/join "\n" (mapv format-error errors))})))
 
 (def description
   "This tool reloads a list of clojure namespaces.
@@ -111,4 +119,4 @@
                   :description "Results map with :reloaded and :errors keys"}
    :prompt-fn    make-prompt
    :recognize-fn recognize-reload-request?
-   :execute-fn   reload-namespaces})
+   :execute-fn   (comp result-content reload-namespaces)})
