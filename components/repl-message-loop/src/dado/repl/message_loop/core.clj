@@ -1,6 +1,5 @@
 (ns dado.repl.message-loop.core
-  (:require [dado.ai.claude.interface :as claude]
-            [dado.ai.message.interface :as message]
+  (:require [dado.ai.message.interface :as message]
             [dado.ai.tool.interface :as tool]
             [dado.patch.interface :as patch]
             [taoensso.telemere :as t]
@@ -72,16 +71,16 @@
 (defn message-loop
   "Implementation of the interactive message loop.
    See interface ns for docs."
-  [config message-thread prompt-fn context-files-fn]
+  [ai-port message-thread prompt-fn context-files-fn]
   ;; Validate inputs
   (have? message/message-thread? message-thread
          :data (malli.error/humanize
                 (malli.core/explain message/message-thread-schema message-thread)))
-  (have? map? config)
+  (have? fn? ai-port)
   (have? fn? prompt-fn)
   (have? fn? context-files-fn)
 
-  (t/event! :message-loop/started {:config (dissoc config :api-key)})
+  (t/event! :message-loop/started)
 
   (loop [msg-thread message-thread
          prompt?    true]
@@ -120,9 +119,7 @@
                           prompt-fn
                           context-files-fn)
               _          (t/event! :message-loop/context-refreshed)
-              response   (claude/send!
-                          (-> config :ai-providers :claude)
-                          msg-thread)
+              response   (ai-port msg-thread)
               _          (t/event!
                           :message-loop/response-processed
                           {:level :warn

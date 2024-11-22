@@ -52,18 +52,18 @@
           response    {:role          :assistant
                        :content       "```updated-namespaces\nmy.project.model\nmy.project.core\n```"
                        :finish-reason :stop}
-          config      {:ai-providers {:claude {:api-key "test"}}}
+          mock-port   (constantly response)
           input       (atom '("some test" "EXIT"))]
 
       ;; Mock AI interaction to return our test response
-      (with-redefs [dado.ai.claude.interface/send! (constantly response)
+      (with-redefs [print identity
                     read-line                      (fn [& _]
                                                      (let [resp (peek @input)]
                                                        (when-not resp (assert false ))
                                                        (swap! input pop)
                                                        resp))]
         (message-loop/message-loop
-         config
+         mock-port
          test-thread
          (constantly "test prompt")
          (constantly []))
