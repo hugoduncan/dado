@@ -30,9 +30,10 @@
    {:id   :dado.ai.ollama/request-translation
     :data {:message-thread message-thread}}
    (let [{:keys [model-name]} config
-         messages            (mapv to-ollama-message (:messages message-thread))]
-     {:model  (or model-name default-model-name)
-      :messages messages})))
+         messages             (mapv to-ollama-message (:messages message-thread))]
+     {:model    (or model-name default-model-name)
+      :messages messages
+      :stream   false})))
 
 (defn- from-ollama-response [response]
   (t/trace!
