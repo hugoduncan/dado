@@ -1,7 +1,6 @@
 (ns dado.ai.message.interface
   (:require [dado.ai.message.core :as core]
-            [dado.ai.message.model :as model]
-            [dado.ai.tool.model :as tool]))
+            [dado.ai.message.model :as model]))
 
 (defn create-message
   "Creates a new message with the specified role and content.

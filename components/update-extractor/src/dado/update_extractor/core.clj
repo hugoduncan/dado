@@ -25,15 +25,16 @@
   {:pre [(have? string? text)]}
 
   (t/event!    :update/extraction-started)
+  (t/trace!
+   {:id :extract/fod :data {:text text}}
+   (let [diff-pattern #"(?s)```\s?fod\n(.*?)```"
+         matches      (re-seq diff-pattern text)]
 
-  (let [diff-pattern #"(?s)```\s?fod\n(.*?)```"
-        matches      (re-seq diff-pattern text)]
+     (t/event! :update/extraction-completed)
 
-    (t/event! :update/extraction-completed)
-
-    (if (seq matches)
-      (str/join (map second matches))
-      "")))
+     (if (seq matches)
+       (str/join (map second matches))
+       ""))))
 
 (defn extract-updated-namespaces
   "Implementation of updated namespaces list extraction."

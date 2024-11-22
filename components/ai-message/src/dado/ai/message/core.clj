@@ -188,7 +188,7 @@
         :content
         (filterv (comp (partial = :text) :type))
         (mapv (comp extractor/extract-simplified-diffs :text))
-        (apply str/join "\n"))))
+        (str/join "\n"))))
 
 (defn extract-file-operation-directives
   "Extracts File Operation Directives from a response content string"
@@ -200,7 +200,7 @@
         :content
         (filterv (comp (partial = :text) :type))
         (mapv (comp extractor/extract-file-operation-directives  :text))
-        (apply str/join "\n"))))
+        (str/join "\n"))))
 
 (defn extract-updated-namespaces
   "Extracts updated namespaces list from an AI response message"
@@ -212,4 +212,4 @@
         :content
         (filterv (comp (partial = :text) :type))
         (mapv (comp extractor/extract-updated-namespaces  :text))
-        (apply str/join "\n"))))
+        (str/join "\n"))))
