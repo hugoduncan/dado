@@ -10,7 +10,7 @@
    [taoensso.truss :refer [have have?]]))
 
 (def ^:private default-api-url "http://localhost:11434/api/chat")
-(def ^:private default-model-name "llama2:3.2")
+(def ^:private default-model-name "llama3.2:latest")
 
 (defn- to-ollama-role [role]
   (name role))
@@ -35,14 +35,16 @@
       :messages messages})))
 
 (defn- from-ollama-response [response]
-  {:role          :assistant
-   :content       [{:type :text
-                    :text (get-in response [:message :content])}]
-   :finish-reason :end-turn
-   :usage         {:prompt-chars     (:prompt_eval_count response)
-                   :completion-chars (:eval_count response)
-                   :total-chars      (+ (:prompt_eval_count response 0)
-                                       (:eval_count response 0))}})
+  (t/trace!
+   {:id :ollama/response :level :warn :data {:response response}}
+   {:role          :assistant
+    :content       [{:type :text
+                     :text (get-in response [:message :content])}]
+    :finish-reason :end-turn
+    :usage         {:prompt-chars     (:prompt_eval_count response)
+                    :completion-chars (:eval_count response)
+                    :total-chars      (+ (:prompt_eval_count response 0)
+                                         (:eval_count response 0))}}))
 
 (defn send! [config message-thread]
   ;; Pre-condition for message-thread format - this is internal validation
