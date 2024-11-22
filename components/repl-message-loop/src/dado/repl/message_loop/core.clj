@@ -63,10 +63,11 @@
          vec)))
 
 (defn- print-response-text! [response]
-  (doseq [content (->> response
-                       :content
-                       (filterv (comp (partial = :text) :type)))]
-    (println "-> " (:text response))))
+  (doseq [text (->> response
+                    :content
+                    (keep :text)
+                    vec)]
+    (println "-> " text)))
 
 (defn message-loop
   "Implementation of the interactive message loop.
