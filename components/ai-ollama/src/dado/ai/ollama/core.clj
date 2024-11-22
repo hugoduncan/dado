@@ -29,8 +29,16 @@
   (t/trace!
    {:id   :dado.ai.ollama/request-translation
     :data {:message-thread message-thread}}
-   (let [{:keys [model-name]} config
-         messages             (mapv to-ollama-message (:messages message-thread))]
+   (let [{:keys [model-name]}        config
+         {:keys [messages metadata]} message-thread
+         system-prompt               (get metadata :system-prompt)
+         messages
+         (cond-> []
+           ;; Add system prompt as first message if present
+           system-prompt (conj {:role    "system"
+                                :content system-prompt})
+           ;; Add conversation messages
+           true          (into (mapv to-ollama-message messages)))]
      {:model    (or model-name default-model-name)
       :messages messages
       :stream   false})))
