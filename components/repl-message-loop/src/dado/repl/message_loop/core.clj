@@ -56,7 +56,7 @@
                  (assoc tools (have (name (:id tool))) tool))
                {}
                (message/registered-tools msg-thread))]
-    (t/event! :tools {:level :warn :data {:tools tools}})
+    (t/event! :tools {:level :debug :data {:tools tools}})
     (->> tool-calls
          (keep (partial execute-tool-call! tools))
          vec)))
@@ -122,7 +122,7 @@
               response   (ai-port msg-thread)
               _          (t/event!
                           :message-loop/response-processed
-                          {:level :warn
+                          {:level :debug
                            :data  {:response response}})
               _          (print-response-text! response)
 

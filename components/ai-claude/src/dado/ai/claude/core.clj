@@ -135,7 +135,7 @@
     (mapv from-claude-content-map content)))
 
 (defn- from-claude-response [response]
-  (t/log! :warn {:response response})
+  (t/log! :debug {:response response})
   (let [content (from-claude-content (:content response))
         usage   (:usage response)]
     (cond-> {:role          :assistant
