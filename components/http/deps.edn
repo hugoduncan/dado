@@ -1,0 +1,6 @@
+{:paths ["src" "resources"]
+ :deps  {org.clojure/clojure   {:mvn/version "1.12.0"}
+         diehard/diehard       {:mvn/version "0.11.12"}
+         metosin/malli         {:mvn/version "0.14.0"}
+         com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
+         com.taoensso/truss    {:mvn/version "1.12.0"}}}

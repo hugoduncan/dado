@@ -30,6 +30,7 @@
   org.hugoduncan/dado.repl-message-loop        {:local/root "components/repl-message-loop"}
   org.hugoduncan/dado.update-extractor         {:local/root "components/update-extractor"}
   org.hugoduncan/dado.util                     {:local/root "components/util"}
+  org.hugoduncan/dado.http                     {:local/root "components/http"}
   ;; bases
   org.hugoduncan/dado.middleware               {:local/root "bases/middleware"}
   }
