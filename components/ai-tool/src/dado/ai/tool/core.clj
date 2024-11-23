@@ -44,8 +44,7 @@
   (t/trace!
    {:id :tool/executed}
    (try
-     (let [result ((:execute-fn tool) params)]
-       {:result result})
+     ((:execute-fn tool) params)
      (catch Exception e
        (throw (ex-info "Tool execution failed"
                        {:type    :error/tool-execution

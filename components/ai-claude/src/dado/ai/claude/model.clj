@@ -10,25 +10,12 @@
    [:type {:optional true} [:= "text"]]
    [:text :string]])
 
-(def ClaudeSystemContent
+(def ClaudeToolCall
   [:map
-   [:type {:optional true} [:= "text"]]
-   [:text :string]
-   [:cache_control {:optional true} [:map [:type [:enum "ephemeral"]]]]])
-
-(def ClaudeMessage
-  [:map
-   [:role ClaudeRole]
-   [:content [:or
-              :string
-              [:vector ClaudeContent]]]
-   [:name {:optional true} :string]])
-
-(def ClaudeTool
-  [:map
+   [:type [:= "tool_use"]]
+   [:id :string]
    [:name :string]
-   [:description :string]
-   [:input_schema any?]])
+   [:input map?]])
 
 (def ClaudeToolResult
   [:map
@@ -36,6 +23,26 @@
    [:tool_use_id :string]
    [:content {:optional true} [:or :string [:vector ClaudeContent]]]
    [:is_error {:optional true} :boolean]])
+
+(def ClaudeMessage
+  [:map
+   [:role ClaudeRole]
+   [:content [:or
+              :string
+              [:vector [:or ClaudeContent ClaudeToolCall ClaudeToolResult]]]]
+   [:name {:optional true} :string]])
+
+(def ClaudeSystemContent
+  [:map
+   [:type {:optional true} [:= "text"]]
+   [:text :string]
+   [:cache_control {:optional true} [:map [:type [:enum "ephemeral"]]]]])
+
+(def ClaudeTool
+  [:map
+   [:name :string]
+   [:description :string]
+   [:input_schema any?]])
 
 (def ClaudeRequest
   [:map
@@ -45,13 +52,6 @@
    [:system {:optional true} [:or :string [:vector ClaudeSystemContent]]]
    [:temperature {:optional true} [:double {:min 0.0 :max 1.0}]]
    [:tools {:optional true} [:vector ClaudeTool]]])
-
-(def ClaudeToolCall
-  [:map
-   [:type [:= "tool_use"]]
-   [:id :string]
-   [:name :string]
-   [:input map?]])
 
 (def ClaudeResponse
   [:map

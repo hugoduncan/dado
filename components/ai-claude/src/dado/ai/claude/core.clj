@@ -17,6 +17,8 @@
 (defn- to-claude-role [role]
   (name role))
 
+(declare to-claude-content)
+
 (defn- to-claude-content-map [content]
   (t/trace!
    {:id :claude/content-map :data {:content content}}
@@ -24,8 +26,20 @@
      (string? content)
      content
 
+     (= :tool-call (:type content))
+     (->  content
+          (assoc :type "tool_use"
+                 :name (name (:tool content))
+                 :input (:parameters content))
+          (dissoc :tool :parameters))
+
      (= :tool-result  (:type content))
-     (assoc content :type :tool_result)
+     (->  content
+          (assoc :type "tool_result"
+                 :is_error (:is-error content)
+                 :tool_use_id (:tool-use-id content))
+          (update :content to-claude-content)
+          (dissoc :is-error :tool-use-id))
 
      :else
      (update content :type (fnil name "text")))))
@@ -33,7 +47,9 @@
 (defn- to-claude-content [content]
   (t/trace!
    {:id :claude/content :data {:content content}}
-   (mapv to-claude-content-map content)))
+   (if (string? content)
+     content
+     (mapv to-claude-content-map content))))
 
 (defn- to-claude-message [{:keys [role content name] :as message}]
   (t/trace!
@@ -77,23 +93,12 @@
           (mapcat #(file-sequence->content-maps false %) normal-sequences))
          vec)))
 
-#_(defn- to-claude-parameters [parameters]
-    (reduce
-     (fn [res parameter]
-       (assoc res (keyword (:name parameter))
-              {:description (:description parameter)
-               :type        (json-schema/transform (:type parameter))})
-       {})
-     parameters))
-
-(defn- to-claude-tool [{:keys [id name description parameters]}]
-  {:name         (clojure.core/name id)
-   :description  description
-   :input_schema (json-schema/transform parameters)
-   ;; {:type       "object"
-   ;;  :properties (to-claude-parameters  parameters)
-   ;;  :required   (vec (keep #(when (:required %) (:name %)) parameters))}
-   })
+(defn- to-claude-tool [{:keys [id description parameters]}]
+  (t/trace!
+   {:id ::to-claude-tool}
+   {:name         (name id)
+    :description  description
+    :input_schema (json-schema/transform parameters)}))
 
 (defn- to-claude-request [message-thread config]
   {:post [(have? model/claude-request? %
@@ -171,18 +176,17 @@
 
   (let [{:keys [api-key api-url]} config
         request-body              (to-claude-request message-thread config)
-        url                       (or api-url default-api-url)]
+        url                       (or api-url default-api-url)
+        request                   {:headers
+                                   {"x-api-key"         api-key
+                                    "anthropic-version" "2023-06-01"
+                                    "content-type"      "application/json"
+                                    "anthropic-beta"    "prompt-caching-2024-07-31" }
+                                   :body (j/write-value-as-string request-body)}]
     #_(have false :data {:request-body request-body})
     (t/trace!
-     {:id :dado.ai.claude/api-call}
-     (let [response (-> (http/post
-                         url
-                         {:headers
-                          {"x-api-key"         api-key
-                           "anthropic-version" "2023-06-01"
-                           "content-type"      "application/json"
-                           "anthropic-beta"    "prompt-caching-2024-07-31" }
-                          :body (j/write-value-as-string request-body)})
+     {:id :dado.ai.claude/api-call :data {:request request}}
+     (let [response (-> (http/post url request)
                         :body
                         (j/read-value j/keyword-keys-object-mapper))]
        (if (:error response)

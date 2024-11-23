@@ -36,30 +36,33 @@
 
 (defn- execute-tool-call!
   [tools tool-call]
-  (t/event! :tool-call {:level :warn :data {:tool-call tool-call}})
-  (let [tool (have (tools (name (have (:tool tool-call)))))
-        {:keys [content is-error] :as result}
-        (tool/execute-tool!
-         tool
-         (have (:parameters tool-call)))]
-    (when result
-      (message/tool-result-content
-       {:tool-use-id (have string? (:id tool-call))
-        :content     content
-        :is-error    is-error}))))
+  (t/trace!
+   {:id ::tool-call :data {:tool-call tool-call}}
+   (let [tool (have (tools (name (have (:tool tool-call)))))
+         {:keys [content is-error] :as result}
+         (tool/execute-tool!
+          tool
+          (have (:parameters tool-call)))]
+     (when result
+       (message/tool-result-content
+        {:tool-use-id (have string? (:id tool-call))
+         :content     content
+         :is-error    is-error})))))
 
 (defn- execute-tool-calls!
   [msg-thread tool-calls]
-  (let [tools (reduce
-               (fn [tools tool]
-                 ;; tool in Tool format
-                 (assoc tools (have (name (:id tool))) tool))
-               {}
-               (message/registered-tools msg-thread))]
-    (t/event! :tools {:level :debug :data {:tools tools}})
-    (->> tool-calls
-         (keep (partial execute-tool-call! tools))
-         vec)))
+  (t/trace!
+   {:id ::execute-tool-calls!}
+   (let [tools (reduce
+                (fn [tools tool]
+                  ;; tool in Tool format
+                  (assoc tools (have (name (:id tool))) tool))
+                {}
+                (message/registered-tools msg-thread))]
+     (t/event! :tools {:level :debug :data {:tools tools}})
+     (->> tool-calls
+          (keep (partial execute-tool-call! tools))
+          vec))))
 
 (defn- print-response-text! [response]
   (doseq [text (->> response
@@ -84,12 +87,13 @@
 
   (loop [msg-thread message-thread
          prompt?    true]
-
+    (t/event! :message-loop/start-loop-body {:data {:prompt? prompt?}})
     (let [[action msg-thread]
           (if prompt?
             (do
               (print "> ")(flush)
               (let [input (get-user-input)]
+                (t/event! :message-loop/input {:data {:input input}})
                 (cond
                   (= input "EXIT")   [:exit msg-thread]
                   (str/blank? input) [:skip msg-thread]
@@ -111,7 +115,7 @@
           (t/event! :message-loop/exited)
           msg-thread)
         :else
-        (let [_ (t/event! :message-loop/message-received)
+        (let [_ (t/event! :message-loop/sending-request)
 
               ;; Refresh context and get AI response
               msg-thread (refresh-thread-context
@@ -121,10 +125,11 @@
               _          (t/event! :message-loop/context-refreshed)
               response   (ai-port msg-thread)
               _          (t/event!
-                          :message-loop/response-processed
+                          :message-loop/response-received
                           {:level :debug
                            :data  {:response response}})
               _          (print-response-text! response)
+              msg-thread (message/add-response msg-thread response)
 
               ;; Extract and apply tools
               tool-calls         (message/extract-tool-calls response)
@@ -148,9 +153,11 @@
           ;; Add response and continue loop
           (if (seq result-contents)
             (recur (-> msg-thread
-                       (message/add-response response)
                        (message/add-message
-                        (-> (message/create-message :user)
-                            (message/add-message-content result-contents))))
+                        (reduce
+                         (fn [msg message-map]
+                           (message/add-message-content msg message-map))
+                         (message/create-message :user)
+                         result-contents)))
                    (not :prompt?))
-            (recur (message/add-response msg-thread response) :prompt?)))))))
+            (recur  msg-thread :prompt?)))))))

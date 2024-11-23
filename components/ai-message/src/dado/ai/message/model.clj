@@ -10,21 +10,6 @@
    [:type {:optional true} [:enum :text]
     :text :string]])
 
-(def ContentMap
-  [:or
-   SimpleContentMap
-   [:map
-    [:type [:= :tool-result]]
-    [:tool-use-id :string]
-    [:content [:or :string [:vector SimpleContentMap]]]
-    [:is-error {:optional true} :boolean]]])
-
-(def Message
-  [:map
-   [:role Role]
-   [:content [:or :string [:vector ContentMap]]]
-   [:name {:optional true} string?]])
-
 (def ToolCall
   [:map
    [:type [:= :tool-call]]
@@ -32,11 +17,30 @@
    [:tool :keyword]
    [:parameters [:map-of :keyword any?]]])
 
+(def ToolResult
+  [:map
+   [:type [:= :tool-result]]
+   [:tool-use-id :string]
+   [:content [:or :string [:vector SimpleContentMap]]]
+   [:is-error {:optional true} :boolean]])
+
+(def ContentMap
+  [:or
+   SimpleContentMap
+   ToolCall
+   ToolResult])
+
+(def Message
+  [:map
+   [:role Role]
+   [:content [:or :string [:vector ContentMap]]]
+   [:name {:optional true} string?]])
+
 (def MessageThread
   [:map
    [:id string?]
    [:created-at inst?]
-   [:messages [:vector [:or Message ToolCall]]]
+   [:messages [:vector Message]]
    [:metadata [:map
                [:model string?]
                [:system-prompt {:optional true} string?]
