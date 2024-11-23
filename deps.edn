@@ -11,6 +11,7 @@
   org.hugoduncan/dado.ai-refactoring-agent     {:local/root "components/ai-refactoring-agent"}
   org.hugoduncan/dado.ai-thread                {:local/root "components/ai-thread"}
   org.hugoduncan/dado.ai-tool                  {:local/root "components/ai-tool"}
+  org.hugoduncan/dado.ai-tool-file-operation   {:local/root "components/file-operation-tool"}
   org.hugoduncan/dado.ai-tool-reload-namespace {:local/root "components/namespace-reload-tool"}
   org.hugoduncan/dado.chat-gpt                 {:local/root "components/chat-gpt"}
   org.hugoduncan/dado.clojure-fns              {:local/root "components/clojure-fns"}

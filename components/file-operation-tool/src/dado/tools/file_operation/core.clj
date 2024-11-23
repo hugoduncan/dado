@@ -1,0 +1,277 @@
+(ns dado.tools.file-operation.core
+  "Core implementation of file operation tool"
+  (:require [babashka.fs :as fs]
+            [clojure.string :as str]
+            [dado.tools.file-operation.model :as model]
+            [jsonista.core :as j]
+            [malli.core :as m]
+            [malli.error :as me]
+            [taoensso.telemere :as t]
+            [taoensso.truss :refer [have]]))
+
+(defn- op-summary [{:keys [operation path target-path]}]
+  {:operation operation :paths (filterv identity [path target-path])})
+
+(defn- validate-path
+  "Validates a file path is relative and within project"
+  [path]
+  (when-not (and path (fs/relative? path))
+    (throw (ex-info "Path must be relative"
+                    {:type :error/tool-validation
+                     :path path})))
+  path)
+
+(defn- validate-operation
+  "Validates a file operation map.
+  If valid, returns nil, otherwiae an error map."
+  [{:keys [operation path target-path content search-blocks] :as op}]
+  (t/trace!
+   {:id ::validate-operation :data {:op op}}
+   (if-not (model/file-operation? op)
+     [{:op op} {:error (me/humanize (m/explain model/FileOperation op))}]
+     (if (not path)
+       [(op-summary op) {:error "Path required" }]
+       (do
+         ;; Validate paths
+         (validate-path path)
+         (when target-path
+           (validate-path target-path))
+
+         ;; Validate required fields per operation
+         (case operation
+           :create (when-not content
+                     [(op-summary op) {:error "Create requires content" }])
+           :edit   (when-not search-blocks
+                     [(op-summary op) {:error "Edit requires search blocks"}])
+           :move   (when-not target-path
+                     [(op-summary op) {:error "Move requires target path"}])
+           :copy   (when-not target-path
+                     [(op-summary op) { :error "Copy requires target path"}])
+           :delete nil))))))
+
+(defn- create-parent-dirs
+  [path]
+  (some-> path
+          fs/parent
+          fs/create-dirs))
+
+(defn- write-changes!
+  "Write changes to filesystem, returns true on success"
+  [op-info new-content]
+  (t/trace!
+   {:id   ::write-changes!
+    :data {:op op-info :content new-content}}
+   (let [{:keys [operation path target-path]} op-info]
+     (try
+       (case operation
+         (:edit :create)
+         (do
+           (when (= operation :create)
+             (create-parent-dirs path))
+           (let [temp-path (str path ".tmp")]
+             (spit temp-path new-content)
+             (fs/move temp-path path {:replace-existing (= operation :edit)})))
+
+         :delete
+         (fs/delete path)
+
+         :move
+         (do
+           (create-parent-dirs target-path)
+           (fs/move path target-path))
+
+         :copy
+         (do
+           (create-parent-dirs target-path)
+           (fs/copy path target-path)))
+       [(op-summary op-info) nil]
+
+       (catch Exception e
+         (t/event! ::write-failed! {:data {:execption e}})
+         [(op-summary op-info)
+          {:error :write-failed :cause (ex-message e)}])))))
+
+(defn- apply-search-block
+  "Apply a single search block to content, returns [new-content error-info]"
+  [content {:keys [search replace] :as op-info}]
+  (t/trace!
+   ::apply-search-block
+   (let [n-context (count search)
+         index     (str/index-of content search)
+         post-str  (when index (subs content (+ index n-context)))]
+     (cond
+       (nil? index)
+       (do
+         (t/event! :fop/search-replace-failed
+                   {:level :warn
+                    :data  {:context search
+                            :content content}})
+         [content {:error   :error/patch-context-mismatch
+                   :context {:op-info op-info
+                             :content content}}])
+
+       (and (seq search) (str/index-of post-str search))
+       (do
+         (t/event! :error/patch-failed
+                   {:level :warn
+                    :data  {:context search
+                            :content content}})
+         [content {:error   :error/patch-insufficient-context
+                   :context {:op-info op-info
+                             :context search
+                             :content content}}])
+
+       :else
+       [(str (->> [(subs content 0 index) replace post-str]
+                  (filterv (complement str/blank?))
+                  (apply str)))
+        nil]))))
+
+(defn- apply-search-blocks
+  "Apply all search blocks to content, returns [new-content errors]"
+  [content search-blocks]
+  (loop [current-content  content
+         remaining-blocks search-blocks
+         errors           []]
+    (if (empty? remaining-blocks)
+      [current-content errors]
+      (let [[new-content error] (apply-search-block
+                                 current-content
+                                 (first remaining-blocks))]
+        (recur new-content
+               (rest remaining-blocks)
+               (if error
+                 (conj errors error)
+                 errors))))))
+
+(defn- apply-file-operation
+  "Apply changes to a single file operation, returns [op-info error-info]"
+  [op-info]
+  (t/trace!
+   {:id :fot/apply-file-operation :data {:op-info op-info}}
+   (let [{:keys [operation path search-blocks]} op-info]
+     (try
+       (case operation
+         :edit
+         (let [current-content      (slurp path)
+               [new-content errors] (apply-search-blocks
+                                     current-content
+                                     search-blocks )]
+           (if (seq errors)
+             [(op-summary op-info) {:errors errors}]
+             [(-> op-info
+                  (assoc :content new-content)
+                  (dissoc :search-blocks))
+              nil]))
+
+         :create
+         [op-info nil]
+
+         :delete
+         [op-info nil]
+
+         (:move :copy)
+         [op-info nil])
+       (catch Exception e
+         [(op-summary op-info)
+          {:error :file-access :cause (ex-message e)}])))))
+
+(defn execture-op! [op-info]
+  (t/trace!
+   {:id :fot/execute-op! :data {:op-info op-info}}
+   (case (:operation op-info)
+     (:edit)
+     (write-changes! op-info (:content op-info))
+
+     (:create)
+     (write-changes! op-info (:content op-info))
+
+     (:delete :move :copy)
+     (write-changes! op-info nil))))
+
+(defn- operation->kw [op-info]
+  (update op-info :operation #(if (string? %) (keyword %) %)))
+
+(defn execute-operations!
+  "Executes file operations using patch component.
+   Returns sequence of operation results."
+  [{:keys [operations]}]
+  (t/trace!
+   {:id   ::execute-operations!
+    :data {:operations operations}}
+
+   (let [operations (->> (if (string? operations)
+                           (j/read-value operations)
+                           operations)
+                         (mapv operation->kw))
+         invalid    (not-empty (vec (keep validate-operation operations)))]
+     (or
+      invalid
+      (let [ops-errors (mapv apply-file-operation operations)
+            errors     (not-empty (vec (filterv second ops-errors)))]
+        (or
+         errors
+         (mapv execture-op! (mapv first ops-errors))))))))
+
+(defn- result-content [result]
+  (t/trace!
+   {:id ::result-content :data {:result result}}
+   {:content
+    (mapv
+     (fn [[{:keys [operation paths]} error-map]]
+       (have operation)
+       {:type :text
+        :text (if error-map
+                (str (name operation) " on " (pr-str paths) " failed: "
+                     (pr-str error-map))
+                (str (name operation) " on " (pr-str paths) " succeeded"))})
+     result)
+    :is-error (boolean (some last result))}))
+
+(def description
+  "Tool for performing file operations.
+All paths must be relative and within project directory.
+
+Supports file create, edit, move, copy and delete.
+
+- The :create operation creates the :path file with :content.
+
+- The :delete operation deletes the :path file.
+
+- The :edit operation edits the file at :path and for each :search-blocks
+  replaces :search with :replace.
+
+- The :copy operation copies the file at :path to :target-path.
+
+- The :move operation moves the file at :path to :target-path." )
+
+(defn make-prompt
+  "Returns tool usage prompt"
+  []
+  "Use this tool to perform file operations. All paths must be relative."
+  (assert (not :implemented)))
+
+(defn recognize-operation?
+  "Returns true if text appears to be requesting file operations"
+  [text]
+  (assert (not :implemented)))
+
+(defn create-tool
+  "Creates file operation tool configuration"
+  []
+  {:id           :dado/file-operation
+   :name         "File Operation Tool"
+   :description  description
+   :structured-description
+   {:claude
+    {:description "Tool for performing file operations. All paths must be relative and within project directory."}}
+   :parameters
+   [:map
+    [:operations
+     [:vector model/FileOperation]]]
+   :returns
+   {:type        :vector
+    :description "Sequence of operation results"}
+   :prompt-fn    make-prompt
+   :recognize-fn recognize-operation?
+   :execute-fn   (comp result-content execute-operations!)})
