@@ -40,7 +40,7 @@
 
 (defn agent-schema
   "Returns the malli schema for AI agents.
-   
+
    The schema defines the required structure for valid agent configurations
    including the function specifications for prompt, context and response processing."
   []

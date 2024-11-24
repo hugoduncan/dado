@@ -1,7 +1,7 @@
 (ns dado.ai.agents.scope.core
   (:require
    [babashka.fs :as fs]
-   [dado.ai.agents.scope.model :as model]
+   [dado.ai.agent.interface :as agent]
    [dado.ai.prompt.interface :as prompt]
    [malli.core :as m]
    [malli.error :as me]
@@ -58,7 +58,7 @@
 
    Throws :error/agent-creation on validation failure."
   [project-config additional-context-fn]
-  {:post [(have? model/Agent? :data (me/humanize (m/explain model/Agent %)))]}
+  {:post [(have? (m/validator (agent/agent-schema)) :data (me/humanize (m/explain model/Agent %)))]}
   (t/trace!
    {:id :scope/create-agent}
    {:name                :scope
