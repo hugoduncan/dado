@@ -31,3 +31,7 @@
                           {:dev-dir "dev"}
                           valid-agent
                           "non-existent.md")))))
+
+(deftest agent-schema-test
+  (testing "returns valid agent schema"
+    (is (= model/Agent (agent/agent-schema)))))

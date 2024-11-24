@@ -1,6 +1,7 @@
 (ns dado.ai.agent.interface
   "Interface for AI agent component"
-  (:require [dado.ai.agent.core :as core]))
+  (:require [dado.ai.agent.core :as core]
+            [dado.ai.agent.model :as model]))
 
 (defn validate-agent
   "Validates agent map structure. Returns agent if valid.
@@ -36,3 +37,11 @@
    - msg-thread: Initial message thread"
   [ai-port-fn agent msg-thread]
   (core/message-loop ai-port-fn agent msg-thread))
+
+(defn agent-schema
+  "Returns the malli schema for AI agents.
+   
+   The schema defines the required structure for valid agent configurations
+   including the function specifications for prompt, context and response processing."
+  []
+  model/Agent)

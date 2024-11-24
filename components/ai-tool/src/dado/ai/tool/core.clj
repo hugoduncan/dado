@@ -49,6 +49,7 @@
        (throw (ex-info "Tool execution failed"
                        {:type    :error/tool-execution
                         :tool-id (:id  tool)
+                        :params  params
                         :cause   e}))))))
 
 (defn validate-tool
