@@ -35,11 +35,11 @@ When presenting your output, use the following format:
 </scope-of-changes-to-files>
 
 <implementation-edits>
-[Insert the changes to implementation files here]
+[Use the file-operation tool to execute the changes to each file]
 </implementation-edits>
 
 <specification-edits>
-[Insert the changes to specification files here]
+[Use the file-operation tool to edit specification documents that need changing]
 </specification-edits>
 
 <explanation>
@@ -50,16 +50,16 @@ When presenting your output, use the following format:
 - Any potential impacts on functionality or performance]
 </explanation>
 
-<updated-namespaces-list>
-[List all modified namespaces in dependency order according to the Updated Namespaces List Format]
-</updated-namespaces-list>
+<reload-namespaces>
+[Reload all modified namespaces in dependency from least dependent to most dependent]
+</reload-namespaces>
 
 <commit-message>
 [Insert a commit message for the changes here]
 </commit-message>
 
-
-Remember to prioritize precision in your refactoring process. Each change should be deliberate and justified. Ensure that:
+Remember to prioritize precision in your refactoring process. Each
+change should be deliberate and justified. Ensure that:
 
 1. Variable and function names are clear and descriptive.
 2. Code structure is logical and easy to follow.
@@ -72,4 +72,6 @@ Before submitting your final output, review your work to confirm that:
 2. The refactored code and updated specification are fully consistent.
 3. Your explanation thoroughly justifies all changes made.
 
-Present your final output in the format specified above, ensuring that all sections (refactored_code, updated_specification, and explanation) are included and properly tagged.
+Present your final output in the format specified above, ensuring that
+all sections (refactored_code, updated_specification, and explanation)
+are included and properly tagged.

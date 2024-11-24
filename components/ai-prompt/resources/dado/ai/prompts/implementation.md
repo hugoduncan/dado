@@ -16,3 +16,17 @@ architecture and the code.
 
 Prefer stateless implementations.  Try and avoid all un-specified or
 un-required state.
+
+Follow these steps to complete the implementation task:
+
+1. Carefully analyze the specification and any related specifications.
+2. Identify areas for improvement based on the implementation
+   requirements.  In particular, consider which parts of the
+   specification are not clear or need to be made more specific.
+3. Update the specification to reflect any clarifications.
+4. Implement the code to meet the specification.
+5. Ensure that the implemented code and the specification are consistent
+   with each other.
+
+At any point, if you need to ask for clarification, do so, then go back
+to the beginning.
