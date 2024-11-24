@@ -42,8 +42,7 @@
     project-config
     ["scope"
      "context-files"
-     "ask-missing-files"
-     "adr-scope"]
+     "ask-missing-files"]
     {})))
 
 (defn create-agent
