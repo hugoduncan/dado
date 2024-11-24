@@ -9,6 +9,7 @@
   org.hugoduncan/dado.ai-message               {:local/root "components/ai-message"}
   org.hugoduncan/dado.ai-prompt                {:local/root "components/ai-prompt"}
   org.hugoduncan/dado.ai-refactoring-agent     {:local/root "components/ai-refactoring-agent"}
+  org.hugoduncan/dado.ai-scope-agent           {:local/root "components/ai-scope-agent"}
   org.hugoduncan/dado.ai-thread                {:local/root "components/ai-thread"}
   org.hugoduncan/dado.ai-tool                  {:local/root "components/ai-tool"}
   org.hugoduncan/dado.ai-tool-file-operation   {:local/root "components/file-operation-tool"}
