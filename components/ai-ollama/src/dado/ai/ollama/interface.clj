@@ -18,5 +18,5 @@
      ex-info with :type :error/ollama-connection for connection errors
      ex-info with :type :error/ollama-response for API errors
      ex-info with :type :error/ollama-validation for validation errors"
-  [config message-thread]
-  (core/send! config message-thread))
+  [config http-request-fn message-thread]
+  (core/send! config http-request-fn message-thread))

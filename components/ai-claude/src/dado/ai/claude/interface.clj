@@ -20,5 +20,5 @@
      ex-info with :type :error/claude-connection for connection errors
      ex-info with :type :error/claude-response for API errors
      ex-info with :type :error/claude-validation for validation errors"
-  [config message-thread]
-  (core/send! config message-thread))
+  [config http-request-fn message-thread]
+  (core/send! config http-request-fn message-thread))

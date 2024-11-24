@@ -1,7 +1,6 @@
 (ns dado.ai.claude.core
   (:require
    [dado.ai.message.interface :as message]
-   [hato.client :as http]
    [jsonista.core :as j]
    [malli.core :as m]
    [malli.error :as me]
@@ -160,7 +159,7 @@
                                    (:output_tokens usage 0))}}
       #_#_ (seq tool-calls) (assoc :tool-calls tool-calls))))
 
-(defn send! [config message-thread]
+(defn send! [config http-request-fn message-thread]
   ;; Pre-condition for message-thread format - this is internal validation
   {:pre [(have? message/message-thread? message-thread
                 :data (me/humanize
@@ -177,16 +176,17 @@
   (let [{:keys [api-key api-url]} config
         request-body              (to-claude-request message-thread config)
         url                       (or api-url default-api-url)
-        request                   {:headers
+        request                   {:url    url
+                                   :method :post
+                                   :headers
                                    {"x-api-key"         api-key
                                     "anthropic-version" "2023-06-01"
                                     "content-type"      "application/json"
                                     "anthropic-beta"    "prompt-caching-2024-07-31" }
-                                   :body (j/write-value-as-string request-body)}]
-    #_(have false :data {:request-body request-body})
+                                   :body   (j/write-value-as-string request-body)}]
     (t/trace!
      {:id :dado.ai.claude/api-call :data {:request request}}
-     (let [response (-> (http/post url request)
+     (let [response (-> (http-request-fn request)
                         :body
                         (j/read-value j/keyword-keys-object-mapper))]
        (if (:error response)

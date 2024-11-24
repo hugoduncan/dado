@@ -3,7 +3,6 @@
    [clojure.string :as str]
    [dado.ai.message.interface :as message]
    [dado.ai.ollama.model :as model]
-   [hato.client :as http]
    [jsonista.core :as j]
    [malli.core :as m]
    [malli.error :as me]
@@ -78,7 +77,7 @@
                     :total-chars      (+ (:prompt_eval_count response 0)
                                          (:eval_count response 0))}}))
 
-(defn send! [config message-thread]
+(defn send! [config http-request-fn message-thread]
   ;; Pre-condition for message-thread format - this is internal validation
   {:pre [(have? message/message-thread? message-thread
                 :data (me/humanize
@@ -99,9 +98,10 @@
         url               (or api-url default-api-url)]
     (t/trace!
      {:id :dado.ai.ollama/api-call}
-     (let [response (-> (http/post
-                         url
-                         {:headers {"content-type" "application/json"}
+     (let [response (-> (http-request-fn
+                         {:url     url
+                          :method  :post
+                          :headers {"content-type" "application/json"}
                           :body    (j/write-value-as-string request-body)})
                         :body
                         (j/read-value j/keyword-keys-object-mapper))]
