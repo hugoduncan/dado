@@ -45,9 +45,7 @@
      "context-files"
      "ask-missing-files"
      "adr-scope"
-     "adr-implementation"
-     "file-operation-directive-edits"
-     "list-updated-namespaces"]
+     "adr-implementation"]
     {})))
 
 (defn create-agent
