@@ -103,7 +103,7 @@ name."
 	     (when response
 	       (funcall callback response)))))
        messages)
-    (message "dado middleware is not available."))
+    (message "dado chat middleware is not available."))
   nil)
 
 (provide 'dado-nrepl)

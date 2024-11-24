@@ -1,4 +1,4 @@
-(ns org.hugoduncan.dado.nrepl-middleware.core
+(ns dado.nrepl-middleware.core
   "Middleware of using dado dev chat assistant."
   (:require
    [nrepl.misc :refer [response-for] :as misc]

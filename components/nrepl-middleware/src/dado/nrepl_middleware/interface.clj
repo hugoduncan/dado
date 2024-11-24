@@ -1,7 +1,7 @@
-(ns org.hugoduncan.dado.nrepl-middleware.interface
+(ns dado.nrepl-middleware.interface
   "Middleware of using dado code assistant."
   (:require
-   [org.hugoduncan.dado.nrepl-middleware.core :as nrepl-midleware-core]
+   [dado.nrepl-middleware.core :as nrepl-midleware-core]
    [org.hugoduncan.dado.clojure-fns.interface]
    [org.hugoduncan.dado.elisp-funs.interface]
    [nrepl.middleware :as middleware :refer [set-descriptor!]]))
