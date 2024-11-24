@@ -154,10 +154,14 @@
           (if (seq result-contents)
             (recur (-> msg-thread
                        (message/add-message
-                        (reduce
-                         (fn [msg message-map]
-                           (message/add-message-content msg message-map))
-                         (message/create-message :user)
-                         result-contents)))
+                        (t/trace!
+                         {:id    ::add-tool-response-message
+                          :level :warn
+                          :data  {:result-contents result-contents}}
+                         (reduce
+                          (fn [msg message-map]
+                            (message/add-message-content msg message-map))
+                          (message/create-message :user)
+                          result-contents))))
                    (not :prompt?))
             (recur  msg-thread :prompt?)))))))
