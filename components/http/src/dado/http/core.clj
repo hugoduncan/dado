@@ -4,14 +4,11 @@
   service unavailability with configurable retry strategies and circuit
   breaker protection."
   (:require
+   [clojure.string :as str]
    [dado.http.policy-builder :as policy-builder]
    [diehard.circuit-breaker :as cb]
    [diehard.core :as dh]
-   [taoensso.telemere :as t])
-  (:import
-   [java.time
-    Duration
-    Instant]))
+   [taoensso.telemere :as t]))
 
 ;;; HTTP Request Defaults
 
@@ -32,11 +29,43 @@
 
 ;;; Failure Predicates
 
-(defn default-failure-predicate
+(defn- maybe-retry-after-header
+  [response]
+  (some-> response :headers (get "retry-after")))
+
+(defn- maybe-should-retry-header
+  [response]
+  (some-> response :headers (get "x-should-retry")))
+
+(defn- retryable-error?
+  [{:keys [status] :as response}]
+  (or
+   (>= status 500)
+   (= status 429)
+   (= "true" (maybe-should-retry-header response))))
+
+(defn error-and-retry-after?
   [{:keys [status] :as response} _thrown-exception]
   (when (>= status 400)
-    (t/event! ::http-request-error {:data {:headers (:headers response)}}))
-  (or (>= status 500) (= status 429)))
+    (t/event!
+     ::error-and-retry-after?
+     {:level :warn
+      :data  {:headers     (:headers response)
+              :retryable?  (retryable-error? response)
+              :retry-after (maybe-retry-after-header response)}}))
+  (and (retryable-error? response)
+       (not (str/blank? (maybe-retry-after-header response)))))
+
+(defn error-and-no-retry-after?
+  [{:keys [status] :as response} _thrown-exception]
+  (when (>= status 400)
+    (t/event!
+     ::error-and-no-retry-after?
+     {:level :warn :data {:headers     (:headers response)
+                          :retryable?  (retryable-error? response)
+                          :retry-after (maybe-retry-after-header response)}}))
+  (and (retryable-error? response)
+       (str/blank? (maybe-retry-after-header response))))
 
 ;;; Circuit Breaker
 
@@ -89,9 +118,13 @@
          config)))
       (wrap-retry
        (merge
-        {:base-sleep-ms 100
-         :max-sleep-ms  1000
-         :retry-if      default-failure-predicate
-         :delay-ms-fn   policy-builder/context->retry-after-millis
-         :max-retries   2}
+        {:retry-if    error-and-retry-after?
+         :delay-ms-fn policy-builder/context->retry-after-millis
+         :max-retries 2}
+        config))
+      (wrap-retry
+       (merge
+        {:retry-if    error-and-no-retry-after?
+         :backoff-ms  [1000 10000]
+         :max-retries 5}
         config))))

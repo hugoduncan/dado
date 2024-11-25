@@ -4,12 +4,16 @@
    [diehard.spec]
    [taoensso.telemere :as t])
   (:import
-   [dev.failsafe ExecutionContext
+   [dev.failsafe
+    ExecutionContext
     RetryPolicy]
-   [dev.failsafe.function ContextualSupplier]
-   [java.time Duration
+   [dev.failsafe.function
+    ContextualSupplier]
+   [java.time
+    Duration
     Instant]
-   [java.time.format DateTimeFormatter]))
+   [java.time.format
+    DateTimeFormatter]))
 
 (defn- parse-rfc-1123-date-time [^String s]
   (.parse DateTimeFormatter/RFC_1123_DATE_TIME s Instant/from))
@@ -17,7 +21,7 @@
 (defn context->retry-after-millis
   [result]
   (t/trace!
-   {:id ::context->retry-after-millis :level :trace}
+   {:id ::context->retry-after-millis :level :warn}
    (let [header-value (-> result :headers (get "retry-after"))]
      (or
       (when header-value
