@@ -57,7 +57,8 @@
 
    Throws :error/agent-creation on validation failure."
   [project-config additional-context-fn]
-  {:post [(have? (m/validator (agent/agent-schema)) :data (me/humanize (m/explain model/Agent %)))]}
+  {:post [(have? (m/validator (agent/agent-schema))
+                 :data (me/humanize (m/explain (agent/agent-schema) %)))]}
   (t/trace!
    {:id :scope/create-agent}
    {:name                :scope
