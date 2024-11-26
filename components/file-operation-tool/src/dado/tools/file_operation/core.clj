@@ -201,7 +201,10 @@
     :data {:operations operations}}
 
    (let [operations (->> (if (string? operations)
-                           (j/read-value operations)
+                           (try
+                             (j/read-value operations)
+                             (catch Exception e
+                               [{:operation "parse"}]))
                            operations)
                          (mapv operation->kw))
          invalid    (not-empty (vec (keep validate-operation operations)))]
