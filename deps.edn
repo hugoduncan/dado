@@ -5,12 +5,12 @@
   org.hugoduncan/dado.ai-claude                {:local/root "components/ai-claude"}
   org.hugoduncan/dado.ai-ollama                {:local/root "components/ai-ollama"}
   org.hugoduncan/dado.ai-implementation-agent  {:local/root "components/ai-implementation-agent"}
-  org.hugoduncan/dado.ai-interaction           {:local/root "components/ai-interaction"}
+  ;; org.hugoduncan/dado.ai-interaction           {:local/root "components/ai-interaction"}
   org.hugoduncan/dado.ai-message               {:local/root "components/ai-message"}
   org.hugoduncan/dado.ai-prompt                {:local/root "components/ai-prompt"}
   org.hugoduncan/dado.ai-refactoring-agent     {:local/root "components/ai-refactoring-agent"}
   org.hugoduncan/dado.ai-scope-agent           {:local/root "components/ai-scope-agent"}
-  org.hugoduncan/dado.ai-thread                {:local/root "components/ai-thread"}
+  org.hugoduncan/dado.ai-thread-mgr            {:local/root "components/ai-thread-mgr"}
   org.hugoduncan/dado.ai-tool                  {:local/root "components/ai-tool"}
   org.hugoduncan/dado.ai-tool-file-operation   {:local/root "components/file-operation-tool"}
   org.hugoduncan/dado.ai-tool-reload-namespace {:local/root "components/namespace-reload-tool"}
