@@ -11,6 +11,7 @@
   org.hugoduncan/dado.ai-prompt                {:local/root "components/ai-prompt"}
   org.hugoduncan/dado.ai-refactoring-agent     {:local/root "components/ai-refactoring-agent"}
   org.hugoduncan/dado.ai-scope-agent           {:local/root "components/ai-scope-agent"}
+  org.hugoduncan/dado.ai-test-agent            {:local/root "components/ai-test-agent"}
   org.hugoduncan/dado.ai-thread-mgr            {:local/root "components/ai-thread-mgr"}
   org.hugoduncan/dado.ai-tool                  {:local/root "components/ai-tool"}
   org.hugoduncan/dado.ai-tool-file-operation   {:local/root "components/file-operation-tool"}
