@@ -96,6 +96,24 @@
        {:description "The name of the function to call."}
        string?]]]]])
 
+(def CompletionResponse
+  [:map
+   [:id string?]
+   [:object [:enum "chat.completion"]]
+   [:created int?]
+   [:model string?]
+   [:choices [:vector
+              [:map
+               [:index int?]
+               [:message [:map
+                          [:role [:enum "assistant"]]
+                          [:content string?]]]
+               [:finish_reason [:enum "stop" "length" "content_filter" "tool_calls"]]]]]
+   [:usage [:map
+            [:prompt_tokens int?]
+            [:completion_tokens int?]
+            [:total_tokens int?]]]])
+
 (def ChatGPTConfig
   [:map
    [:api-key :string]
