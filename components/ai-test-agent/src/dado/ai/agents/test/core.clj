@@ -14,13 +14,14 @@
 (defn- process-response
   "Processes test agent responses, optimizing for test scenarios."
   [response]
-  (t/trace! {:id :test/process-response}
-    (try
-      response
-      (catch Exception e
-        (throw (ex-info "Failed to process test response"
-                       {:type :error/test-response
-                        :cause e})))))
+  (t/trace!
+   {:id :test/process-response}
+   (try
+     response
+     (catch Exception e
+       (throw (ex-info "Failed to process test response"
+                       {:type  :error/test-response
+                        :cause e}))))))
 
 (defn- get-directory-files
   "Gets list of files in a configured directory"
@@ -33,8 +34,7 @@
   [project-config additional-context-fn]
   (t/trace!
    {:id :test/get-context}
-   [(get-directory-files project-config :dado/adr)
-    (reduce into [] (additional-context-fn))]))
+   [(reduce into [] (additional-context-fn))]))
 
 (defn- get-prompt
   "Gets the test-specific system prompt."
@@ -43,10 +43,9 @@
    {:id :test/get-prompt}
    (prompt/construct-prompt
     project-config
-    ["test"
+    ["test/test"
      "context-files"
-     "ask-missing-files"
-     "adr-implementation"]
+     "ask-missing-files"]
     {})))
 
 (defn create-agent
@@ -63,10 +62,10 @@
   [project-config additional-context-fn]
   {:post [(have? (m/validator (agent/agent-schema))
                  %
-                 :data (me/humanize (m/explain (agent/agent-schema) %)))]} 
+                 :data (me/humanize (m/explain (agent/agent-schema) %)))]}
   (t/trace!
    {:id :test/create-agent}
-   {:name :test
-    :prompt-fn (partial get-prompt project-config)
-    :context-fn (partial get-context project-config additional-context-fn)
+   {:name                :test
+    :prompt-fn           (partial get-prompt project-config)
+    :context-fn          (partial get-context project-config additional-context-fn)
     :process-response-fn process-response}))
