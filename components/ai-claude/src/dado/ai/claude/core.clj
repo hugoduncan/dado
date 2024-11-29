@@ -36,12 +36,12 @@
           (dissoc :tool :parameters))
 
      (= :tool-result  (:type content))
-     (->  content
-          (assoc :type "tool_result"
-                 :is_error (:is-error content)
-                 :tool_use_id (:tool-use-id content))
-          (update :content to-claude-content)
-          (dissoc :is-error :tool-use-id))
+     (cond->  (->  content
+                   (assoc :type "tool_result"
+                          :tool_use_id (:tool-use-id content))
+                   (update :content to-claude-content)
+                   (dissoc :is-error :tool-use-id))
+       (contains? content :is-error) (assoc :is_error (:is-error content) ))
 
      :else
      (update content :type (fnil name "text")))))

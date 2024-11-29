@@ -21,7 +21,7 @@
   [:or
    JsonPrimitiveValue
    [:vector [:ref #'JsonValue]]
-   [:map-of JsonPrimitiveValue [:ref #'JsonValue]]])
+   [:map-of [:or :keyword JsonPrimitiveValue] [:ref #'JsonValue]]])
 
 ;; (malli.generator/sample JsonPrimitiveValue)
 ;; (malli.generator/generate JsonValue)
@@ -37,7 +37,7 @@
   [:map
    [:type [:= :tool-result]]
    [:tool-use-id :string]
-   [:content JsonValue]
+   [:content [:or :string [:vector SimpleContentMap]] #_JsonValue]
    [:is-error {:optional true} :boolean]])
 
 (def ContentMap

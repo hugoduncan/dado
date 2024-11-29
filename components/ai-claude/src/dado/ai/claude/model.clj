@@ -49,7 +49,7 @@
    [:input_schema any?]])
 
 (def ClaudeRequest
-  [:map
+  [:map {:closed true}
    [:model :string]
    [:messages [:vector [:or ClaudeMessage ClaudeToolResult]]]
    [:max_tokens {:optional true} pos-int?]

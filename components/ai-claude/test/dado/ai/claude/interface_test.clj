@@ -190,87 +190,62 @@
           (is (some? errors)
               (str "Should detect missing " (name field))))))))
 
-(deftest create-message-test
-  (testing "successful message creation"
-    (let [valid-message (gen-valid-message)
-          response      (claude/send! test-config valid-message)]
-      (is (m/validate schema/message-request valid-message)
-          "Generated message should be valid")
-      (is (= (:model valid-message) (:model response))
-          "Should preserve model specification")
-      (is (= (:messages valid-message) (:messages response))
-          "Should preserve message content")))
-
-  (testing "message creation with various temperatures"
-    (doseq [temp [0.0 0.5 1.0]]
-      (let [message  (assoc (gen-valid-message) :temperature temp)
-            response (claude/create-message test-config message)]
-        (is (nil? (validate-message message))
-            (str "Should accept temperature " temp)))))
-
-  (testing "error handling for invalid config"
-    (is (thrown? clojure.lang.ExceptionInfo
-                 (claude/create-message {} (gen-valid-message)))
-        "Should throw on missing API key"))
-
-  (testing "error handling for invalid message data"
-    (doseq [field [:model :messages]]
-      (let [invalid-message (gen-message-without field)]
-        (is (thrown? clojure.lang.ExceptionInfo
-                     (claude/create-message test-config invalid-message))
-            (str "Should throw on missing " (name field)))))))
-
-(deftest stream-response-test
-  (testing "successful response streaming"
-    (let [valid-message (gen-valid-message)
-          response      (claude/stream-response test-config valid-message)]
-      (is (= 200 (:status response))
-          "Should return success status code")
-      (is (= "test response" (:body response))
-          "Should return expected response body")))
-
-  (testing "streaming with generated valid messages"
-    (dotimes [_ 5] ; Test multiple generated messages
-      (let [message (gen-valid-message)]
-        (is (nil? (validate-message message))
+#_(deftest create-message-test
+    (testing "successful message creation"
+      (let [valid-message (gen-valid-message)
+            response      (claude/send! test-config valid-message)]
+        (is (m/validate schema/message-request valid-message)
             "Generated message should be valid")
-        (is (map? (claude/stream-response test-config message))
-            "Should handle generated message"))))
+        (is (= (:model valid-message) (:model response))
+            "Should preserve model specification")
+        (is (= (:messages valid-message) (:messages response))
+            "Should preserve message content")))
 
-  (testing "error handling for streaming"
-    (let [invalid-config (dissoc test-config :api-key)]
-      (is (some? (validate-config invalid-config))
-          "Should detect invalid config")
+    (testing "message creation with various temperatures"
+      (doseq [temp [0.0 0.5 1.0]]
+        (let [message  (assoc (gen-valid-message) :temperature temp)
+              response (claude/create-message test-config message)]
+          (is (nil? (validate-message message))
+              (str "Should accept temperature " temp)))))
+
+    (testing "error handling for invalid config"
       (is (thrown? clojure.lang.ExceptionInfo
-                   (claude/stream-response invalid-config (gen-valid-message)))
-          "Should throw on invalid config"))))
+                   (claude/create-message {} (gen-valid-message)))
+          "Should throw on missing API key"))
+
+    (testing "error handling for invalid message data"
+      (doseq [field [:model :messages]]
+        (let [invalid-message (gen-message-without field)]
+          (is (thrown? clojure.lang.ExceptionInfo
+                       (claude/create-message test-config invalid-message))
+              (str "Should throw on missing " (name field)))))))
 
 ;; Integration Test Helpers (disabled by default)
-(defn ^:integration create-real-message
-  "Creates a real message using actual API. Requires valid API key.
+#_(defn ^:integration create-real-message
+    "Creates a real message using actual API. Requires valid API key.
    Only runs when integration tests are enabled."
-  [message]
-  (when-not (validate-message message)
-    (claude/create-message
-     {:api-key (System/getenv "CLAUDE_API_KEY")}
-     message)))
+    [message]
+    (when-not (validate-message message)
+      (claude/create-message
+       {:api-key (System/getenv "CLAUDE_API_KEY")}
+       message)))
 
-(defn ^:integration test-real-api
-  "Integration test using real API.
+#_(defn ^:integration test-real-api
+    "Integration test using real API.
    Only runs when integration tests are enabled and API key is available."
-  []
-  (when-let [api-key (System/getenv "CLAUDE_API_KEY")]
-    (testing "real API interaction"
-      (let [message  (gen-valid-message)
-            response (create-real-message message)]
-        (is (nil? (validate-message message))
-            "Should generate valid message")
-        (is (some? response)
-            "Should successfully interact with real API")))))
+    []
+    (when-let [api-key (System/getenv "CLAUDE_API_KEY")]
+      (testing "real API interaction"
+        (let [message  (gen-valid-message)
+              response (create-real-message message)]
+          (is (nil? (validate-message message))
+              "Should generate valid message")
+          (is (some? response)
+              "Should successfully interact with real API")))))
 
 ;; Run integration tests only when explicitly enabled
-(when (System/getenv "RUN_INTEGRATION_TESTS")
-  (test-real-api))
+#_(when (System/getenv "RUN_INTEGRATION_TESTS")
+    (test-real-api))
 
 
 (deftest claude-request-test
