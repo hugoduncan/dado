@@ -1,7 +1,7 @@
-(ns dado.ai.msg-thread-mgr.interface
+(ns dado.conversation-manager.interface
   "Manages message thread lifecycle and state.
    Provides in-memory storage of message threads."
-  (:require [dado.ai.msg-thread-mgr.core :as core]))
+  (:require [dado.conversation-manager.core :as core]))
 
 (defn register-new
   "Adds the message-thread to the in-memory store.

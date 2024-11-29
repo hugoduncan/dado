@@ -1,9 +1,9 @@
-(ns dado.ai.msg-thread-mgr.interface-test
+(ns dado.conversation-manager.interface-test
   (:require
    [clojure.stacktrace :refer [root-cause]]
    [clojure.test :refer [deftest is testing]]
    [dado.ai.message.interface :as message]
-   [dado.ai.msg-thread-mgr.interface :as thread]))
+   [dado.conversation-manager.interface :as thread]))
 
 (def test-message-thread
   {:id "test-thread"

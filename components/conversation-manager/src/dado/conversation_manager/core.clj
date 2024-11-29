@@ -1,4 +1,4 @@
-(ns dado.ai.msg-thread-mgr.core
+(ns dado.conversation-manager.core
   (:refer-clojure :exclude [list])
   (:require
    [dado.ai.message.interface :as message]

@@ -12,7 +12,7 @@
   org.hugoduncan/dado.ai-refactoring-agent     {:local/root "components/ai-refactoring-agent"}
   org.hugoduncan/dado.ai-scope-agent           {:local/root "components/ai-scope-agent"}
   org.hugoduncan/dado.ai-test-agent            {:local/root "components/ai-test-agent"}
-  org.hugoduncan/dado.ai-thread-mgr            {:local/root "components/ai-thread-mgr"}
+  org.hugoduncan/dado.conversation-manager     {:local/root "components/conversation-manager"}
   org.hugoduncan/dado.ai-tool                  {:local/root "components/ai-tool"}
   org.hugoduncan/dado.ai-tool-file-operation   {:local/root "components/file-operation-tool"}
   org.hugoduncan/dado.ai-tool-reload-namespace {:local/root "components/namespace-reload-tool"}
