@@ -21,15 +21,19 @@
   [:map
    [:type [:= "tool_result"]]
    [:tool_use_id :string]
-   [:content {:optional true} [:or :string [:vector ClaudeContent]]]
+   [:content {:optional true} [:or :string [:vector ClaudeContent] [:= []]]]
    [:is_error {:optional true} :boolean]])
+
+(def ClaudeMessageContent
+  [:or
+   :string
+   [:vector [:or ClaudeContent ClaudeToolCall ClaudeToolResult]]
+   [:= []]])
 
 (def ClaudeMessage
   [:map
    [:role ClaudeRole]
-   [:content [:or
-              :string
-              [:vector [:or ClaudeContent ClaudeToolCall ClaudeToolResult]]]]
+   [:content ClaudeMessageContent]
    [:name {:optional true} :string]])
 
 (def ClaudeSystemContent
@@ -80,3 +84,4 @@
 (def claude-config? (m/validator ClaudeConfig))
 (def claude-request? (m/validator ClaudeRequest))
 (def claude-message? (m/validator ClaudeMessage))
+(def claude-message-content? (m/validator ClaudeMessageContent))

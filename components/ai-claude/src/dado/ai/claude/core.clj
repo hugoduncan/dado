@@ -25,6 +25,9 @@
      (string? content)
      content
 
+     (vector? content)
+     (mapv to-claude-content-map content)
+
      (= :tool-call (:type content))
      (->  content
           (assoc :type "tool_use"
@@ -46,15 +49,18 @@
 (defn- to-claude-content [content]
   (t/trace!
    {:id :claude/content :data {:content content}}
-   (if (string? content)
-     content
-     (mapv to-claude-content-map content))))
+   (have
+    model/claude-message-content?
+    (if (string? content)
+      content
+      (mapv to-claude-content-map content)))))
 
 (defn- to-claude-message [{:keys [role content name] :as message}]
   (t/trace!
    {:id :claude/message :data {:message message}}
    (let [msg (cond-> {:role (to-claude-role role)
-                      :content (to-claude-content content)}
+                      :content (to-claude-content
+                                (have content :data {:message message}))}
                name (assoc :name name))]
      (have model/claude-message?
            msg :data (me/humanize (m/explain model/ClaudeMessage msg))))))
@@ -103,8 +109,9 @@
   {:post [(have? model/claude-request? %
                  :data (me/humanize (m/explain model/ClaudeRequest %)))]}
   (t/trace!
-   {:id   :dado.ai.claude/request-translation
-    :data {:message-thread message-thread}}
+   {:id    :dado.ai.claude/request-translation
+    :level :warn
+    :data  {:message-thread message-thread}}
    (let [{:keys [model-name max-tokens]}       config
          {:keys [system-prompt context tools]} (:metadata message-thread)
          system-content                        (if (seq (:files context))
@@ -142,6 +149,7 @@
   (t/log! :debug {:response response})
   (let [content (from-claude-content (:content response))
         usage   (:usage response)]
+    (t/log! {:level :warn :data {:usage usage}} "Claude token usage")
     (cond-> {:role          :assistant
              :content       content
              :finish-reason (case (:stop_reason response)
@@ -158,6 +166,11 @@
               :total-chars      (+ (:input_tokens usage 0)
                                    (:output_tokens usage 0))}}
       #_#_ (seq tool-calls) (assoc :tool-calls tool-calls))))
+
+(defn- send-request! [http-request-fn request]
+  (-> (http-request-fn request)
+      :body
+      (j/read-value j/keyword-keys-object-mapper)))
 
 (defn send! [config http-request-fn message-thread]
   ;; Pre-condition for message-thread format - this is internal validation
@@ -186,9 +199,7 @@
                                    :body   (j/write-value-as-string request-body)}]
     (t/trace!
      {:id :dado.ai.claude/api-call :data {:request request}}
-     (let [response (-> (http-request-fn request)
-                        :body
-                        (j/read-value j/keyword-keys-object-mapper))]
+     (let [response (send-request! http-request-fn request)]
        (if (:error response)
          (throw (ex-info "Claude API error"
                          {:type    :error/claude-response

@@ -1,6 +1,7 @@
 (ns dado.ai.tool.model
   "Data models for AI tools"
-  (:require [malli.core :as m]))
+  (:require [malli.core :as m]
+            [malli.error :as me]))
 
 #_(def Parameter
     "Schema for tool parameter specification"
@@ -24,11 +25,18 @@
    [:id keyword?]
    [:name string?]
    [:description string?]
-   [:parameters [:fn (comp m/schema? m/schema)]]
+   [:parameters
+    {:gen/elements [[:map [:fred :string] [:z [:vector :int]]]]}
+    [:fn (comp m/schema? m/schema)]]
    [:returns ToolReturn]
-   [:prompt-fn fn?]
-   [:recognize-fn fn?]
-   [:execute-fn fn?]])
+   [:prompt-fn
+    {:gen/elements [(constantly "a prompt")]}
+    fn?]
+   [:recognize-fn
+    {:gen/elements [(constantly "unused")]}
+    fn?]
+   [:execute-fn {:gen/elements [(constantly {:result "generated"})]}
+    fn?]])
 
 (def ExecutionResult
   "Schema for tool execution results"
@@ -36,3 +44,5 @@
    [:result any?]
    [:error {:optional true} map?]
    [:metrics {:optional true} map?]])
+
+(malli.generator/generate Tool)

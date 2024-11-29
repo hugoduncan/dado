@@ -3,25 +3,41 @@
             [dado.ai.tool.model :as tool]))
 
 (def Role
-  [:enum :user :system :assistant])
+  [:enum :user :assistant])
 
 (def SimpleContentMap
   [:map
-   [:type {:optional true} [:enum :text]
-    :text :string]])
+   [:type {:optional true} [:enum :text]]
+   [:text :string]])
+
+(def JsonPrimitiveValue
+  [:or
+   :boolean
+   :nil
+   :string
+   number?])
+
+(def JsonValue
+  [:or
+   JsonPrimitiveValue
+   [:vector [:ref #'JsonValue]]
+   [:map-of JsonPrimitiveValue [:ref #'JsonValue]]])
+
+;; (malli.generator/sample JsonPrimitiveValue)
+;; (malli.generator/generate JsonValue)
 
 (def ToolCall
   [:map
    [:type [:= :tool-call]]
    [:id :string] ; TODO rename :call-id
    [:tool :keyword]
-   [:parameters [:map-of :keyword any?]]])
+   [:parameters [:map-of :keyword JsonValue]]])
 
 (def ToolResult
   [:map
    [:type [:= :tool-result]]
    [:tool-use-id :string]
-   [:content [:or :string [:vector SimpleContentMap]]]
+   [:content JsonValue]
    [:is-error {:optional true} :boolean]])
 
 (def ContentMap

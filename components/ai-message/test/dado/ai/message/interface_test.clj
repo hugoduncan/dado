@@ -273,3 +273,7 @@
                          (message/set-context-files invalid-thread [[(.getPath temp-file)]])))
             (finally
               (.delete temp-file))))))))
+
+(deftest message-thread-schema-generator-test
+  (is (message/message-thread?
+       (mg/generate message/message-thread-schema))))
