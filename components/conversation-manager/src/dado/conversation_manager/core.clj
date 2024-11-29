@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [list])
   (:require
    [dado.ai.message.interface :as message]
+   [dado.ai.tool.interface :as tool]
    [taoensso.telemere :as t]
    [taoensso.truss :refer [have?]]
    [malli.core :as m]
@@ -80,6 +81,38 @@
        (throw (ex-info "Unknown message thread ID"
                        {:type :error/unknown-message-thread-id
                         :id   id})))))
+
+(defn add-ai-tool
+  "Adds AI Tool to conversation.
+   Returns updated conversation state.
+   Throws :error/unknown-conversation-id if conversation not found.
+   Throws :error/invalid-ai-tool if tool invalid."
+  [conversation-id tool]
+  {:pre [(have? string? conversation-id)
+         (have? tool/validate-tool tool)]}
+  (t/trace! {:id :conversation/tool-added}
+            (let [conversation (lookup conversation-id)
+                  tools (get-in conversation [:metadata :tools] [])
+                  updated (assoc-in conversation 
+                                   [:metadata :tools]
+                                   (conj tools tool))]
+              (register-update updated))))
+
+(defn remove-ai-tool
+  "Removes AI Tool from conversation.
+   Returns updated conversation state.
+   Throws :error/unknown-conversation-id if conversation not found.
+   Throws :error/invalid-ai-tool if tool invalid."
+  [conversation-id tool]
+  {:pre [(have? string? conversation-id)
+         (have? tool/validate-tool tool)]}
+  (t/trace! {:id :conversation/tool-removed}
+            (let [conversation (lookup conversation-id)
+                  tools (get-in conversation [:metadata :tools] [])
+                  updated (assoc-in conversation 
+                                   [:metadata :tools]
+                                   (filterv #(not= (:id tool) (:id %)) tools))]
+              (register-update updated))))
 
 (defn list
   "Returns sequence of registered message thread IDs.

@@ -31,6 +31,26 @@
   (testing "list"
     (is (= ["test-thread"] (thread/list))))
 
+  (testing "tool operations"
+    (let [tool {:id :test/tool
+               :name "Test Tool"
+               :description "A test tool"
+               :structured-description {}
+               :parameters []
+               :returns {:type :string
+                        :description "test"}
+               :prompt-fn (constantly "test")
+               :recognize-fn (constantly true)
+               :execute-fn (constantly nil)}]
+      
+      (testing "add-ai-tool"
+        (let [updated (thread/add-ai-tool "test-thread" tool)]
+          (is (= [tool] (get-in updated [:metadata :tools])))))
+
+      (testing "remove-ai-tool"
+        (let [removed (thread/remove-ai-tool "test-thread" tool)]
+          (is (empty? (get-in removed [:metadata :tools])))))))
+
   (testing "remove"
     (is (nil? (thread/remove "test-thread")))
     (is (empty? (thread/list)))))
