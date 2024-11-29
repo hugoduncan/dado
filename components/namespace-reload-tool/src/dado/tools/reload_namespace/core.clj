@@ -38,7 +38,13 @@
   [{:keys [namespaces] :as parameters}]
   (t/trace!
    {:id :reload/started :level :warn :data {:parameters parameters}}
-   (let [ns-syms (if (string? namespaces) (j/read-value namespaces) namespaces)]
+   (let [[ ns-syms errors] (if (string? namespaces)
+                             (try
+                               [(j/read-value namespaces)]
+                               (catch Exception e
+                                 [nil [{:ns      "unknown"
+                                        :message (ex-message e)}]]))
+                             [namespaces])]
      (loop [remaining ns-syms
             reloaded  []
             errors    []]
