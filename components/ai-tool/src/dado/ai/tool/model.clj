@@ -45,4 +45,4 @@
    [:error {:optional true} map?]
    [:metrics {:optional true} map?]])
 
-#_(malli.generator/generate Tool)
+(def tool? (m/validator Tool))

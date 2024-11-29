@@ -26,6 +26,11 @@
   [role & {:keys [name]}]
   (core/create-message role :name name))
 
+(defn message-thread-id
+  "Return the ID of a message-thread"
+  [message-thread]
+  (core/message-thread-id message-thread))
+
 (defn add-message-content
   "Adds content to a message.
    Content must be a valid content map (see text-content, tool-result-content).

@@ -45,3 +45,8 @@
    including the function specifications for prompt, context and response processing."
   []
   model/Agent)
+
+(defn agent?
+  "Predicate for an AI agent."
+  [x]
+  (model/agent? x))

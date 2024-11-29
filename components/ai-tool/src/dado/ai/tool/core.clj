@@ -44,6 +44,7 @@
   (t/trace!
    {:id :tool/executed}
    (try
+     (t/log! {:level :warn :data {:params params}} "Execute")
      ((:execute-fn tool) params)
      (catch Exception e
        (throw (ex-info "Tool execution failed"

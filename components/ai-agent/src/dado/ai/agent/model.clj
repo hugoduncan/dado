@@ -19,3 +19,5 @@
   [:map
    [:content string?]
    [:path string?]])
+
+(def agent? (m/validator Agent))

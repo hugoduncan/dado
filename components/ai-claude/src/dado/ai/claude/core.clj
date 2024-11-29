@@ -109,9 +109,8 @@
   {:post [(have? model/claude-request? %
                  :data (me/humanize (m/explain model/ClaudeRequest %)))]}
   (t/trace!
-   {:id    :dado.ai.claude/request-translation
-    :level :warn
-    :data  {:message-thread message-thread}}
+   {:id   :dado.ai.claude/request-translation
+    :data {:message-thread message-thread}}
    (let [{:keys [model-name max-tokens]}       config
          {:keys [system-prompt context tools]} (:metadata message-thread)
          system-content                        (if (seq (:files context))

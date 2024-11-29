@@ -1,6 +1,8 @@
 (ns dado.ai.tool.interface
   "Interface for AI tool management"
-  (:require [dado.ai.tool.core :as core]))
+  (:require
+   [dado.ai.tool.core :as core]
+   [dado.ai.tool.model :as model]))
 
 (defn register-tool!
   "Registers a tool. Tool map must conform to Tool schema.
@@ -42,3 +44,9 @@
    Throws :error/tool-validation if invalid."
   [tool]
   (core/validate-tool tool))
+
+(defn tool-schema []
+  model/Tool)
+
+(defn tool? [x]
+  (model/tool? x))

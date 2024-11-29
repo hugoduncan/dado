@@ -247,3 +247,8 @@
         (mapv (comp extractor/extract-updated-namespaces  :text))
         (apply concat)
         vec)))
+
+(defn message-thread-id
+  [message-thread]
+  {:pre [(have? model/message-thread? message-thread)]}
+  (:id message-thread))
