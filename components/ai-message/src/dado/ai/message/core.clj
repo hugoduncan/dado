@@ -170,7 +170,8 @@
   {:pre [(have? model/message-thread? message-thread)
          (have? model/response-message?
                 response
-                :data (me/humanize (m/explain model/ResponseMessage response)))]}
+                :data (me/humanize
+                       (m/explain model/ResponseMessage response)))]}
   (t/trace! {:id :message/response-added}
             (cond-> message-thread
               true (update :messages conj (dissoc response :usage))
