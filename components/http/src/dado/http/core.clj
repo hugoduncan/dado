@@ -46,7 +46,7 @@
 
 (defn error-and-retry-after?
   [{:keys [status] :as response} _thrown-exception]
-  (when (>= status 400)
+  (when (> status 400)
     (t/event!
      ::error-and-retry-after?
      {:level :warn
@@ -58,7 +58,7 @@
 
 (defn error-and-no-retry-after?
   [{:keys [status] :as response} _thrown-exception]
-  (when (>= status 400)
+  (when (> status 400)
     (t/event!
      ::error-and-no-retry-after?
      {:level :warn :data {:headers     (:headers response)
