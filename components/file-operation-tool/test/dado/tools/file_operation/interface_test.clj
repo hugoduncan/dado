@@ -62,10 +62,13 @@
   [result-sym results]
   `(let [results# ~results
          result#  ~result-sym]
-     (is (= (count results#) (count result# )))
+     (is (= (count results#) (count result# ))
+         (pr-str {:expected results#
+                  :actual   result#}))
      (doseq [[i# [op# & paths#]] (mapv vector (range) results#)]
        (is (= (str op# " on " (mapv abs-path paths#) " succeeded" )
-              (get-in result# [:content i# :text]))))))
+              (get-in result# [:content i# :text]))
+           "Succeass message"))))
 
 (defmacro is-failed-result?
   [result-expr results]
@@ -209,3 +212,61 @@
                [{:operation :copy
                  :path      "test.txt"}]})
              [["copy" ["test.txt"] "requires target path"]])))))))
+
+
+(deftest extract-operations-test
+  (testing "extracts operations from text"
+    (let [input
+          "Some text with file operations:
+<file-operation type=\"create\" path=\"test.txt\">
+This is some content for the new file
+</file-operation>
+<file-operation type=\"delete\" path=\"old.txt\">
+</file-operation>
+<file-operation type=\"edit\" path=\"edit.txt\">
+<search>This is the original content</search>
+<replace>This is the new content</replace>
+</file-operation>
+<file-operation type=\"move\" path=\"move.txt\" target-path=\"moved.txt\">
+</file-operation>
+<file-operation type=\"copy\" path=\"copy.txt\" target-path=\"copied.txt\">
+</file-operation>"
+          expected-ops [{:operation :create,
+                         :path      "test.txt",
+                         :content   "This is some content for the new file\n"}
+                        {:operation :delete, :path "old.txt"}
+                        {:operation :edit,
+                         :path      "edit.txt",
+                         :search-blocks
+                         [{:search  "This is the original content",
+                           :replace "This is the new content"}]}
+                        {:operation   :move,
+                         :path        "move.txt",
+                         :target-path "moved.txt"}
+                        {:operation   :copy,
+                         :path        "copy.txt",
+                         :target-path "copied.txt"}]]
+      (is (= expected-ops (core/extract-operations input)))))
+
+  (testing "handles no operations in text"
+    (let [input        "No file operations here."
+          expected-ops []]
+      (is (= expected-ops (core/extract-operations input)))))
+
+  (testing "handles invalid operations"
+    (let [input        "Invalid operation block:
+                 <file-operation type=\"invalid\" path=\"invalid.txt\">
+                 </file-operation>"
+          expected-ops []]
+      (is (= expected-ops (core/extract-operations input)))))
+
+  (testing "handles mixed valid and invalid operations"
+    (let [input        "Mixed operations:
+<file-operation type=\"create\" path=\"test.txt\">
+This is some content for the new file
+</file-operation>
+<file-operation type=\"invalid\" path=\"invalid.txt\">
+</file-operation>"
+          expected-ops [{:operation :create, :path "test.txt",
+                         :content   "This is some content for the new file\n"}]]
+      (is (= expected-ops (core/extract-operations input))))))

@@ -1,6 +1,7 @@
 (ns dado.tools.file-operation.core
   "Core implementation of file operation tool"
   (:require [babashka.fs :as fs]
+            [clojure.edn :as edn]
             [clojure.string :as str]
             [dado.tools.file-operation.model :as model]
             [jsonista.core :as j]
@@ -248,11 +249,94 @@ Supports file create, edit, move, copy and delete.
 
 - The :move operation moves the file at :path to :target-path." )
 
+(def describe-tool
+  "To change files, use the `<file-operation>` tag.
+
+  <example>
+  <file-operation type=\"create\" path=\"components/document/deps.edn\">
+  This is some content for the new file
+  </file-operation>
+  </example>
+
+  <example>
+  <file-operation type=\"delete\" path=\"components/document/deps.edn\">
+  </file-operation>
+  </example>
+
+  <example>
+  <file-operation
+     type=\"copy\"
+     path=\"components/document/deps.edn\"
+     target-path=\"components/document/deps.edn\">
+  </file-operation>
+  </example>
+
+  <example>
+  <file-operation
+     type=\"move\"
+     path=\"components/document/deps.edn\"
+     target-path=\"components/document/deps.edn\">
+  </file-operation>
+  </example>
+
+  <example>
+  <file-operation
+     type=\"edit\"
+     path=\"components/document/deps.edn\">
+  <search>Text to be replaced</search>
+  <replace>Replacement text</replace>
+  </file-operation>
+  </example>")
+
+(defn- parse-search-replace [body]
+  (let [re-sr #"(?s)\s*<search>(.*?)</search>\s*<replace>(.*?)</replace>"]
+    (->> (re-seq re-sr body)
+         (mapv (fn [[_ s r]] {:search s :replace r})))))
+
+(def ^:private valid-ops #{:edit :copy :move :delete :create})
+
+(defn extract-operations
+  "Extracts file operation blocks from a string.
+   Each block is expected to be in the format described in
+  `describe-tool`.  Return a list of file operation maps, as could be
+  passed to `execute-operations!`."
+  [text]
+  (t/trace!
+   {:id    ::extract-operations
+    :level :warn
+    :data  {:text text}}
+   (let [re-ops          #"(?s)(<file-operation[^>]*>)(.*?)</file-operation>"
+         re-attr         #"(?i)([\w-]+)\s*=\s*\"([^\"]*)\""
+         parse-operation (fn [attrs body]
+                           (let [operation (keyword (:type attrs))
+                                 op        {:operation operation
+                                            :path      (:path attrs)}]
+                             (case operation
+                               :edit
+                               (assoc op :search-blocks (parse-search-replace body))
+                               (:copy :move)
+                               (assoc op :target-path (:target-path attrs))
+                               :delete
+                               op
+                               :create
+                               (assoc op :content body)
+                               nil)))]
+     (->> (re-seq re-ops text)
+          (mapv (fn [[_ tag-expr body]]
+                  (let [attrs (->> (re-seq re-attr tag-expr)
+                                   (mapv (fn [[_ k v]] [(keyword k) v]))
+                                   (into {}))]
+                    (parse-operation
+                     attrs
+                     (str/triml body)))))
+          (filterv some?)
+          #_(mapv (fn [op] (cond-> op
+                             (= (:type op) :edit) (assoc :search-blocks (:content op)))))))))
+
 (defn make-prompt
   "Returns tool usage prompt"
   []
-  "Use this tool to perform file operations. All paths must be relative."
-  (assert (not :implemented)))
+  describe-tool)
 
 (defn recognize-operation?
   "Returns true if text appears to be requesting file operations"
@@ -267,7 +351,8 @@ Supports file create, edit, move, copy and delete.
    :description  description
    :structured-description
    {:claude
-    {:description "Tool for performing file operations. All paths must be relative and within project directory."}}
+    {:description
+     "Tool for performing file operations. All paths must be relative and within project directory."}}
    :parameters
    [:map
     [:operations
