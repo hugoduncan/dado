@@ -42,7 +42,9 @@
    Throws :error/tool-execution for validation/execution errors."
   [tool params]
   (t/trace!
-   {:id :tool/executed}
+   {:id    :tool/executed
+    :level :warn
+    :data  {:tool tool :params params}}
    (try
      (t/log! {:level :warn :data {:params params}} "Execute")
      ((:execute-fn tool) params)

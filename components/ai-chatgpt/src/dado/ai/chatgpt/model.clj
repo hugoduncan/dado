@@ -21,7 +21,7 @@
 (def Message
   [:map
    [:role {:description "The role of the message author."}
-    [:enum "system" "user" "assistant"]]
+    [:enum "system" "user" "assistant" "tool"]]
    [:content
     {:description "The content of the message (null for function call messages)."}
     Content]
