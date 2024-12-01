@@ -1,4 +1,4 @@
-(ns dado.tools.reload-namespace.interface
+(ns dado.tools.reload-namespaces.interface
   "Interface for namespace reload tool"
   (:require [dado.tools.reload-namespace.core :as core]))
 

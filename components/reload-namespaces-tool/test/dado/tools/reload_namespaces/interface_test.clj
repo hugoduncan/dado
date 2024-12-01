@@ -1,6 +1,6 @@
-(ns dado.tools.reload-namespace.interface-test
+(ns dado.tools.reload-namespaces.interface-test
   (:require [clojure.test :refer [deftest is testing]]
-            [dado.tools.reload-namespace.interface :as sut]
+            [dado.tools.reload-namespaces.interface :as sut]
             [dado.ai.tool.interface :as tool]))
 
 (def test-input

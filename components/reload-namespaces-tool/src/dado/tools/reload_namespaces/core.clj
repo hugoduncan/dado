@@ -1,4 +1,4 @@
-(ns dado.tools.reload-namespace.core
+(ns dado.tools.reload-namespaces.core
   "Core implementation of namespace reload tool"
   (:require
    [clojure.string :as str]
