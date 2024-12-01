@@ -5,20 +5,12 @@
   (:require
    [dado.conversation-manager.core :as core]))
 
-(defn conversation!
-  "Creates new conversation with specified AI port and agent.
+(defn add!
+  "Add a new conversation.
    Returns conversation ID (UUID).
    Throws :error/conversation-creation on failure."
-  [ai-agent
-   port-send-fn
-   message-thread
-   {:keys [ai-tools user-data] :as options}]
-  (core/conversation ai-agent port-send-fn message-thread options))
-
-(defn id
-  "Return the conversation ID."
   [conversation]
-  (core/id conversation))
+  (core/add! conversation))
 
 #_(defn send-message
     "Sends message and returns response asynchronously.

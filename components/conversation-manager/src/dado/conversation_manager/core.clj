@@ -1,8 +1,7 @@
 (ns dado.conversation-manager.core
   (:require
-   [dado.ai.agent.interface :as agent]
    [dado.ai.message.interface :as message]
-   [dado.ai.tool.interface :as tool]
+   [dado.conversation.interface :as conversation]
    [dado.conversation-manager.model :as model]
    [malli.core :as m]
    [malli.error :as me]
@@ -12,36 +11,26 @@
 ;; Thread store atom - holds map of thread-id to thread
 (defonce ^:private conversation-store (atom {}))
 
-(defn conversation!
-  "Creates new conversation with specified AI port and agent.
+(defn add!
+  "Add a new conversation
    Returns conversation.
    Throws :error/conversation-creation on failure."
-  [ai-agent port-send-fn message-thread {:keys [ai-tools user-data]}]
-  {:pre  [(have? message/message-thread? message-thread
+  [conversation]
+  {:pre  [(have? conversation/conversation? conversation
                  :data (me/humanize
-                        (m/explain message/message-thread-schema message-thread)))
-          (have? fn? port-send-fn)
-          (have? agent/agent? ai-agent)
-          (have? tool/tool? :in ai-tools)]
-   :post [(have? model/conversation? %
+                        (m/explain
+                         (conversation/conversation-schema)
+                         conversation)))]
+   :post [(have? conversation/conversation? %
                  :data (me/humanize
                         (m/explain model/Conversation %)))]}
   (t/trace!
    {:id :thread/registered}
-   (let [conversation {:message-thread message-thread
-                       :ai-agent       ai-agent
-                       :port-send-fn   port-send-fn
-                       :ai-tools       ai-tools
-                       :user-data      user-data}]
-     (swap! conversation-store assoc (:id message-thread) conversation)
-     message-thread)))
-
-(defn id [conversation]
-  {:pre  [(have? model/conversation? conversation
-                 :data (me/humanize
-                        (m/explain model/Conversation conversation)))]
-   :post [(have? string? %)]}
-  (-> conversation :message-thread :id))
+   (do
+     (swap!
+      conversation-store
+      assoc (:id (:message-thread conversation)) conversation)
+     conversation)))
 
 (defn- get-conversation-or-throw
   [id]
@@ -58,12 +47,16 @@
    Throws :error/unknown-message-thread-id if id not found.
    Throws :error/invalid-message-thread if validation fails."
   [conversation]
-  {:pre  [(have? model/conversation? conversation
+  {:pre  [(have? conversation/conversation? conversation
                  :data (me/humanize
-                        (m/explain model/Conversation conversation)))]
-   :post [(have? model/conversation? conversation
+                        (m/explain
+                         (conversation/conversation-schema)
+                         conversation)))]
+   :post [(have? conversation/conversation? conversation
                  :data (me/humanize
-                        (m/explain model/Conversation conversation)))
+                        (m/explain
+                         (conversation/conversation-schema)
+                         conversation)))
           (have? (partial = conversation) %)]}
   (t/trace!
    {:id :thread/updated}
@@ -77,12 +70,14 @@
    Returns nil.
    Throws :error/unknown-message-thread-id if id not found."
   [conversation]
-  {:pre [(have? model/conversation? conversation
+  {:pre [(have? conversation/conversation? conversation
                 :data (me/humanize
-                       (m/explain model/Conversation conversation)))]}
+                       (m/explain
+                        (conversation/conversation-schema)
+                        conversation)))]}
   (t/trace!
    {:id :thread/removed}
-   (let [c-id (id conversation)]
+   (let [c-id (conversation/id conversation)]
      (get-conversation-or-throw c-id)
      (swap! conversation-store dissoc c-id)
      nil)))
@@ -92,8 +87,9 @@
    Throws :error/unknown-message-thread-id if id not found."
   [id]
   {:pre  [(have? string? id)]
-   :post [(have? model/Conversation %
-                 :data (me/humanize (m/explain model/Conversation %)))]}
+   :post [(have? conversation/conversation? %
+                 :data (me/humanize
+                        (m/explain (conversation/conversation-schema) %)))]}
   (t/trace!
    {:id :thread/lookup}
    (get-conversation-or-throw id)))

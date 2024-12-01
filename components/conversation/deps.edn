@@ -1,0 +1,16 @@
+{:paths ["src" "resources"]
+ :deps  {org.clojure/clojure {:mvn/version "1.11.1"}
+         org.hugoduncan/dado.ai-message {:local/root "../ai-message"}
+         org.hugoduncan/dado.ai-tool {:local/root "../ai-tool"}
+         org.hugoduncan/dado.ai-agent {:local/root "../ai-agent"}
+         metosin/malli {:mvn/version "0.14.0"}
+         com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
+         com.taoensso/truss {:mvn/version "1.12.0"}}
+
+ :aliases
+ {:test
+  {:extra-paths ["test"]
+   :extra-deps  {io.github.cognitect-labs/test-runner
+                 {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+   :main-opts   ["-m" "cognitect.test-runner"]
+   :exec-fn     cognitect.test-runner.api/test}}}

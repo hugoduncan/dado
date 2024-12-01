@@ -20,6 +20,7 @@
   org.hugoduncan/dado.clojure-fns               {:local/root "components/clojure-fns"}
   org.hugoduncan/dado.clojure-ns                {:local/root "components/clojure-ns"}
   org.hugoduncan/dado.clojure-target            {:local/root "components/clojure-target"}
+  org.hugoduncan/dado.conversation              {:local/root "components/conversation"}
   org.hugoduncan/dado.elisp-feature             {:local/root "components/elisp-feature"}
   org.hugoduncan/dado.elisp-funs                {:local/root "components/elisp-funs"}
   org.hugoduncan/dado.elisp-target              {:local/root "components/elisp-target"}
