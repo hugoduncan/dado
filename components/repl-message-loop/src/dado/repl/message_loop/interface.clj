@@ -30,3 +30,7 @@
    - ex-info with :error/message-loop-interaction for component interaction errors"
   [ai-port message-thread prompt-fn context-files-fn]
   (core/message-loop ai-port message-thread prompt-fn context-files-fn))
+
+(defn complete-with-tools!
+  [msg-thread prompt-fn context-files-fn ai-port]
+  (core/complete-with-tools! msg-thread prompt-fn context-files-fn ai-port))

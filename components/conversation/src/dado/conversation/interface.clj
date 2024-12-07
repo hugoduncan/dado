@@ -14,6 +14,16 @@
   [conversation]
   (core/id conversation))
 
+(defn message-thread
+  "Returns the conversation message-thread."
+  [conversation]
+  (core/message-thread conversation))
+
+(defn ai-agent
+  "Returns the conversation agent."
+  [conversation]
+  (core/ai-agent conversation))
+
 (defn conversation? [x]
   (model/conversation? x))
 

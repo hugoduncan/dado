@@ -8,6 +8,7 @@
   org.hugoduncan/dado.ai-implementation-agent   {:local/root "components/ai-implementation-agent"}
   ;; org.hugoduncan/dado.ai-interaction           {:local/root "components/ai-interaction"}
   org.hugoduncan/dado.ai-message                {:local/root "components/ai-message"}
+  org.hugoduncan/dado.ai-port                   {:local/root "components/ai-port"}
   org.hugoduncan/dado.ai-prompt                 {:local/root "components/ai-prompt"}
   org.hugoduncan/dado.ai-refactoring-agent      {:local/root "components/ai-refactoring-agent"}
   org.hugoduncan/dado.ai-scope-agent            {:local/root "components/ai-scope-agent"}
@@ -21,6 +22,7 @@
   org.hugoduncan/dado.clojure-ns                {:local/root "components/clojure-ns"}
   org.hugoduncan/dado.clojure-target            {:local/root "components/clojure-target"}
   org.hugoduncan/dado.conversation              {:local/root "components/conversation"}
+  org.hugoduncan/dado.conversation-action       {:local/root "components/conversation-action"}
   org.hugoduncan/dado.elisp-feature             {:local/root "components/elisp-feature"}
   org.hugoduncan/dado.elisp-funs                {:local/root "components/elisp-funs"}
   org.hugoduncan/dado.elisp-target              {:local/root "components/elisp-target"}

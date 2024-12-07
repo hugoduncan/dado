@@ -3,6 +3,12 @@
   (:require [dado.ai.agent.core :as core]
             [dado.ai.agent.model :as model]))
 
+(defn lookup
+  "Look up an AI Agent by keyword identifier.
+   Returns Agent if found, nil if not found."
+  [agent-name]
+  (core/lookup agent-name))
+
 (defn validate-agent
   "Validates agent map structure. Returns agent if valid.
    Throws :error/agent-validation if invalid.

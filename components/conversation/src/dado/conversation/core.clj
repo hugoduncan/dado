@@ -26,8 +26,8 @@
    {:message-thread message-thread
     :ai-agent       ai-agent
     :port-send-fn   port-send-fn
-    :ai-tools       ai-tools
-    :user-data      user-data}))
+    :ai-tools       (or  ai-tools [])
+    :user-data      (or user-data {})}))
 
 (defn id
   "Returns the conversation ID."
@@ -37,3 +37,22 @@
                         (m/explain model/Conversation conversation)))]
    :post [(have? string? %)]}
   (-> conversation :message-thread :id))
+
+(defn message-thread
+  [conversation]
+  {:pre  [(have? model/conversation? conversation
+                 :data (me/humanize
+                        (m/explain model/Conversation conversation)))]
+   :post [(have? message/message-thread? %
+                 :data (me/humanize
+                        (m/explain message/message-thread-schema %)))]}
+  (-> conversation :message-thread))
+
+(defn ai-agent
+  [conversation]
+  {:pre  [(have? model/conversation? conversation
+                 :data (me/humanize
+                        (m/explain model/Conversation conversation)))]
+   :post [(have? agent/agent? %
+                 :data (me/humanize (m/explain (agent/agent-schema) %)))]}
+  (-> conversation :ai-agent))

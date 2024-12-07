@@ -36,7 +36,10 @@
 
   It understands the following params:
 
-  * `messages` - a list of messages."
+  * `message` - a messages.
+  * `agent-name` - the name of the agent to talk to
+  * `ai-port-name` - the name of the AI to talk with
+  * `conversation-id` - the ID for the conversation"
   [h]
   (nrepl-midleware-core/wrap-dado-chat h))
 
@@ -47,8 +50,11 @@
   :handles
   {"dado/chat"
    {:doc      "Provides dado code assistant actions."
-    :requires {"messages" "A list of messages"}
-    :optional {}
+    :requires {"message"      "A message"
+               "agent-name"   "The name of the chat agent"
+               "ai-port-name" "The name of the AI provider"
+               }
+    :optional {"conversation-id" "The ID for the conversation"}
     :returns  {"choices" "Completions"}}}})
 
 (defn- middleware-symbol [op-name]

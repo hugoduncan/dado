@@ -1,10 +1,12 @@
 (ns dado.repl.message-loop.core
-  (:require [dado.ai.message.interface :as message]
+  (:require [clojure.string :as str]
+            [dado.ai.message.interface :as message]
             [dado.ai.tool.interface :as tool]
             [dado.patch.interface :as patch]
+            [malli.core :as m]
+            [malli.error :as me]
             [taoensso.telemere :as t]
-            [taoensso.truss :as truss :refer [have have?]]
-            [clojure.string :as str]))
+            [taoensso.truss :as truss :refer [have have?]]))
 
 (defn- get-user-input
   "Get input from user, return nil if empty/whitespace-only"
@@ -71,6 +73,63 @@
                     vec)]
     (println "-> " text)))
 
+(defn complete-with-tools!
+  [msg-thread prompt-fn context-files-fn ai-port]
+  {:pre [(have? message/message-thread? msg-thread
+                :data (me/humanize
+                       (m/explain message/message-thread-schema msg-thread)))]}
+  (loop [msg-thread msg-thread]
+    (t/event! :message-loop/inner-loop-body)
+    (let [_ (t/event! :message-loop/sending-request)
+
+          ;; Refresh context and get AI response
+          msg-thread (refresh-thread-context
+                      msg-thread
+                      prompt-fn
+                      context-files-fn)
+          _          (t/event! :message-loop/context-refreshed)
+          response   (ai-port msg-thread)
+          _          (t/event!
+                      :message-loop/response-received
+                      {:level :debug
+                       :data  {:response response}})
+          _          (print-response-text! response)
+          msg-thread (message/add-response msg-thread response)
+
+          ;; Extract and apply tools
+          tool-calls         (message/extract-tool-calls response)
+          result-contents    (execute-tool-calls! msg-thread tool-calls)
+          simplified-diffs   (message/extract-simplified-diffs response)
+          fods               (message/extract-file-operation-directives response)
+          updated-namespaces (message/extract-updated-namespaces response) ]
+
+      (when (seq simplified-diffs)
+        (patch/apply-simplified-diff-patch! simplified-diffs)
+        (t/event! :message-loop/diffs-applied))
+
+      (when (seq fods)
+        (patch/apply-fod-diff-patch! fods)
+        (t/event! :message-loop/diffs-applied))
+
+      ;; Reload any updated namespaces
+      (when (seq updated-namespaces)
+        (reload-updated-namespaces! updated-namespaces))
+
+      ;; Add response and continue loop
+      (if (seq result-contents)
+        (recur (-> msg-thread
+                   (message/add-message
+                    (t/trace!
+                     {:id        ::add-tool-response-message
+                      #_#_:level :warn
+                      :data      {:result-contents result-contents}}
+                     (reduce
+                      (fn [msg message-map]
+                        (message/add-message-content msg message-map))
+                      (message/create-message :user)
+                      result-contents)))))
+        msg-thread))))
+
 (defn message-loop
   "Implementation of the interactive message loop.
    See interface ns for docs."
@@ -85,83 +144,33 @@
 
   (t/event! :message-loop/started)
 
-  (loop [msg-thread message-thread
-         prompt?    true]
-    (t/event! :message-loop/start-loop-body {:data {:prompt? prompt?}})
+  (loop [msg-thread message-thread]
+    (t/event! :message-loop/start-loop-body)
     (let [[action msg-thread]
-          (if prompt?
-            (do
-              (print "> ")(flush)
-              (let [input (get-user-input)]
-                (t/event! :message-loop/input {:data {:input input}})
-                (cond
-                  (= input "EXIT")   [:exit msg-thread]
-                  (str/blank? input) [:skip msg-thread]
-                  :else
-                  (do
-                    (println input)
-                    [:process (message/add-message
-                               msg-thread
-                               (-> (message/create-message :user)
-                                   (message/add-message-content
-                                    (message/text-content input))))]))))
-            [:process msg-thread])]
+          (do
+            (print "> ")(flush)
+            (let [input (get-user-input)]
+              (t/event! :message-loop/input {:data {:input input}})
+              (cond
+                (= input "EXIT")   [:exit msg-thread]
+                (str/blank? input) [:skip msg-thread]
+                :else
+                (do
+                  (println input)
+                  [:process (message/add-message
+                             msg-thread
+                             (-> (message/create-message :user)
+                                 (message/add-message-content
+                                  (message/text-content input))))])))) ]
 
       (cond
         (= :skip action)
-        (recur msg-thread true)
+        (recur msg-thread)
         (= :exit action)
         (do
           (t/event! :message-loop/exited)
           msg-thread)
         :else
-        (let [_ (t/event! :message-loop/sending-request)
-
-              ;; Refresh context and get AI response
-              msg-thread (refresh-thread-context
-                          msg-thread
-                          prompt-fn
-                          context-files-fn)
-              _          (t/event! :message-loop/context-refreshed)
-              response   (ai-port msg-thread)
-              _          (t/event!
-                          :message-loop/response-received
-                          {:level :debug
-                           :data  {:response response}})
-              _          (print-response-text! response)
-              msg-thread (message/add-response msg-thread response)
-
-              ;; Extract and apply tools
-              tool-calls         (message/extract-tool-calls response)
-              result-contents    (execute-tool-calls! msg-thread tool-calls)
-              simplified-diffs   (message/extract-simplified-diffs response)
-              fods               (message/extract-file-operation-directives response)
-              updated-namespaces (message/extract-updated-namespaces response) ]
-
-          (when (seq simplified-diffs)
-            (patch/apply-simplified-diff-patch! simplified-diffs)
-            (t/event! :message-loop/diffs-applied))
-
-          (when (seq fods)
-            (patch/apply-fod-diff-patch! fods)
-            (t/event! :message-loop/diffs-applied))
-
-          ;; Reload any updated namespaces
-          (when (seq updated-namespaces)
-            (reload-updated-namespaces! updated-namespaces))
-
-          ;; Add response and continue loop
-          (if (seq result-contents)
-            (recur (-> msg-thread
-                       (message/add-message
-                        (t/trace!
-                         {:id        ::add-tool-response-message
-                          #_#_:level :warn
-                          :data      {:result-contents result-contents}}
-                         (reduce
-                          (fn [msg message-map]
-                            (message/add-message-content msg message-map))
-                          (message/create-message :user)
-                          result-contents))))
-                   (not :prompt?))
-            (recur  msg-thread :prompt?)))))))
+        (->
+         (complete-with-tools! msg-thread prompt-fn context-files-fn ai-port)
+         (recur))))))

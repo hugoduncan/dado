@@ -2,7 +2,6 @@
   (:require
    [dado.ai.message.interface :as message]
    [dado.conversation.interface :as conversation]
-   [dado.conversation-manager.model :as model]
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
@@ -23,7 +22,7 @@
                          conversation)))]
    :post [(have? conversation/conversation? %
                  :data (me/humanize
-                        (m/explain model/Conversation %)))]}
+                        (m/explain conversation/conversation-schema %)))]}
   (t/trace!
    {:id :thread/registered}
    (do
@@ -36,10 +35,12 @@
   [id]
   (t/trace!
    {:id ::get-conversation-or-throw :data {:id id}}
-   (when-not (get @conversation-store id)
-     (throw (ex-info "Unknown message thread ID"
-                     {:type :error/unknown-message-thread-id
-                      :id   id})))))
+   (let [conversation (get @conversation-store id)]
+     (when-not conversation
+       (throw (ex-info "Unknown message thread ID"
+                       {:type :error/unknown-message-thread-id
+                        :id   id})))
+     conversation)))
 
 (defn update!
   "Updates stored conversation.

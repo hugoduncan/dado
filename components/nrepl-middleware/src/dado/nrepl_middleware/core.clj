@@ -1,10 +1,12 @@
 (ns dado.nrepl-middleware.core
   "Middleware of using dado dev chat assistant."
   (:require
+   [clojure.string :as str]
+   [dado.conversation-action.interface :as conversation-action]
    [nrepl.misc :refer [response-for] :as misc]
-   [nrepl.transport :as t]
-   [org.hugoduncan.dado.chat-gpt.interface :as chat-gpt]
-   [org.hugoduncan.dado.operation.interface :as operation])
+   [nrepl.transport :as transport]
+   [org.hugoduncan.dado.operation.interface :as operation]
+   [taoensso.telemere :as t])
   (:import
    [nrepl.transport
     Transport]))
@@ -35,36 +37,56 @@
   [h]
   (fn [{:keys [op ^Transport transport] :as msg}]
     (if (= op "dado")
-      (t/send transport (dado-reply msg))
+      (transport/send transport (dado-reply msg))
       (h msg))))
 
-(defn- input->message-maps [messages]
-  (mapv
-   #(hash-map "role" (str (first %)) "content" (str (last %)))
-   messages))
+(defn- input->message-maps [message]
+  (str (last message))
+  #_(mapv
+     #(hash-map "role" (str (first %)) "content" (str (last %)))
+     messages))
 
 (defn- dado-chat-reply
-  [{:keys [messages] :as msg}]
-  (try
-    (response-for
-     msg
-     {:status   :done
-      :response (chat-gpt/generate-chat-completion
-                 (input->message-maps messages))})
-    (catch Exception e
-      (do
-        (prn e))
-      (response-for
-       msg
-       {:status #{:done :dado-chat-error}}))))
+  [{:keys [agent-name ai-port-name conversation-id message] :as msg}]
+  (t/trace!
+   {:id    ::dado-chat-reply
+    :level :warn
+    :data  {:agent-name      agent-name
+            :ai-port-name    ai-port-name
+            :conversation-id conversation-id
+            :message         message}}
+   (try
+     (let [conversation-id (if (str/blank? conversation-id)
+                             (conversation-action/create-conversation!
+                              agent-name
+                              ai-port-name)
+                             conversation-id)
+           response        (conversation-action/response!
+                            conversation-id message)]
+
+       (response-for
+        msg
+        {:status   :done
+         :response response}))
+     (catch Exception e
+       (do
+         (prn e))
+       (response-for
+        msg
+        {:status #{:done :dado-chat-error}})))))
 
 (defn wrap-dado-chat [h]
   "Middleware that provides dado chat.
   It understands the following params:
 
-  * `messages` - a list of messages"
+  * `message` - a message
+  * `agent-name` - the name of the agent to talk to
+  * `ai-port-name` - the name of the AI to talk with
+  * `conversation-id` - the ID for the conversation"
   [h]
   (fn [{:keys [op ^Transport transport] :as msg}]
-    (if (= op "dado/chat")
-      (t/send transport (dado-chat-reply msg))
-      (h msg))))
+    (t/trace!
+     {:id ::wrap-dado-chat :level :warn :data {:msg msg} }
+     (if (= op "dado/chat")
+       (transport/send transport (dado-chat-reply msg))
+       (h msg)))))

@@ -29,8 +29,8 @@
   [project-config additional-context-fn]
   (t/trace!
    {:id :refactoring/get-context}
-   [(get-directory-files project-config :dado/scope)
-    (get-directory-files project-config :dado/architecture)
+   [(into (get-directory-files project-config :dado/scope)
+          (get-directory-files project-config :dado/architecture))
     (get-directory-files project-config :dado/adr)
     (get-directory-files project-config :dado/implementation)
     (reduce into [] (additional-context-fn))]))

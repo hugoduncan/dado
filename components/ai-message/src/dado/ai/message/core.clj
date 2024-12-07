@@ -127,7 +127,9 @@
 (defn register-tools
   "Registers tools for use in message thread"
   [message-thread tools]
-  {:pre [(have? model/message-thread? message-thread)
+  {:pre [(have? model/message-thread? message-thread
+                :data (me/humanize
+                       (m/explain model/MessageThread message-thread)))
          (have? tool/validate-tool :in tools)]}
   (t/trace!
    {:id :message/tools-registered}

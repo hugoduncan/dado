@@ -50,6 +50,10 @@
 
 (defvar-local dado-chat--prompt-overlay nil)
 
+(defvar-local dado-chat--agent-name nil)
+(defvar-local dado-chat--ai-port-name nil)
+(defvar-local dado-chat--conversation-id nil)
+
 (defun dado-chat--insert-prompt (prompt)
   (let ((prompt (propertize prompt 'face 'dado-chat-prompt-face))
 	(start (point)))
@@ -133,7 +137,7 @@ The optional CALLBACK will be called with a list of completions."
     (dado-chat--remove-prompt)
     (dado-chat--insert-user-message role content)
     (let* ((messages (dado-chat--parse-messages)))
-      (dado-chat--chat-completion messages callback))))
+      (dado-chat--chat-completion content callback))))
 
 (defun dado-chat--process-input ()
   (interactive)
@@ -141,18 +145,22 @@ The optional CALLBACK will be called with a list of completions."
     (seq-let [role content] input
       (dado-chat-input role content))))
 
-(defun dado-chat--chat-completion (messages &optional callback)
+(defun dado-chat--chat-completion (message &optional callback)
   (let ((buffer (current-buffer)))
-    (dado-chat-op
-     (lambda (messages)
-       (with-current-buffer buffer
-         (dolist (response messages)
-           (seq-let [role content] response
-             (dado-chat--insert-ai-message content)))
-	 (dado-chat--insert-prompt dado-chat-prompt)
-	 (when callback
-	   (funcall callback messages))))
-     messages)))
+    (with-current-buffer buffer
+      (message "buffer %s"(buffer-name))
+      (dado-chat-op
+       (lambda (messages)
+	 (with-current-buffer buffer
+           (dolist (message messages)
+             (dado-chat--insert-ai-message message))
+	   (dado-chat--insert-prompt dado-chat-prompt)
+	   (when callback
+	     (funcall callback messages))))
+       message
+       dado-chat--agent-name
+       dado-chat--ai-port-name
+       dado-chat--conversation-id))))
 
 (defvar dado-chat-mode-map
   (let ((map (make-sparse-keymap)))
@@ -169,13 +177,17 @@ The optional CALLBACK will be called with a list of completions."
   (dado-chat--insert-prompt dado-chat-first-prompt))
 
 ;;;###autoload
-(defun dado-chat ()
+(defun dado-chat (agent-name ai-port-name)
   "Start a new chat session with the dado-chat-mode enabled.
 Create a chat buffer.  By default the buffer is named
 *dado-chat*, but when invoked with a prefix, this name is made
 unique.  The buffer's major mode is dado-chat-mode.
 Return the chat buffer."
-  (interactive)
+  (interactive
+   (list
+    (completing-read "Agent: " '("architect" "implement" "refactor" "test"))
+    (completing-read "AI Provider: " '("claude" "ChatGPT" "Ollama"))))
+  (message "dado-chat %s %s" agent-name ai-port-name)
   (let* ((buffer-name (if current-prefix-arg
 			  (generate-new-buffer-name "*dado-chat*")
 			"*dado-chat*"))
@@ -183,6 +195,10 @@ Return the chat buffer."
     (switch-to-buffer buffer)
     (unless (derived-mode-p 'dado-chat-mode)
       (dado-chat-mode))
+    (setq dado-chat--agent-name agent-name)
+    (setq dado-chat--ai-port-name ai-port-name)
+    (setq dado-chat--conversation-id "")
+
     buffer))
 
 (provide 'dado-chat-mode)

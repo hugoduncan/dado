@@ -1,6 +1,9 @@
 (ns dado.ai.claude.interface
   (:require [dado.ai.claude.core :as core]))
 
+(defn default-model-name []
+  core/default-model-name)
+
 (defn send!
   "Send message thread to Claude AI and return response.
 

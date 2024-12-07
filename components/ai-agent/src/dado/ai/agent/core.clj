@@ -7,7 +7,8 @@
    [dado.repl.message-loop.interface :as message-loop]
    [malli.core :as m]
    [malli.error :as me]
-   [taoensso.telemere :as t]))
+   [taoensso.telemere :as t]
+   [dado.project-config.interface :as project-config]))
 
 (def agent? (m/validator model/Agent))
 
@@ -71,3 +72,12 @@
    msg-thread
    (:prompt-fn agent)
    (:context-fn agent)))
+
+(defn lookup
+  [agent-name]
+  (let [create-fn-sym (symbol
+                       (str "dado.ai.agents."
+                            agent-name
+                            ".interface/create-agent"))
+        create-fn     (requiring-resolve  create-fn-sym)]
+    (create-fn (project-config/load-config) (constantly nil))))
