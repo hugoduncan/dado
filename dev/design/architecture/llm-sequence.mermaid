@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant O as Orchestrator
+    participant C as Context Engine
+    participant T as Tool Manager
+    participant M as LLM Model
+    
+    U->>F: Send Query
+    F->>O: Format Request
+    
+    O->>C: Get Context
+    C-->>O: Return Relevant Context
+    
+    O->>T: Check Tool Requirements
+    T-->>O: Return Available Tools
+    
+    O->>M: Send Prompt Package
+    Note over M: Process with:<br/>- System Prompt<br/>- Context<br/>- Tools<br/>- Query
+    
+    M-->>O: Return Response
+    
+    alt Tool Use Required
+        O->>T: Execute Tool
+        T-->>O: Return Tool Result
+        O->>M: Send Tool Result
+        M-->>O: Return Updated Response
+    end
+    
+    O->>F: Format Response
+    F->>U: Display Response

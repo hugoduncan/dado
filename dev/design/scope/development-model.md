@@ -1,10 +1,10 @@
-Dado imposes a conceptual design that is split into three levels; scope,
-architecture and implementation.
+Dado imposes a conceptual design that is split into three levels of
+specificity; scope, architecture and implementation.
 
 Each document driving the development process clearly belongs to just
 one of these levels.
 
-# 3 Level model
+# 3 Level specificity model
 
 ## Scope Level
 

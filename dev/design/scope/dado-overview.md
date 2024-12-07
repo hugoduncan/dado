@@ -2,7 +2,7 @@
 
 Dado uses the 4 level module of system development.
 
-System development is in no way a linear progression through the 3
+яSystem development is in no way a linear progression through the 3
 levels.  It is intended to be an iterative process that spans across
 them all.
 
