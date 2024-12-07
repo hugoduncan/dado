@@ -186,7 +186,7 @@ Return the chat buffer."
   (interactive
    (list
     (completing-read "Agent: " '("architect" "implement" "refactor" "test"))
-    (completing-read "AI Provider: " '("claude" "ChatGPT" "Ollama"))))
+    (completing-read "AI Provider: " '("claude" "chatgpt" "ollama" "glhf"))))
   (message "dado-chat %s %s" agent-name ai-port-name)
   (let* ((buffer-name (if current-prefix-arg
 			  (generate-new-buffer-name "*dado-chat*")

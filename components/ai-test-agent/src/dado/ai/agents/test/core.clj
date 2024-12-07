@@ -3,9 +3,10 @@
   (:require
    [babashka.fs :as fs]
    [dado.ai.agent.interface :as agent]
-   [dado.ai.message.interface :as message]
    [dado.ai.prompt.interface :as prompt]
    [dado.project-config.interface :as project-config]
+   [dado.tools.file-operation.interface :as file-operation]
+   [dado.tools.reload-namespaces.core :as reload-namespaces]
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
@@ -68,4 +69,6 @@
    {:name                :test
     :prompt-fn           (partial get-prompt project-config)
     :context-fn          (partial get-context project-config additional-context-fn)
-    :process-response-fn process-response}))
+    :process-response-fn process-response
+    :ai-tools            [(file-operation/create-tool)
+                          (reload-namespaces/create-tool)]}))

@@ -3,11 +3,12 @@
    [babashka.fs :as fs]
    [dado.ai.agent.interface :as agent]
    [dado.ai.prompt.interface :as prompt]
+   [dado.project-config.interface :as project-config]
+   [dado.tools.file-operation.interface :as file-operation]
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
-   [taoensso.truss :refer [have?]]
-   [dado.project-config.interface :as project-config]))
+   [taoensso.truss :refer [have?]]))
 
 (defn- process-response
   [response]
@@ -67,4 +68,5 @@
     :context-fn          (partial get-context
                                   project-config
                                   additional-context-fn)
-    :process-response-fn process-response}))
+    :process-response-fn process-response
+    :ai-tools            [(file-operation/create-tool)]}))

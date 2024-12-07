@@ -1,6 +1,7 @@
 (ns dado.ai.agent.model
   "Data models for AI agents"
-  (:require [malli.core :as m]))
+  (:require [malli.core :as m]
+            [dado.ai.tool.interface :as tool]))
 
 (def AgentFn
   "Schema for agent functions"
@@ -12,7 +13,8 @@
    [:name keyword?]
    [:prompt-fn AgentFn]
    [:context-fn AgentFn]
-   [:process-response-fn AgentFn]])
+   [:process-response-fn AgentFn]
+   [:ai-tools [:vector (tool/tool-schema)]]])
 
 (def Document
   "Schema for loaded documents"
