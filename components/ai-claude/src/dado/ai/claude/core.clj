@@ -10,8 +10,8 @@
    [dado.ai.claude.model :as model]))
 
 (def ^:private default-api-url "https://api.anthropic.com/v1/messages")
-(def  default-model-name "claude-3-5-sonnet-20241022")
-#_(def  default-model-name "claude-3-5-haiku-20241022")
+#_(def  default-model-name "claude-3-5-sonnet-20241022")
+(def  default-model-name "claude-3-5-haiku-20241022")
 (def ^:private default-max-tokens 8192)
 
 (defn- to-claude-role [role]

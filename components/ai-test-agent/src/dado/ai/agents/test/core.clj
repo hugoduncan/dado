@@ -35,7 +35,7 @@
   [project-config additional-context-fn]
   (t/trace!
    {:id :test/get-context}
-   [(reduce into [] (additional-context-fn))]))
+   (filterv seq [(reduce into [] (additional-context-fn))])))
 
 (defn- get-prompt
   "Gets the test-specific system prompt."

@@ -27,6 +27,7 @@
   "Mode for adding context files"
   :type '(choice (const all)
                  (const none)
+		 (const single)
                  (const src)
                  (const test))
   :group 'dado-chat)

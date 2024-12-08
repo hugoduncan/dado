@@ -56,10 +56,9 @@
                       msg-thread
                       (have (:prompt-fn agent))
                       (fn []
-                        (reduce
-                         into []
-                         [((:context-fn agent))
-                          [@(:context-files conversation)]]))
+                        (conj
+                         ((:context-fn agent))
+                         context-files))
                       (have (:port-send-fn conversation)))
         conversation (assoc conversation :message-thread msg-thread)]
     (conversation-manager/update! conversation)

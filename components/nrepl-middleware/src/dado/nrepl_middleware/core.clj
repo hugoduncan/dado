@@ -3,6 +3,7 @@
   (:require
    [clojure.string :as str]
    [dado.conversation-action.interface :as conversation-action]
+   [dado.document-retrieval.interface :as document-retrieval]
    [nrepl.misc :refer [response-for] :as misc]
    [nrepl.transport :as transport]
    [org.hugoduncan.dado.operation.interface :as operation]
@@ -57,17 +58,21 @@
             :conversation-id conversation-id
             :message         message}}
    (try
-     (prn :OPTIONS options)
      (let [options         (-> (apply hash-map options)
                                (update-keys keyword))
-           {:keys [invoke-buffer-path context-mode]}
+           {:keys [invoke-file-path context-mode]}
            options
            conversation-id (if (str/blank? conversation-id)
                              (conversation-action/create-conversation!
                               agent-name
                               ai-port-name)
                              conversation-id)
-           context-files   []
+           context-files   (case (keyword context-mode)
+                             :all    (document-retrieval/all-files ".")
+                             :single (if (str/blank? invoke-file-path)
+                                       []
+                                       [invoke-file-path])
+                             [])
            response        (conversation-action/response!
                             conversation-id message context-files)]
 
@@ -76,8 +81,7 @@
         {:status   :done
          :response response}))
      (catch Exception e
-       (do
-         (prn e))
+       (prn e)
        (response-for
         msg
         {:status #{:done :dado-chat-error}})))))
@@ -93,8 +97,8 @@
   * `options` - context options"
   [h]
   (fn [{:keys [op ^Transport transport] :as msg}]
-    (t/trace!
-     {:id ::wrap-dado-chat :level :warn :data {:msg msg} }
-     (if (= op "dado/chat")
-       (transport/send transport (dado-chat-reply msg))
-       (h msg)))))
+    (if (= op "dado/chat")
+      (t/trace!
+       {:id ::wrap-dado-chat :level :debug :data {:msg msg} }
+       (transport/send transport (dado-chat-reply msg)))
+      (h msg))))
