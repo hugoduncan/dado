@@ -1,9 +1,17 @@
 (ns dado.document-retrieval.core
   (:require
    [babashka.fs :as fs]
-   [clojure.edn :as edn]
    [clojure.set :as set]
-   [clojure.tools.deps :as deps]))
+   [clojure.tools.deps :as deps]
+   [clojure.tools.namespace.dependency :as ns-deps]
+   [clojure.tools.namespace.dir :as ns-dir]
+   [clojure.tools.namespace.find :as ns-find]
+   [clojure.tools.namespace.file :as ns-file]
+   [clojure.tools.namespace.parse :as ns-parse]
+   [clojure.tools.namespace.track :as ns-track]
+   [clojure.java.io :as io]))
+
+;;; tools.deps
 
 (defn- deps-edn-path [root]
   (fs/file root "deps.edn"))
@@ -101,6 +109,49 @@
    (into
     (all-deps-files root aliases)
     (markdown-files root))))
+
+
+
+;;; Direct dependencies
+
+(defonce ns-tracker (volatile! (ns-track/tracker)))
+
+#_(let [ns-decls (find/find-ns-decls-in-dir (io/file "src"))
+        graph    (reduce (fn [g ns-decl]
+                           (let [ns-name (parse/name-from-ns-decl ns-decl)
+                                 deps    (parse/deps-from-ns-decl ns-decl)]
+                             (reduce #(dep/depend %1 ns-name %2) g deps)))
+                         (dep/graph)
+                         ns-decls)]
+    (dep/immediate-dependencies graph 'my.namespace))
+
+(defn- deps-graph
+  [paths]
+  (prn :paths paths)
+  (vswap! ns-tracker ns-dir/scan-dirs (mapv fs/file paths))
+  (prn :ns-tracker ns-tracker)
+
+  (::ns-track/deps @ns-tracker)
+
+  #_(let [ns-decls   (ns-find/find-ns-decls (mapv fs/file paths))
+          deps-graph (ns-deps/deps-from-ns-decls ns-decls)]
+      (deps/immediate-dependencies deps-graph 'my.namespace)))
+
+(ns-deps/immediate-dependencies
+ (deps-graph
+  ["components/document-retrieval/src"])
+ 'dado.document-retrieval.core)
+
+(defn dependency-files
+  [root]
+  (try
+    (let [graph   (deps-graph ["components/document-retrieval/src"])
+          ns-sym  (second ns-decl)
+          related (ns-deps/immediate-dependents )]
+      )
+    #_(catch Exception e
+        (prn :ignoring e)))
+  )
 
 (comment
   (all-files ".")

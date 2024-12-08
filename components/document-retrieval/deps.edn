@@ -1,7 +1,8 @@
 {:paths ["src" "resources"]
- :deps  {com.taoensso/telemere  {:mvn/version "v1.0.0-RC1"}
-         metosin/malli          {:mvn/version "0.11.0"}
-         org.clojure/tools.deps {:mvn/version "0.21.1460"}}
+ :deps  {com.taoensso/telemere       {:mvn/version "v1.0.0-RC1"}
+         metosin/malli               {:mvn/version "0.11.0"}
+         org.clojure/tools.deps      {:mvn/version "0.21.1460"}
+         org.clojure/tools.namespace {:mvn/version "1.5.0"}}
  :aliases
  {:test {:extra-paths ["test"]
          :extra-deps
