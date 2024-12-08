@@ -94,7 +94,6 @@
 (defn markdown-files [root]
   (fs/list-dir root "*.md"))
 
-
 (defn all-files
   ([root]
    (all-files root [:test]))
