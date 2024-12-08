@@ -53,18 +53,21 @@ name."
     (cider-emit-into-color-buffer response-buffer response)))
 
 (defun dado-chat-request
-    (callback message agent-name ai-port-name conversation-id)
+    (callback message agent-name ai-port-name conversation-id invoke-file-path)
   "Send \"dado/chat\" op with parameters MESSAGES."
-  (thread-first
-    `("op" "dado/chat"
-      "message" ,message
-      "agent-name" ,agent-name
-      "ai-port-name" ,ai-port-name
-      "conversation-id" ,conversation-id)
-    (cider-nrepl-send-request
-     callback
-     (cider-current-repl)
-     'tooling)))
+  (let* ((options `("context-mode" ,(symbol-name dado-chat-context-mode)
+		    "invoke-file-path" ,invoke-file-path)))
+    (thread-first
+      `("op" "dado/chat"
+	"message" ,message
+	"agent-name" ,agent-name
+	"ai-port-name" ,ai-port-name
+	"conversation-id" ,conversation-id
+	"options" ,options)
+      (cider-nrepl-send-request
+       callback
+       (cider-current-repl)
+       'tooling))))
 
 (defun dado-request (callback action args)
   "Send \"dado\" op with parameters ACTION, ARGS and NS."
@@ -96,7 +99,8 @@ name."
   nil)
 
 
-(defun dado-chat-op (callback message agent-name ai-port-name conversation-id)
+(defun dado-chat-op
+    (callback message agent-name ai-port-name conversation-id invoke-file-path)
   (message "dado-chat-op %s %s %s" agent-name ai-port-name conversation-id)
   (if (cider-nrepl-op-supported-p "dado/chat")
       (dado-chat-request
@@ -109,7 +113,8 @@ name."
        message
        agent-name
        ai-port-name
-       conversation-id)
+       conversation-id
+       invoke-file-path)
     (message "dado chat middleware is not available."))
   nil)
 

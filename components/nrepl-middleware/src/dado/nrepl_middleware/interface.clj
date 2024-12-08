@@ -39,7 +39,8 @@
   * `message` - a messages.
   * `agent-name` - the name of the agent to talk to
   * `ai-port-name` - the name of the AI to talk with
-  * `conversation-id` - the ID for the conversation"
+  * `conversation-id` - the ID for the conversation
+  * `options` - map of context options"
   [h]
   (nrepl-midleware-core/wrap-dado-chat h))
 
@@ -52,9 +53,9 @@
    {:doc      "Provides dado code assistant actions."
     :requires {"message"      "A message"
                "agent-name"   "The name of the chat agent"
-               "ai-port-name" "The name of the AI provider"
-               }
-    :optional {"conversation-id" "The ID for the conversation"}
+               "ai-port-name" "The name of the AI provider"}
+    :optional {"conversation-id" "The ID for the conversation"
+               "options"         "Context options"}
     :returns  {"choices" "Completions"}}}})
 
 (defn- middleware-symbol [op-name]

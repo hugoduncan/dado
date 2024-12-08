@@ -12,7 +12,8 @@
    [:ai-agent (agent/agent-schema)]
    [:port-send-fn fn?]
    [:ai-tools {:optional true} [:vector (tool/tool-schema)]]
-   [:user-data [:map-of any? any?]]])
+   [:user-data [:map-of any? any?]]
+   [:context-files [:fn volatile?]]])
 
 ;; Validators
 (def conversation? (m/validator Conversation))

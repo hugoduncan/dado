@@ -25,7 +25,8 @@
   "Gets list of files in a configured directory"
   [project-config dir-key]
   (when-let [dir (project-config/get-directory project-config dir-key)]
-    (mapv str (fs/list-dir dir))))
+    (when (fs/exists? dir)
+      (mapv str (fs/list-dir dir)))))
 
 (defn- get-context
   [project-config additional-context-fn]
@@ -35,6 +36,7 @@
           (get-directory-files project-config :dado/architecture))
     (get-directory-files project-config :dado/adr)
     (get-directory-files project-config :dado/implementation)
+    #_(mapv str (fs/list-dir "src" "*.clj"))
     (reduce into [] (additional-context-fn))]))
 
 (defn- get-prompt

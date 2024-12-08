@@ -11,7 +11,10 @@
 
 (defn create
   "Creates new conversation."
-  [ai-agent port-send-fn message-thread {:keys [ai-tools user-data]}]
+  [ai-agent
+   port-send-fn
+   message-thread
+   {:keys [ai-tools context-files user-data]}]
   {:pre  [(have? message/message-thread? message-thread
                  :data (me/humanize
                         (m/explain message/message-thread-schema message-thread)))
@@ -27,7 +30,8 @@
     :ai-agent       ai-agent
     :port-send-fn   port-send-fn
     :ai-tools       (or  ai-tools [])
-    :user-data      (or user-data {})}))
+    :user-data      (or user-data {})
+    :context-files  (or context-files (volatile! []))}))
 
 (defn id
   "Returns the conversation ID."
@@ -56,3 +60,14 @@
    :post [(have? agent/agent? %
                  :data (me/humanize (m/explain (agent/agent-schema) %)))]}
   (-> conversation :ai-agent))
+
+(defn set-context-files
+  [conversation file-paths]
+  {:pre  [(have? model/conversation? conversation
+                 :data (me/humanize
+                        (m/explain model/Conversation conversation)))
+          (have? vector? file-paths)]
+   :post [(have? model/conversation? conversation
+                 :data (me/humanize
+                        (m/explain model/Conversation conversation)))]}
+  (vreset! (:file-paths conversation) (mapv str file-paths)))

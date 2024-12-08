@@ -23,6 +23,14 @@
   :group 'convenience
   :prefix "dado-chat-")
 
+(defcustom dado-chat-context-mode 'all
+  "Mode for adding context files"
+  :type '(choice (const all)
+                 (const none)
+                 (const src)
+                 (const test))
+  :group 'dado-chat)
+
 (defcustom dado-chat-prompt "> "
   "Prompt string for the user input in dado-chat-mode."
   :type 'string
@@ -53,6 +61,7 @@
 (defvar-local dado-chat--agent-name nil)
 (defvar-local dado-chat--ai-port-name nil)
 (defvar-local dado-chat--conversation-id nil)
+(defvar-local dado-chat--invoke-file-path nil)
 
 (defun dado-chat--insert-prompt (prompt)
   (let ((prompt (propertize prompt 'face 'dado-chat-prompt-face))
@@ -160,7 +169,8 @@ The optional CALLBACK will be called with a list of completions."
        message
        dado-chat--agent-name
        dado-chat--ai-port-name
-       dado-chat--conversation-id))))
+       dado-chat--conversation-id
+       dado-chat--invoke-file-path))))
 
 (defvar dado-chat-mode-map
   (let ((map (make-sparse-keymap)))
@@ -185,10 +195,16 @@ unique.  The buffer's major mode is dado-chat-mode.
 Return the chat buffer."
   (interactive
    (list
-    (completing-read "Agent: " '("architect" "implement" "refactor" "test"))
+    (completing-read
+     "Agent: "
+     '("architect" "implement" "refactor" "scope" "test"))
     (completing-read "AI Provider: " '("claude" "chatgpt" "ollama" "glhf"))))
   (message "dado-chat %s %s" agent-name ai-port-name)
-  (let* ((buffer-name (if current-prefix-arg
+  (let* ((invoke-buffer-path (when-let ((buffer-file (buffer-file-name)))
+			       (file-relative-name
+				buffer-file
+				(project-root (project-current)))))
+	 (buffer-name (if current-prefix-arg
 			  (generate-new-buffer-name "*dado-chat*")
 			"*dado-chat*"))
 	 (buffer (get-buffer-create buffer-name)))
@@ -198,7 +214,7 @@ Return the chat buffer."
     (setq dado-chat--agent-name agent-name)
     (setq dado-chat--ai-port-name ai-port-name)
     (setq dado-chat--conversation-id "")
-
+    (setq dado-chat--invoke-file-path invoke-buffer-path)
     buffer))
 
 (provide 'dado-chat-mode)

@@ -47,7 +47,8 @@
      messages))
 
 (defn- dado-chat-reply
-  [{:keys [agent-name ai-port-name conversation-id message] :as msg}]
+  [{:keys [agent-name ai-port-name conversation-id message options]
+    :as   msg}]
   (t/trace!
    {:id    ::dado-chat-reply
     :level :warn
@@ -56,13 +57,19 @@
             :conversation-id conversation-id
             :message         message}}
    (try
-     (let [conversation-id (if (str/blank? conversation-id)
+     (prn :OPTIONS options)
+     (let [options         (-> (apply hash-map options)
+                               (update-keys keyword))
+           {:keys [invoke-buffer-path context-mode]}
+           options
+           conversation-id (if (str/blank? conversation-id)
                              (conversation-action/create-conversation!
                               agent-name
                               ai-port-name)
                              conversation-id)
+           context-files   []
            response        (conversation-action/response!
-                            conversation-id message)]
+                            conversation-id message context-files)]
 
        (response-for
         msg
@@ -82,7 +89,8 @@
   * `message` - a message
   * `agent-name` - the name of the agent to talk to
   * `ai-port-name` - the name of the AI to talk with
-  * `conversation-id` - the ID for the conversation"
+  * `conversation-id` - the ID for the conversation
+  * `options` - context options"
   [h]
   (fn [{:keys [op ^Transport transport] :as msg}]
     (t/trace!

@@ -41,7 +41,7 @@
    {:id :scope/get-prompt}
    (prompt/construct-prompt
     project-config
-    ["scope"
+    ["scope/scope"
      "context-files"
      "ask-missing-files"]
     {})))

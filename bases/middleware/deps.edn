@@ -1,15 +1,57 @@
-{:paths   ["src"]
+{:paths ["src"]
  :deps
- {org.hugoduncan/dado.chat-gpt         {:local/root "../../components/chat-gpt"}
-  org.hugoduncan/dado.clojure-ns       {:local/root "../../components/clojure-ns"}
-  org.hugoduncan/dado.clojure-fns      {:local/root "../../components/clojure-fns"}
-  org.hugoduncan/dado.clojure-target   {:local/root "../../components/clojure-target"}
-  org.hugoduncan/dado.elisp-feature    {:local/root "../../components/elisp-feature"}
-  org.hugoduncan/dado.elisp-funs       {:local/root "../../components/elisp-funs"}
-  org.hugoduncan/dado.elisp-target     {:local/root "../../components/elisp-target"}
-  org.hugoduncan/dado.nrepl-middleware {:local/root "../../components/nrepl-middleware"}
-  org.hugoduncan/dado.operation        {:local/root "../../components/operation"}
-  org.hugoduncan/dado.util             {:local/root "../../components/util"}
+ {
+  org.hugoduncan/dado.ai-agent                  {:local/root "../../components/ai-agent"}
+  org.hugoduncan/dado.ai-architect-agent        {:local/root "../../components/ai-architect-agent"}
+  org.hugoduncan/dado.ai-claude                 {:local/root "../../components/ai-claude"}
+  org.hugoduncan/dado.ai-ollama                 {:local/root "../../components/ai-ollama"}
+  org.hugoduncan/dado.ai-chatgpt                {:local/root "../../components/ai-chatgpt"}
+  org.hugoduncan/dado.ai-implementation-agent   {:local/root "../../components/ai-implementation-agent"}
+  ;; org.hugoduncan/dado.ai-interaction           {:local/root "../../components/ai-interaction"}
+  org.hugoduncan/dado.ai-message                {:local/root "../../components/ai-message"}
+  org.hugoduncan/dado.ai-port                   {:local/root "../../components/ai-port"}
+  org.hugoduncan/dado.ai-prompt                 {:local/root "../../components/ai-prompt"}
+  org.hugoduncan/dado.ai-refactoring-agent      {:local/root "../../components/ai-refactoring-agent"}
+  org.hugoduncan/dado.ai-scope-agent            {:local/root "../../components/ai-scope-agent"}
+  org.hugoduncan/dado.ai-test-agent             {:local/root "../../components/ai-test-agent"}
+  org.hugoduncan/dado.conversation-manager      {:local/root "../../components/conversation-manager"}
+  org.hugoduncan/dado.ai-tool                   {:local/root "../../components/ai-tool"}
+  org.hugoduncan/dado.ai-tool-file-operation    {:local/root "../../components/file-operation-tool"}
+  org.hugoduncan/dado.ai-tool-reload-namespaces {:local/root "../../components/reload-namespaces-tool"}
+  org.hugoduncan/dado.chat-gpt                  {:local/root "../../components/chat-gpt"}
+  org.hugoduncan/dado.clojure-fns               {:local/root "../../components/clojure-fns"}
+  org.hugoduncan/dado.clojure-ns                {:local/root "../../components/clojure-ns"}
+  org.hugoduncan/dado.clojure-target            {:local/root "../../components/clojure-target"}
+  org.hugoduncan/dado.conversation              {:local/root "../../components/conversation"}
+  org.hugoduncan/dado.conversation-action       {:local/root "../../components/conversation-action"}
+  org.hugoduncan/dado.elisp-feature             {:local/root "../../components/elisp-feature"}
+  org.hugoduncan/dado.elisp-funs                {:local/root "../../components/elisp-funs"}
+  org.hugoduncan/dado.elisp-target              {:local/root "../../components/elisp-target"}
+  org.hugoduncan/dado.emacs-core                {:local/root "../../components/emacs-core"}
+  org.hugoduncan/dado.implement-namespace       {:local/root "../../components/implement-namespace"}
+  org.hugoduncan/dado.logging                   {:local/root "../../components/logging"}
+  org.hugoduncan/dado.nrepl-middleware          {:local/root "../../components/nrepl-middleware"}
+  org.hugoduncan/dado.operation                 {:local/root "../../components/operation"}
+  org.hugoduncan/dado.patch                     {:local/root "../../components/patch"}
+  org.hugoduncan/dado.project-config            {:local/root "../../components/project-config"}
+  org.hugoduncan/dado.repl-message-loop         {:local/root "../../components/repl-message-loop"}
+  org.hugoduncan/dado.update-extractor          {:local/root "../../components/update-extractor"}
+  org.hugoduncan/dado.util                      {:local/root "../../components/util"}
+  org.hugoduncan/dado.http                      {:local/root "../../components/http"}
+  ;; bases
+  org.hugoduncan/dado.middleware                {:local/root "../../bases/middleware"}
+
+
+  ;; org.hugoduncan/dado.chat-gpt         {:local/root "../../components/chat-gpt"}
+  ;; org.hugoduncan/dado.clojure-ns       {:local/root "../../components/clojure-ns"}
+  ;; org.hugoduncan/dado.clojure-fns      {:local/root "../../components/clojure-fns"}
+  ;; org.hugoduncan/dado.clojure-target   {:local/root "../../components/clojure-target"}
+  ;; org.hugoduncan/dado.elisp-feature    {:local/root "../../components/elisp-feature"}
+  ;; org.hugoduncan/dado.elisp-funs       {:local/root "../../components/elisp-funs"}
+  ;; org.hugoduncan/dado.elisp-target     {:local/root "../../components/elisp-target"}
+  ;; org.hugoduncan/dado.nrepl-middleware {:local/root "../../components/nrepl-middleware"}
+  ;; org.hugoduncan/dado.operation {:local/root "../../components/operation"}
+  ;; org.hugoduncan/dado.util      {:local/root "../../components/util"}
   }
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps  {}}}}

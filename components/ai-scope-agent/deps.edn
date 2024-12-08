@@ -1,10 +1,10 @@
-{:paths ["src"]
- :deps {com.taoensso/telemere {:mvn/version "v1.0.0-RC1"}
-        metosin/malli {:mvn/version "0.11.0"}
-        org.hugoduncan/dado.ai-agent {:local/root "../ai-agent"}}
+{:paths ["src" "resources"]
+ :deps  {com.taoensso/telemere        {:mvn/version "v1.0.0-RC1"}
+         metosin/malli                {:mvn/version "0.11.0"}
+         org.hugoduncan/dado.ai-agent {:local/root "../ai-agent"}}
  :aliases
  {:test {:extra-paths ["test"]
          :extra-deps
          {io.github.cognitect-labs/test-runner
           {:git/url "https://github.com/cognitect-labs/test-runner"
-           :sha "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}}}}}
+           :sha     "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}}}}}

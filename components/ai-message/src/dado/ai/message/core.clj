@@ -106,12 +106,14 @@
   "Starts a new sequence in the context files and adds the file to it."
   [message-thread file-sequence]
   {:pre [(have? model/message-thread? message-thread)
-         (have? sequential? file-sequence)]}
+         (have? (some-fn nil? sequential?) file-sequence)]}
   (t/trace! {:id :message/file-sequence-added}
-            (update-in message-thread
-                       [:metadata :context :files]
-                       (fnil conj [])
-                       (mapv file-path->content-map file-sequence))))
+            (if (seq file-sequence)
+              (update-in message-thread
+                         [:metadata :context :files]
+                         (fnil conj [])
+                         (mapv file-path->content-map file-sequence))
+              message-thread)))
 
 (defn set-context-files
   "Set the file contexts on the message thread context.

@@ -6,7 +6,10 @@
 
 (defn create
   "Creates a new conversation."
-  [ai-agent port-send-fn message-thread {:keys [ai-tools user-data] :as options}]
+  [ai-agent
+   port-send-fn
+   message-thread
+   {:keys [ai-tools context-files user-data] :as options}]
   (core/create ai-agent port-send-fn message-thread options))
 
 (defn id
@@ -23,6 +26,11 @@
   "Returns the conversation agent."
   [conversation]
   (core/ai-agent conversation))
+
+(defn set-context-files
+  [conversation file-paths]
+  (core/set-context-files conversation file-paths))
+
 
 (defn conversation? [x]
   (model/conversation? x))

@@ -35,6 +35,7 @@
           (get-directory-files project-config :dado/architecture))
     (get-directory-files project-config :dado/adr)
     (get-directory-files project-config :dado/implementation)
+    #_(conj (mapv str (fs/list-dir "src" "*.clj")) "deps.edn")
     (reduce into [] (additional-context-fn))]))
 
 (defn- get-prompt
