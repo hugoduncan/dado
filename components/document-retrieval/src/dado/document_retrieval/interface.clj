@@ -10,6 +10,10 @@
   [file-path]
   (core/dependency-files file-path))
 
+(defn git-uncommitted-diffs
+  []
+  (core/git-uncommitted-diffs))
+
 (defn path->namespace
   [file-path]
   (core/path->namespace file-path))

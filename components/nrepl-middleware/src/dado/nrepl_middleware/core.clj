@@ -1,6 +1,7 @@
 (ns dado.nrepl-middleware.core
   "Middleware of using dado dev chat assistant."
   (:require
+   [clojure.set :as set]
    [clojure.string :as str]
    [dado.ai.prompt.interface :as prompt]
    [dado.conversation-action.interface :as conversation-action]
@@ -9,7 +10,7 @@
    [nrepl.transport :as transport]
    [org.hugoduncan.dado.operation.interface :as operation]
    [taoensso.telemere :as t]
-   [dado.project-config.interface :as project-config])
+   [dado.project-config.interface :as project-config]   )
   (:import
    [nrepl.transport
     Transport]))
@@ -83,6 +84,11 @@
                               invoke-file-path)
 
                              [])
+           dirty-git-files (document-retrieval/git-uncommitted-diffs)
+           context-files   (vec (set/union
+                                 (set context-files)
+                                 (set dirty-git-files)))
+
            this-namespace   (some-> invoke-file-path
                                     (document-retrieval/path->namespace))
            project-config   (project-config/load-config)

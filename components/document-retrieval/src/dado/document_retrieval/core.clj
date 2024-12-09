@@ -1,7 +1,9 @@
 (ns dado.document-retrieval.core
   (:require
    [babashka.fs :as fs]
+   [babashka.process :as process]
    [clojure.set :as set]
+   [clojure.string :as str]
    [clojure.tools.deps :as deps]
    [clojure.tools.namespace.dependency :as ns-deps]
    [clojure.tools.namespace.dir :as ns-dir]
@@ -146,6 +148,18 @@
 #_(all-deps-source-paths "." [:test])
 #_(all-deps-files "." [:test])
 
+(defn- parent-deps-edn-files
+  [file-path]
+  (loop [current (fs/path file-path)
+         acc     []]
+    (let [deps-file (fs/path current "deps.edn")
+          acc       (if (fs/exists? deps-file)
+                      (conj acc deps-file)
+                      acc)]
+      (if current
+        (recur (fs/parent current) acc)
+        acc))))
+
 (defn dependency-files
   [file-path]
   (try
@@ -177,7 +191,8 @@
           related-paths (reduce into #{}
                                 [(cond-> [(fs/path file-path)]
                                    test-file (conj test-file))
-                                 deps-paths])]
+                                 deps-paths
+                                 (parent-deps-edn-files file-path)])]
       ;; sort provides a stable order
       (vec (sort related-paths)))
     (catch Exception e
@@ -191,8 +206,50 @@
   (or ((::ns-file/filemap @ns-tracker) (fs/file file-path))
       ((::ns-file/filemap @ns-tracker) (fs/file (fs/cwd) file-path))))
 
-(path->namespace
- (fs/file "components/document-retrieval/src/dado/document_retrieval/core.clj"))
+;;; Git operations
+
+(defn- modified-files
+  "Returns a sequence of file paths that have been modified since last commit.
+   Files are returned as relative paths from the current working directory.
+
+   Returns empty sequence if no files modified.
+   Throws ex-info with :error/git if git command fails."
+  []
+  (try
+    (let [{:keys [out]} (process/shell {:out :string}
+                                       "git" "status" "--porcelain" "-uno")]
+      (->> (str/split-lines out)
+           (remove str/blank?)
+           (map #(-> % (subs 3) str/trim))
+           (filter (complement str/blank?))
+           (into [])))
+    (catch Exception e
+      (throw (ex-info "Failed to get modified files"
+                      {:type  :error/git
+                       :cause e})))))
+
+(defn- uncommitted-diffs
+  "Returns unified diff of all uncommitted changes.
+   Returns empty string if no changes.
+   Throws ex-info with :error/git if git command fails."
+  []
+  (try
+    (let [{:keys [out]} (process/shell {:out :string}
+                                       "git" "diff")]
+      out)
+    (catch Exception e
+      (throw (ex-info "Failed to get uncommitted diffs"
+                      {:type  :error/git
+                       :cause e})))))
+
+(defn files-with-uncommitted-changes
+  []
+  (modified-files))
+
+(defn git-uncommitted-diffs
+  []
+  (uncommitted-diffs))
+
 
 (comment
   (all-files ".")
@@ -201,4 +258,9 @@
    "components/document-retrieval/src/dado/document_retrieval/core.clj")
   (dependency-files
    "components/document-retrieval/src/dado/document_retrieval/interface.clj")
-  (dependency-files "README.md"))
+  (dependency-files "README.md")
+  (parent-deps-edn-files
+   "components/document-retrieval/src/dado/document_retrieval/interface.clj")
+
+  (modified-files)
+  (uncommitted-diffs))
