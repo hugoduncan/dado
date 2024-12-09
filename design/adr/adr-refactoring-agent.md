@@ -10,7 +10,7 @@ Proposed
 - Must support interactive refactoring conversations
 - Should handle both high-level and detailed refactoring
 - Must manage appropriate file context during refactoring
-- Should use FOD format for code changes
+- Should use the file-operation tool for code changes
 
 ## Decision
 We will create a Refactoring Agent component that:

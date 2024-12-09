@@ -7,7 +7,7 @@
 
    The agent specializes in:
    - Code refactoring suggestions
-   - Safe code modifications using FOD format
+   - Safe code modifications using the file-operation tool
    - Context-aware refactoring
 
    Throws :error/agent-creation on validation failure."

@@ -24,9 +24,9 @@ We will create a File Operation Tool that:
  :structured-description
  {:claude
   {:description "Tool for performing file operations. All paths must be relative and within project directory."}}
- :parameters 
+ :parameters
  [:map
-  [:operations 
+  [:operations
    [:vector
     [:map
      [:operation [:enum :create :edit :move :copy :delete]]
@@ -34,11 +34,11 @@ We will create a File Operation Tool that:
      [:target-path {:optional true} :string]  ; Required for move/copy
      [:content {:optional true} :string]      ; Required for create/edit
      [:search-blocks                          ; Required for edit
-      {:optional true} 
-      [:vector [:map 
+      {:optional true}
+      [:vector [:map
                 [:search :string]
                 [:replace :string]]]]]]]]
- :returns 
+ :returns
  {:type        :map
   :description "Map containing operation results and any errors"}
  :prompt-fn    (fn [_] "Use this tool to perform file operations. All paths must be relative.")
@@ -67,7 +67,7 @@ The tool will:
 ```clojure
 {:operations [{:operation :create
                :path "path/to/file"}
-              {:operation :move 
+              {:operation :move
                :path "source/path"
                :target "target/path"}]
  :errors [{:operation :edit
@@ -78,7 +78,6 @@ The tool will:
 ### Implementation Requirements
 - Use Patch component for file operations
 - Use AI Tool component for registration
-- Support all FOD operations
 - Maintain atomic transaction semantics
 - Provide clear error reporting
 - Validate before execution
@@ -103,7 +102,6 @@ Use standard AI Tool error types:
 - Strong validation and safety checks
 - Atomic operations with rollback
 - Clear error reporting
-- Consistent with FOD format
 - Supports all operation types
 
 ### Negative
@@ -119,13 +117,4 @@ Use standard AI Tool error types:
 
 ## Notes
 - Uses dado.ai.tools.file-operation namespace
-- Follows FOD operation semantics
-- Provides programmatic alternative to FOD format
 - Maintains same safety guarantees as Patch component
-```
-
-The key differences from the FOD format are:
-1. JSON-style structured input instead of text markers
-2. All operations in a single call
-3. Structured result/error reporting
-4. Integration with AI Tool component

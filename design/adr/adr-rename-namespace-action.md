@@ -55,7 +55,7 @@ We will create an Implement Namespace Action component that:
    5. Update namespace references
    6. Update namespace declarations
 
-5. All file operations must use the Patch component's FOD format
+5. All file operations must use the file-operation tool.
 
 6. The returned map should contain:
 ```clojure
