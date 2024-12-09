@@ -23,11 +23,12 @@
   :group 'convenience
   :prefix "dado-chat-")
 
-(defcustom dado-chat-context-mode 'all
+(defcustom dado-chat-context-mode 'file-dependencies
   "Mode for adding context files"
   :type '(choice (const all)
                  (const none)
 		 (const single)
+		 (const file-dependencies)
                  (const src)
                  (const test))
   :group 'dado-chat)

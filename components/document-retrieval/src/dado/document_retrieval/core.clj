@@ -5,11 +5,9 @@
    [clojure.tools.deps :as deps]
    [clojure.tools.namespace.dependency :as ns-deps]
    [clojure.tools.namespace.dir :as ns-dir]
-   [clojure.tools.namespace.find :as ns-find]
    [clojure.tools.namespace.file :as ns-file]
    [clojure.tools.namespace.parse :as ns-parse]
-   [clojure.tools.namespace.track :as ns-track]
-   [clojure.java.io :as io]))
+   [clojure.tools.namespace.track :as ns-track]))
 
 ;;; tools.deps
 
@@ -73,6 +71,23 @@
           (recur (into seen-roots new-roots)
                  (into remaining new-roots)))))))
 
+(defn deps-source-paths
+  "Returns all source paths from a deps.edn configuration.
+
+   Parameters:
+     root    - Root directory containing deps.edn
+     aliases - Aliases to apply from deps.edn
+
+   Returns:
+     Vector of source paths from deps.edn with aliases applied"
+  [root aliases]
+  (when-let [deps-map (deps-map-with-aliases root aliases)]
+    (into []
+          (comp
+           (map #(fs/path root %))
+           (filter fs/exists?))
+          (source-paths deps-map))))
+
 (defn deps-source-files
   "Returns a vector of Clojure source files (.clj) found in project paths.
 
@@ -80,19 +95,21 @@
   paths specified.
 
   Parameters:
-    root - Root directory of the project containing deps.edn
+    root    - Root directory of the project containing deps.edn
+    aliases - Aliases to apply from deps.edn
 
   Returns:
     Vector of paths to .clj files"
   [root aliases]
-  (let [paths      (-> root
-                       slurp-deps
-                       (apply-aliases aliases)
-                       source-paths)
-        path-xform (comp (filter fs/exists?)
-                         (map #(fs/path root %))
+  (let [paths      (deps-source-paths root aliases)
+        path-xform (comp #_(filter fs/exists?)
+                         #_(map #(fs/path root %))
                          (mapcat #(fs/glob % "**.clj")))]
     (into [] path-xform paths)))
+
+(defn all-deps-source-paths
+  [root aliases]
+  (into [] (mapcat #(deps-source-paths % aliases)) (deps-roots root aliases)))
 
 (defn all-deps-files
   [root aliases]
@@ -110,50 +127,47 @@
     (all-deps-files root aliases)
     (markdown-files root))))
 
-
-
 ;;; Direct dependencies
 
 (defonce ns-tracker (volatile! (ns-track/tracker)))
 
-#_(let [ns-decls (find/find-ns-decls-in-dir (io/file "src"))
-        graph    (reduce (fn [g ns-decl]
-                           (let [ns-name (parse/name-from-ns-decl ns-decl)
-                                 deps    (parse/deps-from-ns-decl ns-decl)]
-                             (reduce #(dep/depend %1 ns-name %2) g deps)))
-                         (dep/graph)
-                         ns-decls)]
-    (dep/immediate-dependencies graph 'my.namespace))
-
 (defn- deps-graph
   [paths]
-  (prn :paths paths)
   (vswap! ns-tracker ns-dir/scan-dirs (mapv fs/file paths))
-  (prn :ns-tracker ns-tracker)
+  (::ns-track/deps @ns-tracker))
 
-  (::ns-track/deps @ns-tracker)
-
-  #_(let [ns-decls   (ns-find/find-ns-decls (mapv fs/file paths))
-          deps-graph (ns-deps/deps-from-ns-decls ns-decls)]
-      (deps/immediate-dependencies deps-graph 'my.namespace)))
-
-(ns-deps/immediate-dependencies
- (deps-graph
-  ["components/document-retrieval/src"])
- 'dado.document-retrieval.core)
+#_(all-deps-source-paths "." [:test])
+#_(all-deps-files "." [:test])
 
 (defn dependency-files
   [root]
   (try
-    (let [graph   (deps-graph ["components/document-retrieval/src"])
-          ns-sym  (second ns-decl)
-          related (ns-deps/immediate-dependents )]
-      )
-    #_(catch Exception e
-        (prn :ignoring e)))
-  )
+    (let [paths         (all-deps-source-paths "." [:test])
+          graph         (deps-graph paths)
+          ns-sym        (ns-parse/name-from-ns-decl
+                         (ns-file/read-file-ns-decl root))
+          related-ns    (into
+                         (ns-deps/immediate-dependents graph ns-sym)
+                         (ns-deps/immediate-dependencies graph ns-sym))
+          ns->files     (-> @ns-tracker
+                            ::ns-file/filemap
+                            set/map-invert)
+          related-paths (into
+                         [(fs/path root)]
+                         (comp (keep ns->files)
+                               (map #(fs/relativize (fs/cwd) %)) )
+                         related-ns)]
+      ;; sort provides a stable order
+      (vec (sort related-paths)))
+    (catch Exception e
+      (prn :ignoring e)
+      [root])))
 
 (comment
   (all-files ".")
-  (all-files "/Users/duncan/projects/rpl/redef-mock/" [:test])
-  (all-files "/Users/duncan/projects/rpl/redef-mock/"))
+
+  (dependency-files
+   "components/document-retrieval/src/dado/document_retrieval/core.clj")
+  (dependency-files
+   "components/document-retrieval/src/dado/document_retrieval/interface.clj")
+  (dependency-files "README.md"))

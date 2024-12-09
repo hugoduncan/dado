@@ -68,13 +68,21 @@
                               ai-port-name)
                              conversation-id)
            context-files   (case (keyword context-mode)
-                             :all    (document-retrieval/all-files ".")
-                             :single (if (str/blank? invoke-file-path)
-                                       []
-                                       [invoke-file-path])
+                             :all
+                             (document-retrieval/all-files ".")
+
+                             :single
+                             (if (str/blank? invoke-file-path)
+                               []
+                               [invoke-file-path])
+
+                             :file-dependencies
+                             (document-retrieval/dependency-files
+                              invoke-file-path)
+
                              [])
-           response        (conversation-action/response!
-                            conversation-id message context-files)]
+           response (conversation-action/response!
+                     conversation-id message context-files)]
 
        (response-for
         msg
