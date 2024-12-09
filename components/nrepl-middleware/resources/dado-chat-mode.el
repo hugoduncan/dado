@@ -199,7 +199,7 @@ Return the chat buffer."
    (list
     (completing-read
      "Agent: "
-     '("architect" "implemention" "refactoring" "scope" "test"))
+     '("architect" "implementation" "refactoring" "scope" "test"))
     (completing-read "AI Provider: " '("claude" "chatgpt" "ollama" "glhf"))))
   (message "dado-chat %s %s" agent-name ai-port-name)
   (let* ((invoke-buffer-path (when-let ((buffer-file (buffer-file-name)))
