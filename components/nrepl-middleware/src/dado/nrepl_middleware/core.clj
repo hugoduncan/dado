@@ -2,12 +2,14 @@
   "Middleware of using dado dev chat assistant."
   (:require
    [clojure.string :as str]
+   [dado.ai.prompt.interface :as prompt]
    [dado.conversation-action.interface :as conversation-action]
    [dado.document-retrieval.interface :as document-retrieval]
    [nrepl.misc :refer [response-for] :as misc]
    [nrepl.transport :as transport]
    [org.hugoduncan.dado.operation.interface :as operation]
-   [taoensso.telemere :as t])
+   [taoensso.telemere :as t]
+   [dado.project-config.interface :as project-config])
   (:import
    [nrepl.transport
     Transport]))
@@ -81,8 +83,25 @@
                               invoke-file-path)
 
                              [])
-           response (conversation-action/response!
-                     conversation-id message context-files)]
+           this-namespace   (some-> invoke-file-path
+                                    (document-retrieval/path->namespace))
+           project-config   (project-config/load-config)
+           exophoric-prompt (cond-> ""
+                              invoke-file-path
+                              (str (prompt/render-template
+                                    project-config
+                                    "exophoric-file"
+                                    {:this-file-path invoke-file-path}))
+                              this-namespace
+                              (str (prompt/render-template
+                                    project-config
+                                    "exophoric-namespace"
+                                    {:this-namespace this-namespace})))
+           response         (conversation-action/response!
+                             conversation-id
+                             message
+                             exophoric-prompt
+                             context-files)]
 
        (response-for
         msg

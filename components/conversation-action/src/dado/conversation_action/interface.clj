@@ -43,7 +43,7 @@
   (str/join "\n" (mapv :text (:content msg))))
 
 (defn response!
-  [conversation-id message-text context-files]
+  [conversation-id message-text extra-prompt context-files]
   (let [conversation (conversation-manager/lookup conversation-id)
         _            (vreset! (:context-files conversation) (vec context-files))
         agent        (conversation/ai-agent conversation)
@@ -54,7 +54,8 @@
         n-messages   (-> msg-thread :messages count)
         msg-thread   (message-loop/complete-with-tools!
                       msg-thread
-                      (have (:prompt-fn agent))
+                      (fn []
+                        (str ((have (:prompt-fn agent))) extra-prompt))
                       (fn []
                         (conj
                          ((:context-fn agent))

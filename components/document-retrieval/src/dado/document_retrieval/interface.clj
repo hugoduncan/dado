@@ -9,3 +9,7 @@
 (defn dependency-files
   [file-path]
   (core/dependency-files file-path))
+
+(defn path->namespace
+  [file-path]
+  (core/path->namespace file-path))

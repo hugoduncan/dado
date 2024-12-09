@@ -64,6 +64,10 @@
    {:id ::compose-templates}
    (str/join "\n" templates)))
 
+(defn remder-template
+  [project-config template-name data]
+  (selmer/render (read-template project-config template-name) data))
+
 (defn- substitute-data
   [composed-template data]
   (t/trace!

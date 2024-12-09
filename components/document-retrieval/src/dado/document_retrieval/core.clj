@@ -136,32 +136,63 @@
   (vswap! ns-tracker ns-dir/scan-dirs (mapv fs/file paths))
   (::ns-track/deps @ns-tracker))
 
+(defn- src->test [p]
+  (apply
+   fs/path
+   (into []
+         (map (fn [c] (if (= "src" (fs/file-name c)) "test" c)))
+         (fs/components p))))
+
 #_(all-deps-source-paths "." [:test])
 #_(all-deps-files "." [:test])
 
 (defn dependency-files
-  [root]
+  [file-path]
   (try
-    (let [paths         (all-deps-source-paths "." [:test])
-          graph         (deps-graph paths)
-          ns-sym        (ns-parse/name-from-ns-decl
-                         (ns-file/read-file-ns-decl root))
-          related-ns    (into
-                         (ns-deps/immediate-dependents graph ns-sym)
-                         (ns-deps/immediate-dependencies graph ns-sym))
-          ns->files     (-> @ns-tracker
-                            ::ns-file/filemap
-                            set/map-invert)
-          related-paths (into
-                         [(fs/path root)]
-                         (comp (keep ns->files)
-                               (map #(fs/relativize (fs/cwd) %)) )
-                         related-ns)]
+    (let [paths      (all-deps-source-paths "." [:test])
+          graph      (deps-graph paths)
+          ns-sym     (ns-parse/name-from-ns-decl
+                      (ns-file/read-file-ns-decl file-path))
+          related-ns (into
+                      (ns-deps/immediate-dependents graph ns-sym)
+                      (ns-deps/immediate-dependencies graph ns-sym))
+          ns->files  (-> @ns-tracker
+                         ::ns-file/filemap
+                         set/map-invert)
+          deps-paths (into
+                      #{}
+                      (comp (keep ns->files)
+                            (map #(fs/relativize (fs/cwd) %)) )
+                      related-ns)
+          test-file  (let [file-name  (fs/file-name file-path)
+                           component  (fs/parent file-path)
+                           iface-test (-> (fs/path
+                                           component
+                                           "interface_test.clj")
+                                          src->test)]
+                       (when (and (not= "interface.clj" file-name)
+                                  (not (deps-paths iface-test)))
+                         iface-test))
+
+          related-paths (reduce into #{}
+                                [(cond-> [(fs/path file-path)]
+                                   test-file (conj test-file))
+                                 deps-paths])]
       ;; sort provides a stable order
       (vec (sort related-paths)))
     (catch Exception e
       (prn :ignoring e)
-      [root])))
+      [file-path])))
+
+(defn path->namespace
+  [file-path]
+  (let [paths (all-deps-source-paths "." [:test])]
+    (deps-graph paths))                          ; to refresh tracker
+  (or ((::ns-file/filemap @ns-tracker) (fs/file file-path))
+      ((::ns-file/filemap @ns-tracker) (fs/file (fs/cwd) file-path))))
+
+(path->namespace
+ (fs/file "components/document-retrieval/src/dado/document_retrieval/core.clj"))
 
 (comment
   (all-files ".")

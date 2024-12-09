@@ -17,6 +17,12 @@
   [project-config template-names data]
   (core/construct-prompt project-config template-names data))
 
+(defn render-template
+  [project-config template-name data]
+  (core/remder-template project-config template-name data))
+
+;; TOD move to document-retrieval
+
 (defn interface-paths
   "Returns a sequence of paths to all the interface namespace files for the
    given component name.
