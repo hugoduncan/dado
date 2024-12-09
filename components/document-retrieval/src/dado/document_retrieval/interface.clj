@@ -10,6 +10,10 @@
   [file-path]
   (core/dependency-files file-path))
 
+(defn git-dirty-files
+  []
+  (core/git-dirty-files))
+
 (defn git-uncommitted-diffs
   []
   (core/git-uncommitted-diffs))

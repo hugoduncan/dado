@@ -246,6 +246,10 @@
   []
   (modified-files))
 
+(defn git-dirty-files
+  []
+  (modified-files))
+
 (defn git-uncommitted-diffs
   []
   (uncommitted-diffs))
