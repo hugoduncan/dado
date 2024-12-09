@@ -19,7 +19,8 @@
 (selmer-util/set-missing-value-formatter! missing-value-fn)
 
 (defn- project-prompt-dir [project-config]
-  (fs/path (have (project-config/get-directory project-config :dado/prompts))))
+  (fs/path
+   (have (project-config/get-directory project-config :dado/ai-prompt))))
 
 (defn- resource-template-path [template-name]
   (str "dado/ai/prompts/" template-name ".md"))

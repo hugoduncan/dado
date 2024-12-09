@@ -1,13 +1,12 @@
 (ns dado.ai.agent.interface-test
   (:require [clojure.test :refer [deftest is testing]]
             [dado.ai.agent.interface :as agent]
-            [dado.ai.agent.model :as model]
-            [malli.core :as m]))
+            [dado.ai.agent.model :as model]))
 
 (def valid-agent
-  {:name :test-agent
-   :prompt-fn (fn [_] "prompt")
-   :context-fn (fn [_] {})
+  {:name                :test-agent
+   :prompt-fn           (fn [_] "prompt")
+   :context-fn          (fn [_] {})
    :process-response-fn (fn [_] {})})
 
 (def invalid-agent
@@ -17,11 +16,11 @@
 (deftest validate-agent-test
   (testing "valid agent configuration"
     (is (= valid-agent (agent/validate-agent valid-agent))))
-  
+
   (testing "invalid agent configuration"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                         #"Invalid agent configuration"
-                         (agent/validate-agent invalid-agent)))))
+                          #"Invalid agent configuration"
+                          (agent/validate-agent invalid-agent)))))
 
 (deftest load-agent-document-test
   (testing "document not found"

@@ -18,11 +18,12 @@
                          :cause e}))))))
 
 (def ^:private default-directories
-  {:dado/prompts        "dev/ai/prompts"
-   :dado/adr            "dev/design/adr"
-   :dado/architecture   "dev/design/architecture"
-   :dado/implementation "dev/design/implementation"
-   :dado/scope          "dev/design/scope"})
+  {:dado/ai-agent       "dado/ai/agent"
+   :dado/ai-prompt      "dado/ai/prompt"
+   :dado/adr            "design/adr"
+   :dado/architecture   "design/architecture"
+   :dado/implementation "design/implementation"
+   :dado/scope          "design/scope"})
 
 (defn load-config []
   (let [config (-> (read-config-file)
