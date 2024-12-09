@@ -234,20 +234,54 @@
 
 (def description
   "Tool for performing file operations.
-All paths must be relative and within project directory.
 
-Supports file create, edit, move, copy and delete.
+  All paths must be relative and within project directory.
 
-- The :create operation creates the :path file with :content.
+  The tool performs a sequence of file operations.
 
-- The :delete operation deletes the :path file.
+  A single operation supports one of file create, edit, move, copy or delete.
 
-- The :edit operation edits the file at :path and for each :search-blocks
-  replaces :search with :replace.
+  - The \"create\" operation creates the \"path\" file with \"content\".
 
-- The :copy operation copies the file at :path to :target-path.
+  - The \"delete\" operation deletes the \"path\" file.
 
-- The :move operation moves the file at :path to :target-path." )
+  - The \"edit\" operation edits the file at \"path\" and for each \"search-blocks\"
+  replaces \"search\" with \"replace\".
+
+  - The :copy operation copies the file at :path to :target-path.
+
+  - The :move operation moves the file at :path to :target-path.
+
+  An example of the parameters:
+
+  <example>
+  {\"operations\":
+  [{\"operation\": \"create\",
+    \"content\": \"some content\",
+    \"path\": \"file/to/create..md\"},
+   {\"operation\": \"delete\", \"path\": \"file/to/delete.clj\"}]}
+  </example>
+
+  <example>
+  {\"operations\":
+  [{\"operation\": \"edit\",
+    \"path\": \"file/to/edit.md\",
+  \"search-blocks\":
+    [{\"search\": \"text to modify\",
+      \"replace\": \"text it should be replaced by\"},
+     {\"search\": \"other text to modify\",
+      \"replace\": \"text it should be replaced by\"}]}]}
+  </example>
+
+  <example>
+  {\"operations\":
+  [{\"operation\": \"copy\",
+    \"path\": \"file/to/copy.md\",
+    \"target-path\": \"location/to/copy/to.md\"},
+   {\"operation\": \"move\",
+    \"path\": \"file/to/move.md\",
+    \"target-path\": \"location/to/move/to.md\"}]}
+  </example>")
 
 (def describe-tool
   "To change files, use the `<file-operation>` tag.
