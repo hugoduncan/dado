@@ -161,13 +161,16 @@ The optional CALLBACK will be called with a list of completions."
     (with-current-buffer buffer
       (message "buffer %s"(buffer-name))
       (dado-chat-op
-       (lambda (messages)
-	 (with-current-buffer buffer
-           (dolist (message messages)
-             (dado-chat--insert-ai-message message))
-	   (dado-chat--insert-prompt dado-chat-prompt)
-	   (when callback
-	     (funcall callback messages))))
+       (lambda (response)
+	 (nrepl-dbind-response response (messages conversation-id)
+	   (with-current-buffer buffer
+	     (when (string= dado-chat--conversation-id "")
+	       (setq dado-chat--conversation-id conversation-id))
+             (dolist (message messages)
+               (dado-chat--insert-ai-message message))
+	     (dado-chat--insert-prompt dado-chat-prompt)
+	     (when callback
+	       (funcall callback messages)))))
        message
        dado-chat--agent-name
        dado-chat--ai-port-name

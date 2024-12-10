@@ -56,7 +56,7 @@
                "ai-port-name" "The name of the AI provider"}
     :optional {"conversation-id" "The ID for the conversation"
                "options"         "Context options"}
-    :returns  {"choices" "Completions"}}}})
+    :returns  {"response" "Completions and conversation ID"}}}})
 
 (defn- middleware-symbol [op-name]
   ;; It is safe to use *ns* as this is called only at compile time

@@ -63,4 +63,9 @@
                       (have (:port-send-fn conversation)))
         conversation (assoc conversation :message-thread msg-thread)]
     (conversation-manager/update! conversation)
-    (->> msg-thread :messages (drop n-messages) (mapv msg->text))))
+    {:messages        (into []
+                            (comp
+                             (drop n-messages)
+                             (map msg->text))
+                            (:messages msg-thread))
+     :conversation-id conversation-id}))
