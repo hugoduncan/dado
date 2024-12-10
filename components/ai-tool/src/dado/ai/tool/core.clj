@@ -4,7 +4,9 @@
             [malli.core :as m]
             [malli.error :as me]
             [taoensso.telemere :as t]
-            [taoensso.truss :refer [have?]]))
+            [taoensso.truss :refer [have?]]
+            [jsonista.core :as j]
+            [clojure.string :as str]))
 
 ;; Tool registry
 (def ^:private tool-registry (atom {}))
@@ -31,7 +33,29 @@
    Returns tool map if found, nil if not found."
   [tool-id]
   (t/trace! {:id :tool/lookup}
-    (get @tool-registry tool-id)))
+            (get @tool-registry tool-id)))
+
+(defrecord ErrorMonadValue
+    [success? value])
+
+(defn success [x] (->ErrorMonadValue true x))
+(defn failure [x] (->ErrorMonadValue false x))
+(defn maybe [success? value] (->ErrorMonadValue success? value))
+(defn bind [m f] (if (:success? m) (f (:value m)) m))
+(defn fmap [f m] (bind m (fn cont [x] (success (f x)))))
+(defmacro do-error [bindings expr]
+  (let [[sym m & rest] bindings]
+    (if sym
+      `(bind ~m (fn [~sym] (do-error ~(vec rest) ~expr)))
+      `(success ~expr))))
+
+
+(defn- tool-ex [e]
+  {:is-error? true
+   :content
+   [{:text "Failed to parse parameters as valid JSON"
+     :type :text}
+    {:text (ex-message e) :type :text}]})
 
 (defn execute-tool!
   "Executes tool with given parameters.
@@ -46,14 +70,47 @@
     :level :warn
     :data  {:tool tool :params params}}
    (try
-     (t/log! {:level :warn :data {:params params}} "Execute")
-     ((:execute-fn tool) params)
+     (let [{:keys [success? value] :as v}
+           (do-error
+            [params (if (string? params)
+                      (try
+                        (success (j/read-value params))
+                        (catch Exception e
+                          (failure (tool-ex e))))
+                      (success params))
+             invalid (maybe
+                      (t/spy! :warn
+                              (m/validate
+                               (:parameters tool)
+                               params))
+                      {:is-error? true
+                       :content
+                       [{:text "Invalid parameters" :type :text}
+                        {:text (pr-str (me/humanize
+                                        (m/explain
+                                         (:parameters tool)
+                                         params)))
+                         :type :text}]})]
+            params)]
+       (t/log! {:level :warn
+                :data  {:params   params
+                        :schema   (:parameters tool)
+                        :success? success?
+                        :value    value
+                        :v        v}}
+               "Execute")
+       (if success?
+         ((:execute-fn tool) value)
+         value))
      (catch Exception e
-       (throw (ex-info "Tool execution failed"
-                       {:type    :error/tool-execution
-                        :tool-id (:id  tool)
-                        :params  params
-                        :cause   e}))))))
+       (t/error!
+        e
+        {:level :error
+         :id    ::execute-tool!
+         :data  {:params params :tool tool}})
+       {:is-error? true
+        :content   [{:text (str "Unexpected exception: " (ex-message e))
+                     :type :text}]}))))
 
 (defn validate-tool
   "Validates tool map structure.

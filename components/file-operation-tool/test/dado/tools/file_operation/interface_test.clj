@@ -7,7 +7,8 @@
    [dado.tools.file-operation.interface :as file-operation]
    [dado.tools.file-operation.core :as core]
    [malli.generator :as mg]
-   [taoensso.truss :refer [have?]]))
+   [taoensso.truss :refer [have?]]
+   [jsonista.core :as j]))
 
 (def ^:dynamic *temp-dir* nil)
 
@@ -211,7 +212,19 @@
               {:operations
                [{:operation :copy
                  :path      "test.txt"}]})
-             [["copy" ["test.txt"] "requires target path"]])))))))
+             [["copy" ["test.txt"] "requires target path"]])))
+
+        (testing "handles a json string"
+          (let [content   "test content"
+                file-name (temp-path)
+                operation {:operation :create
+                           :path      (abs-path file-name)
+                           :content   content}
+                result    (execute-fn
+                           (j/write-value-as-string {:operations [operation]}))]
+            (is-result? result [["create" file-name]])
+            (is (file-exists? file-name) "File should be created")
+            (is (has-content? file-name content) "File has content")))))))
 
 
 (deftest extract-operations-test

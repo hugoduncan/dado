@@ -31,9 +31,8 @@
 (defn execute-tool!
   "Executes tool with given parameters.
    Returns result map containing:
-   {:result any?      ; Tool execution result
-    :error map?       ; Error details if execution failed
-    :metrics map?}    ; Execution metrics (duration etc)
+   {:content content-string-or-vector
+    :is-error?  error-flag}
    Throws :error/tool-execution for validation/execution errors."
   [tool params]
   (core/execute-tool! tool params))
