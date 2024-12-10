@@ -43,11 +43,10 @@
                            #((some-fn (partial = :text) nil?) (:type %))
                            content))]
     (t/trace!
-     {:id        ::convert-message
-      #_#_:level :warn
-      :data      {:tool-calls   tool-calls
-                  :tool-results tool-results
-                  :text-maps    text-maps}}
+     {:id   ::convert-message
+      :data {:tool-calls   tool-calls
+             :tool-results tool-results
+             :text-maps    text-maps}}
      (cond
        (seq tool-calls)
        {:role       (name role)
@@ -88,9 +87,8 @@
   {:post [(have? model/completion-message? %
                  :data (me/humanize (m/explain model/CompletionMessage %)))]}
   (t/trace!
-   {:id        :dado.ai.chatgpt/request-translation
-    #_#_:level :warn
-    :data      {:message-thread message-thread}}
+   {:id   :dado.ai.chatgpt/request-translation
+    :data {:message-thread message-thread}}
    (let [{:keys [model-name]}        config
          {:keys [messages metadata]} message-thread
          context-files               (get-in metadata [:context :files])
@@ -128,9 +126,8 @@
     (let [re          #"(?s)<tool_call>(.*?)</tool_call>"
           json-string (-> (re-matches re s) second)]
       (t/event! ::parse-tool-call
-                {#_#_:level :warn
-                 :data      {:s           s
-                             :json-string json-string}})
+                {:data {:s           s
+                        :json-string json-string}})
       (when json-string
         (let [tool-call (try
                           (t/trace!
@@ -141,9 +138,7 @@
                             j/keyword-keys-object-mapper))
                           (catch Exception _
                             nil))]
-          (t/event! ::parse-tool-call
-                    {#_#_:level :warn
-                     :data      {:tool-call tool-call}})
+          (t/event! ::parse-tool-call {:data {:tool-call tool-call}})
           (when tool-call
             (if (:function tool-call)
               (read-chatgpt-tool-call tool-call)
@@ -156,9 +151,8 @@
   [{:keys [message] :as choice}]
   (let [message-as-tool-call (parse-tool-call (:content message))]
     (t/event! ::choice->content-maps
-              {#_#_:level :warn
-               :data      {:choice               choice
-                           :message-as-tool-call message-as-tool-call}})
+              {:data {:choice               choice
+                      :message-as-tool-call message-as-tool-call}})
     (cond-> []
       (not (str/blank? (:content message)))
       (conj {:type :text :text (:content message)})
@@ -169,9 +163,8 @@
 
 (defn- from-chatgpt-response [response]
   (t/trace!
-   {:id        ::from-chatgpt-response
-    #_#_:level :warn
-    :data      {:response response}}
+   {:id   ::from-chatgpt-response
+    :data {:response response}}
    (let [{:keys [choices usage]} response
          choice                  (first choices)]
      {:role          :assistant

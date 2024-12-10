@@ -31,9 +31,8 @@
    (for [files                  file-sequences
          {:keys [name content]} files]
      (t/trace!
-      {:id    :ollama/context-files->messages
-       :level :warn
-       :data  {:file (str name)}}
+      {:id   :ollama/context-files->messages
+       :data {:file (str name)}}
       (str "<document path=\"" name "\">\n" content "\n</document>")))))
 
 (defn- to-ollama-request [message-thread config]

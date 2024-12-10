@@ -58,12 +58,11 @@
   [{:keys [agent-name ai-port-name conversation-id message options]
     :as   msg}]
   (t/trace!
-   {:id    ::dado-chat-reply
-    :level :warn
-    :data  {:agent-name      agent-name
-            :ai-port-name    ai-port-name
-            :conversation-id conversation-id
-            :message         message}}
+   {:id   ::dado-chat-reply
+    :data {:agent-name      agent-name
+           :ai-port-name    ai-port-name
+           :conversation-id conversation-id
+           :message         message}}
    (try
      (let [options          (-> (apply hash-map options)
                                 (update-keys keyword))

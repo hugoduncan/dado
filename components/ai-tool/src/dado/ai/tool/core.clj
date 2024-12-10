@@ -54,9 +54,8 @@
    Throws :error/tool-execution for validation/execution errors."
   [tool params]
   (t/trace!
-   {:id    :tool/executed
-    :level :warn
-    :data  {:tool tool :params params}}
+   {:id   :tool/executed
+    :data {:tool tool :params params}}
    (try
      (let [{:keys [success? value] :as v}
            (em/do-error
@@ -82,12 +81,11 @@
                                          params)))
                          :type :text}]})]
             params)]
-       (t/log! {:level :warn
-                :data  {:params   params
-                        :schema   (:parameters tool)
-                        :success? success?
-                        :value    value
-                        :v        v}}
+       (t/log! {:data {:params   params
+                       :schema   (:parameters tool)
+                       :success? success?
+                       :value    value
+                       :v        v}}
                "Execute")
        (if success?
          ((:execute-fn tool) value)

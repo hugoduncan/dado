@@ -37,7 +37,7 @@
    Returns map of results with :reloaded and :errors keys."
   [{:keys [namespaces] :as parameters}]
   (t/trace!
-   {:id :reload/started :level :warn :data {:parameters parameters}}
+   {:id :reload/started :data {:parameters parameters}}
    (let [[ ns-syms errors] (if (string? namespaces)
                              (try
                                [(j/read-value namespaces)]

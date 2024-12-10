@@ -105,9 +105,8 @@
        (nil? index)
        (do
          (t/event! :fop/search-replace-failed
-                   {:level :warn
-                    :data  {:context search
-                            :content content}})
+                   {:data {:context search
+                           :content content}})
          [content {:error   :error/patch-context-mismatch
                    :context {:op-info op-info
                              :content content}}])
@@ -115,9 +114,8 @@
        (and (seq search) (str/index-of post-str search))
        (do
          (t/event! :error/patch-failed
-                   {:level :warn
-                    :data  {:context search
-                            :content content}})
+                   {:data {:context search
+                           :content content}})
          [content {:error   :error/patch-insufficient-context
                    :context {:op-info op-info
                              :context search
@@ -354,9 +352,8 @@
   passed to `execute-operations!`."
   [text]
   (t/trace!
-   {:id    ::extract-operations
-    :level :warn
-    :data  {:text text}}
+   {:id   ::extract-operations
+    :data {:text text}}
    (let [re-ops          #"(?s)(<file-operation[^>]*>)(.*?)</file-operation>"
          re-attr         #"(?i)([\w-]+)\s*=\s*\"([^\"]*)\""
          parse-operation (fn [attrs body]

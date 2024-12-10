@@ -149,7 +149,7 @@
   (t/log! :debug {:response response})
   (let [content (from-claude-content (:content response))
         usage   (:usage response)]
-    (t/log! {:level :warn :data {:usage usage}} "Claude token usage")
+    (t/log! {:data {:usage usage}} "Claude token usage")
     (cond-> {:role          :assistant
              :content       content
              :finish-reason (case (:stop_reason response)

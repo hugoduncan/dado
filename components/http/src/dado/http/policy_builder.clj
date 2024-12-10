@@ -21,7 +21,7 @@
 (defn context->retry-after-millis
   [result]
   (t/trace!
-   {:id ::context->retry-after-millis :level :warn}
+   {:id ::context->retry-after-millis}
    (let [header-value (-> result :headers (get "retry-after"))]
      (or
       (when header-value

@@ -120,9 +120,8 @@
         (recur (-> msg-thread
                    (message/add-message
                     (t/trace!
-                     {:id        ::add-tool-response-message
-                      #_#_:level :warn
-                      :data      {:result-contents result-contents}}
+                     {:id   ::add-tool-response-message
+                      :data {:result-contents result-contents}}
                      (reduce
                       (fn [msg message-map]
                         (message/add-message-content msg message-map))

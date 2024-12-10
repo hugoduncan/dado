@@ -205,7 +205,7 @@
   [file-path]
   (let [paths (all-deps-source-paths "." [:test])]
     (deps-graph paths))                          ; to refresh tracker
-  (t/trace! {:id ::path->namespace :level :warn :data {:file-path file-path}}
+  (t/trace! {:id ::path->namespace :data {:file-path file-path}}
             (or ((::ns-file/filemap @ns-tracker) (fs/file file-path))
                 ((::ns-file/filemap @ns-tracker) (fs/file (fs/cwd) file-path)))))
 
