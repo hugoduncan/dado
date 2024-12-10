@@ -13,5 +13,5 @@
 The coordinates for `deps.edn` are:
 
 ``` clojure
-com.taoensso/telemere {:mvn/version "v1.0.0-RC1"}
+com.taoensso/telemere {:mvn/version "1.0.0-RC1"}
 ```

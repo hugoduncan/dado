@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps  {com.taoensso/telemere        {:mvn/version "v1.0.0-RC1"}
+ :deps  {com.taoensso/telemere        {:mvn/version "1.0.0-RC1"}
          metosin/malli                {:mvn/version "0.11.0"}
          org.hugoduncan/dado.ai-agent {:local/root "../ai-agent"}}
  :aliases
