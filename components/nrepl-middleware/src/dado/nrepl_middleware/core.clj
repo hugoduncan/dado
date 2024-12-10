@@ -50,6 +50,10 @@
      #(hash-map "role" (str (first %)) "content" (str (last %)))
      messages))
 
+(defn- empty->nil [s]
+  (when-not (str/blank? s)
+    s))
+
 (defn- dado-chat-reply
   [{:keys [agent-name ai-port-name conversation-id message options]
     :as   msg}]
@@ -61,29 +65,30 @@
             :conversation-id conversation-id
             :message         message}}
    (try
-     (let [options         (-> (apply hash-map options)
-                               (update-keys keyword))
+     (let [options          (-> (apply hash-map options)
+                                (update-keys keyword))
            {:keys [invoke-file-path context-mode]}
            options
-           conversation-id (if (str/blank? conversation-id)
-                             (conversation-action/create-conversation!
-                              agent-name
-                              ai-port-name)
-                             conversation-id)
-           context-files   (case (keyword context-mode)
-                             :all
-                             (document-retrieval/all-files ".")
+           invoke-file-path (empty->nil invoke-file-path)
+           conversation-id  (if (str/blank? conversation-id)
+                              (conversation-action/create-conversation!
+                               agent-name
+                               ai-port-name)
+                              conversation-id)
+           context-files    (case (keyword context-mode)
+                              :all
+                              (document-retrieval/all-files ".")
 
-                             :single
-                             (if (str/blank? invoke-file-path)
-                               []
-                               [invoke-file-path])
+                              :single
+                              (if (str/blank? invoke-file-path)
+                                []
+                                [invoke-file-path])
 
-                             :file-dependencies
-                             (document-retrieval/dependency-files
-                              invoke-file-path)
+                              :file-dependencies
+                              (document-retrieval/dependency-files
+                               invoke-file-path)
 
-                             [])
+                              [])
            dirty-git-files (document-retrieval/git-dirty-files)
            git-diffs       (document-retrieval/git-uncommitted-diffs)
            context-files   (vec (set/union
@@ -93,27 +98,31 @@
            this-namespace (some-> invoke-file-path
                                   (document-retrieval/path->namespace))
            project-config (project-config/load-config)
-           extra-prompt   (cond-> ""
-                            invoke-file-path
-                            (str (prompt/render-template
-                                  project-config
-                                  "exophoric-file"
-                                  {:this-file-path invoke-file-path}))
-                            this-namespace
-                            (str (prompt/render-template
-                                  project-config
-                                  "exophoric-namespace"
-                                  {:this-namespace this-namespace}))
-                            (not (str/blank? git-diffs))
-                            (str (prompt/render-template
-                                  project-config
-                                  "git-diffs"
-                                  {:uncommitted-diffs git-diffs})))
-           response       (conversation-action/response!
-                           conversation-id
-                           message
-                           extra-prompt
-                           context-files)]
+
+
+           ;; TODO this would be better as context (non-file based)
+
+           extra-prompt (cond-> ""
+                          invoke-file-path
+                          (str (prompt/render-template
+                                project-config
+                                "exophoric-file"
+                                {:this-file-path invoke-file-path}))
+                          this-namespace
+                          (str (prompt/render-template
+                                project-config
+                                "exophoric-namespace"
+                                {:this-namespace this-namespace}))
+                          (not (str/blank? git-diffs))
+                          (str (prompt/render-template
+                                project-config
+                                "git-diffs"
+                                {:uncommitted-diffs git-diffs})))
+           response     (conversation-action/response!
+                         conversation-id
+                         message
+                         extra-prompt
+                         context-files)]
        (response-for
         msg
         {:status   :done

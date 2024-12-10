@@ -172,7 +172,7 @@ The optional CALLBACK will be called with a list of completions."
        dado-chat--agent-name
        dado-chat--ai-port-name
        dado-chat--conversation-id
-       dado-chat--invoke-file-path))))
+       (or dado-chat--invoke-file-path "")))))
 
 (defvar dado-chat-mode-map
   (let ((map (make-sparse-keymap)))
