@@ -186,7 +186,8 @@
                                            "interface_test.clj")
                                           src->test)]
                        (when (and (not= "interface.clj" file-name)
-                                  (not (deps-paths iface-test)))
+                                  (not (deps-paths iface-test))
+                                  (fs/exists? iface-test))
                          iface-test))
 
           related-paths (reduce into #{}
