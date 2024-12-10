@@ -80,7 +80,7 @@
                                          (:parameters tool)
                                          params)))
                          :type :text}]})]
-            params)]
+            (em/success params))]
        (t/log! {:data {:params   params
                        :schema   (:parameters tool)
                        :success? success?
@@ -89,7 +89,7 @@
                "Execute")
        (if success?
          ((:execute-fn tool) value)
-         value))
+         (t/spy! {:level :warn} value)))
      (catch Exception e
        (t/error!
         e

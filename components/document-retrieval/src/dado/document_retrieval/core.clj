@@ -198,7 +198,9 @@
       ;; sort provides a stable order
       (vec (sort related-paths)))
     (catch Exception e
-      (prn :ignoring e)
+      (t/log! {:data {:file-path  file-path
+                      :ex-message (ex-message e)}}
+              "Could not find dependencies")
       [file-path])))
 
 (defn path->namespace
