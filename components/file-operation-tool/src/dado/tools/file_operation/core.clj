@@ -230,6 +230,8 @@
 (def description
   "Tool for performing atomic file operations within a project directory.
 
+  The parameters are passed using a JSON map.
+
   All paths must be relative and within the project directory. Operations are
   executed atomically - either all operations succeed or none are applied.
 
