@@ -105,8 +105,9 @@
        (nil? index)
        (do
          (t/event! :fop/search-replace-failed
-                   {:data {:context search
-                           :content content}})
+                   {:level :warn
+                    :data  {:context search
+                            :content content}})
          [content {:error   :error/patch-context-mismatch
                    :context {:op-info op-info
                              :content content}}])
@@ -114,8 +115,9 @@
        (and (seq search) (str/index-of post-str search))
        (do
          (t/event! :error/patch-failed
-                   {:data {:context search
-                           :content content}})
+                   {:level :warn
+                    :data  {:context search
+                            :content content}})
          [content {:error   :error/patch-insufficient-context
                    :context {:op-info op-info
                              :context search
