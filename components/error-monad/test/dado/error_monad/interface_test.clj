@@ -1,73 +1,70 @@
 (ns dado.error-monad.interface-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [dado.error-monad.interface :refer [bind do-error failure fmap maybe success]]))
-
-
-;;; Error Monad
+   [dado.error-monad.interface :as em]))
 
 (deftest monad-laws-test
   (testing "left identity: (bind (success x) f) ≡ (f x)"
-    (let [f #(success (inc %))]
-      (is (= (bind (success 1) f)
+    (let [f #(em/success (inc %))]
+      (is (= (em/bind (em/success 1) f)
              (f 1)))))
 
   (testing "right identity: (bind m success) ≡ m"
-    (is (= (bind (success 1) success)
-           (success 1)))
-    (is (= (bind (failure "error") success)
-           (failure "error"))))
+    (is (= (em/bind (em/success 1) em/success)
+           (em/success 1)))
+    (is (= (em/bind (em/failure "error") em/success)
+           (em/failure "error"))))
 
   (testing "associativity: (bind (bind m f) g) ≡ (bind m #(bind (f %) g))"
-    (let [f #(success (inc %))
-          g #(success (* % 2))
-          m (success 1)]
-      (is (= (bind (bind m f) g)
-             (bind m #(bind (f %) g)))))))
+    (let [f #(em/success (inc %))
+          g #(em/success (* % 2))
+          m (em/success 1)]
+      (is (= (em/bind (em/bind m f) g)
+             (em/bind m #(em/bind (f %) g)))))))
 
 (deftest basic-operations-test
   (testing "success creation and access"
-    (let [m (success 1)]
+    (let [m (em/success 1)]
       (is (:success? m))
       (is (= 1 (:value m)))))
 
   (testing "failure creation and access"
-    (let [m (failure "error")]
+    (let [m (em/failure "error")]
       (is (not (:success? m)))
       (is (= "error" (:value m)))))
 
   (testing "bind with success"
-    (is (= (success 2)
-           (bind (success 1) #(success (inc %))))))
+    (is (= (em/success 2)
+           (em/bind (em/success 1) #(em/success (inc %))))))
 
   (testing "bind with failure"
-    (is (= (failure "error")
-           (bind (failure "error") #(success (inc %))))))
+    (is (= (em/failure "error")
+           (em/bind (em/failure "error") #(em/success (inc %))))))
 
   (testing "fmap with success"
-    (is (= (success 2)
-           (fmap inc (success 1)))))
+    (is (= (em/success 2)
+           (em/fmap inc (em/success 1)))))
 
   (testing "fmap with failure"
-    (is (= (failure "error")
-           (fmap inc (failure "error"))))))
+    (is (= (em/failure "error")
+           (em/fmap inc (em/failure "error"))))))
 
 (deftest do-error-test
   (testing "do-error with successful chain"
-    (is (= (success 6)
-           (do-error [a (success 1)
-                      b (success (inc a))
-                      c (success (* b 2))]
-                     (success (+ c 2))))))
+    (is (= (em/success 6)
+           (em/do-error [a (em/success 1)
+                      b (em/success (inc a))
+                      c (em/success (* b 2))]
+                     (em/success (+ c 2))))))
 
   (testing "do-error fails fast on first error"
-    (is (= (failure "boom")
-           (do-error [a (success 1)
-                      b (failure "boom")
-                      c (success 3)]
-                     (success (+ a b c))))))
+    (is (= (em/failure "boom")
+           (em/do-error [a (em/success 1)
+                      b (em/failure "boom")
+                      c (em/success 3)]
+                     (em/success (+ a b c))))))
 
   (testing "do-error with empty binding vector"
-    (is (= (success 1)
-           (do-error []
-                     (success 1))))))
+    (is (= (em/success 1)
+           (em/do-error []
+                     (em/success 1))))))

@@ -1,12 +1,14 @@
 (ns dado.ai.tool.core
   "Core implementation of AI tool management"
-  (:require [dado.ai.tool.model :as model]
-            [malli.core :as m]
-            [malli.error :as me]
-            [taoensso.telemere :as t]
-            [taoensso.truss :refer [have?]]
-            [jsonista.core :as j]
-            [clojure.string :as str]))
+  (:require
+   [dado.ai.tool.model :as model]
+   [dado.error-monad.interface :as em]
+   [malli.core :as m]
+   [malli.error :as me]
+   [taoensso.telemere :as t]
+   [taoensso.truss :refer [have?]]
+   [jsonista.core :as j]
+   [clojure.string :as str]))
 
 ;; Tool registry
 (def ^:private tool-registry (atom {}))
@@ -35,20 +37,6 @@
   (t/trace! {:id :tool/lookup}
             (get @tool-registry tool-id)))
 
-(defrecord ErrorMonadValue
-    [success? value])
-
-(defn success [x] (->ErrorMonadValue true x))
-(defn failure [x] (->ErrorMonadValue false x))
-(defn maybe [success? value] (->ErrorMonadValue success? value))
-(defn bind [m f] (if (:success? m) (f (:value m)) m))
-(defn fmap [f m] (bind m (fn cont [x] (success (f x)))))
-(defmacro do-error [bindings expr]
-  (let [[sym m & rest] bindings]
-    (if sym
-      `(bind ~m (fn [~sym] (do-error ~(vec rest) ~expr)))
-      `(success ~expr))))
-
 
 (defn- tool-ex [e]
   {:is-error? true
@@ -71,15 +59,15 @@
     :data  {:tool tool :params params}}
    (try
      (let [{:keys [success? value] :as v}
-           (do-error
+           (em/do-error
             [params (if (string? params)
                       (try
-                        (success
+                        (em/success
                          (j/read-value params j/keyword-keys-object-mapper))
                         (catch Exception e
-                          (failure (tool-ex e))))
-                      (success params))
-             invalid (maybe
+                          (em/failure (tool-ex e))))
+                      (em/success params))
+             invalid (em/maybe
                       (t/spy! :warn
                               (m/validate
                                (:parameters tool)
