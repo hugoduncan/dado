@@ -1,5 +1,6 @@
 {:deps
- {;; components
+ {
+  ;; components
   org.hugoduncan/dado.ai-agent                  {:local/root "components/ai-agent"}
   org.hugoduncan/dado.ai-architect-agent        {:local/root "components/ai-architect-agent"}
   org.hugoduncan/dado.ai-claude                 {:local/root "components/ai-claude"}
@@ -28,6 +29,7 @@
   org.hugoduncan/dado.elisp-funs                {:local/root "components/elisp-funs"}
   org.hugoduncan/dado.elisp-target              {:local/root "components/elisp-target"}
   org.hugoduncan/dado.emacs-core                {:local/root "components/emacs-core"}
+  org.hugoduncan/dado.error-monad               {:local/root "components/error-monad"}
   org.hugoduncan/dado.implement-namespace       {:local/root "components/implement-namespace"}
   org.hugoduncan/dado.logging                   {:local/root "components/logging"}
   org.hugoduncan/dado.nrepl-middleware          {:local/root "components/nrepl-middleware"}
