@@ -74,7 +74,8 @@
            (do-error
             [params (if (string? params)
                       (try
-                        (success (j/read-value params))
+                        (success
+                         (j/read-value params j/keyword-keys-object-mapper))
                         (catch Exception e
                           (failure (tool-ex e))))
                       (success params))
@@ -86,6 +87,7 @@
                       {:is-error? true
                        :content
                        [{:text "Invalid parameters" :type :text}
+                        {:text (pr-str params) :type :text}
                         {:text (pr-str (me/humanize
                                         (m/explain
                                          (:parameters tool)

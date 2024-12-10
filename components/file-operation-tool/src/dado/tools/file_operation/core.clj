@@ -8,7 +8,8 @@
             [malli.core :as m]
             [malli.error :as me]
             [taoensso.telemere :as t]
-            [taoensso.truss :refer [have]]))
+            [taoensso.truss :refer [have]]
+            [malli.json-schema :as json]))
 
 (defn- op-summary [{:keys [operation path target-path]}]
   {:operation operation :paths (filterv identity [path target-path])})
@@ -201,7 +202,8 @@
    {:id   ::execute-operations!
     :data {:operations operations}}
 
-   (let [invalid (not-empty (vec (keep validate-operation operations)))]
+   (let [operations (mapv operation->kw operations)
+         invalid    (not-empty (vec (keep validate-operation operations)))]
      (or
       invalid
       (let [ops-errors (mapv apply-file-operation operations)
@@ -226,27 +228,48 @@
     :is-error (boolean (some last result))}))
 
 (def description
-  "Tool for performing file operations.
+  "Tool for performing atomic file operations within a project directory.
 
-  All paths must be relative and within project directory.
+  All paths must be relative and within the project directory. Operations are
+  executed atomically - either all operations succeed or none are applied.
 
-  The tool performs a sequence of file operations.
+  The tool supports the following operations:
 
-  A single operation supports one of file create, edit, move, copy or delete.
+  CREATE:
+    - Creates a new file at the specified path
+    - Required: \"path\", \"content\"
+    - The target path must not exist
+    - Parent directories will be created as needed
 
-  - The \"create\" operation creates the \"path\" file with \"content\".
+  EDIT:
+    - Modifies an existing file using search and replace
+    - Required: \"path\", \"search-blocks\"
+    - File must exist
+    - Each search block must match exactly once
+    - Search blocks are applied in order
 
-  - The \"delete\" operation deletes the \"path\" file.
+  MOVE:
+    - Moves a file to a new location
+    - Required: \"path\", \"target-path\"
+    - Source must exist
+    - Target must not exist
+    - Parent directories will be created as needed
 
-  - The \"edit\" operation edits the file at \"path\" and for each \"search-blocks\"
-  replaces \"search\" with \"replace\".
+  COPY:
+    - Copies a file to a new location
+    - Required: \"path\", \"target-path\"
+    - Source must exist
+    - Target must not exist
+    - Parent directories will be created as needed
 
-  - The :copy operation copies the file at :path to :target-path.
+  DELETE:
+    - Removes an existing file
+    - Required: \"path\"
+    - File must exist
 
-  - The :move operation moves the file at :path to :target-path.
+  Examples:
 
-  An example of the parameters:
-
+  1. Creating and deleting files:
   <example>
   {\"operations\":
   [{\"operation\": \"create\",
@@ -255,6 +278,7 @@
    {\"operation\": \"delete\", \"path\": \"file/to/delete.clj\"}]}
   </example>
 
+  2. Editing file content:
   <example>
   {\"operations\":
   [{\"operation\": \"edit\",
@@ -266,6 +290,7 @@
       \"replace\": \"text it should be replaced by\"}]}]}
   </example>
 
+  3. Moving and copying files:
   <example>
   {\"operations\":
   [{\"operation\": \"copy\",
@@ -383,7 +408,7 @@
    :parameters
    [:map
     [:operations
-     [:vector model/FileOperation]]]
+     [:vector model/FileOperationParameter]]]
    :returns
    {:type        :vector
     :description "Sequence of operation results"}

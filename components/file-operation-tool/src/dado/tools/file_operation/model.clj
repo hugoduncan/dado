@@ -33,6 +33,26 @@
     [:operation [:= :delete]]
     [:path :string]]])
 
+(def FileOperationParameter
+  [:or
+   [:map
+    [:operation [:= "create"]]
+    [:path :string]
+    [:content {:optional true} :string]]
+   [:map
+    [:operation [:= "edit"]]
+    [:path :string]
+    [:search-blocks
+     {:optional true}
+     [:vector SearchBlock]]]
+   [:map
+    [:operation [:enum "move" "copy"]]
+    [:path :string]
+    [:target-path {:optional true} :string]]
+   [:map
+    [:operation [:= "delete"]]
+    [:path :string]]])
+
 (def OperationResult
   [:map
    [:operation Operation]
