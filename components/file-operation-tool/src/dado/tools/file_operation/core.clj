@@ -272,33 +272,33 @@
   1. Creating and deleting files:
   <example>
   {\"operations\":
-  [{\"operation\": \"create\",
-    \"content\": \"some content\",
-    \"path\": \"file/to/create..md\"},
-   {\"operation\": \"delete\", \"path\": \"file/to/delete.clj\"}]}
+   [{\"operation\": \"create\",
+     \"content\": \"some content\",
+     \"path\": \"file/to/create..md\"},
+    {\"operation\": \"delete\", \"path\": \"file/to/delete.clj\"}]}
   </example>
 
   2. Editing file content:
   <example>
   {\"operations\":
-  [{\"operation\": \"edit\",
-    \"path\": \"file/to/edit.md\",
-  \"search-blocks\":
-    [{\"search\": \"text to modify\",
-      \"replace\": \"text it should be replaced by\"},
-     {\"search\": \"other text to modify\",
-      \"replace\": \"text it should be replaced by\"}]}]}
+   [{\"operation\": \"edit\",
+     \"path\": \"file/to/edit.md\",
+     \"search-blocks\":
+      [{\"search\": \"text to modify\",
+        \"replace\": \"text it should be replaced by\"},
+       {\"search\": \"other text to modify\",
+        \"replace\": \"text it should be replaced by\"}]}]}
   </example>
 
   3. Moving and copying files:
   <example>
   {\"operations\":
-  [{\"operation\": \"copy\",
-    \"path\": \"file/to/copy.md\",
-    \"target-path\": \"location/to/copy/to.md\"},
-   {\"operation\": \"move\",
-    \"path\": \"file/to/move.md\",
-    \"target-path\": \"location/to/move/to.md\"}]}
+   [{\"operation\": \"copy\",
+     \"path\": \"file/to/copy.md\",
+     \"target-path\": \"location/to/copy/to.md\"},
+    {\"operation\": \"move\",
+     \"path\": \"file/to/move.md\",
+     \"target-path\": \"location/to/move/to.md\"}]}
   </example>")
 
 (def describe-tool
