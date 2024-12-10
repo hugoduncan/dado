@@ -85,8 +85,9 @@
                                 [invoke-file-path])
 
                               :file-dependencies
-                              (document-retrieval/dependency-files
-                               invoke-file-path)
+                              (when invoke-file-path
+                                (document-retrieval/dependency-files
+                                 invoke-file-path))
 
                               [])
            dirty-git-files (document-retrieval/git-dirty-files)

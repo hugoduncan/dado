@@ -9,7 +9,8 @@
    [clojure.tools.namespace.dir :as ns-dir]
    [clojure.tools.namespace.file :as ns-file]
    [clojure.tools.namespace.parse :as ns-parse]
-   [clojure.tools.namespace.track :as ns-track]))
+   [clojure.tools.namespace.track :as ns-track]
+   [taoensso.telemere :as t]))
 
 ;;; tools.deps
 
@@ -203,8 +204,9 @@
   [file-path]
   (let [paths (all-deps-source-paths "." [:test])]
     (deps-graph paths))                          ; to refresh tracker
-  (or ((::ns-file/filemap @ns-tracker) (fs/file file-path))
-      ((::ns-file/filemap @ns-tracker) (fs/file (fs/cwd) file-path))))
+  (t/trace! {:id ::path->namespace :level :warn :data {:file-path file-path}}
+            (or ((::ns-file/filemap @ns-tracker) (fs/file file-path))
+                ((::ns-file/filemap @ns-tracker) (fs/file (fs/cwd) file-path)))))
 
 ;;; Git operations
 
