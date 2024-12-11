@@ -248,6 +248,8 @@
     - File must exist
     - Each search block must match exactly once
     - Search blocks are applied in order
+    - Whitespace and indentation are extremely important in the search string
+      and must match the current document contents exactly.
 
   MOVE:
     - Moves a file to a new location
