@@ -180,7 +180,10 @@
         :text (if error-map
                 (str "Error: " (pr-str error-map))
                 (str/join "\n" (into [] (comp (map :path) (map str)) matches)))}]
-      :is-error (boolean (seq error-map))})))
+      :is-error    (boolean (seq error-map))
+      :context-mod (if error-map {}
+                       {:files     (into [] (comp (map :path) (map str)) matches)
+                        :operation :set!})})))
 
 (comment
   (result-content (execute-tool! {:pattern "context-file" :mode "exact"}))
@@ -191,6 +194,8 @@
   "Searches project files for exact text or regex patterns.
 
   Returns a list of matching files, with optional context lines around matches.
+
+  Adds the matched files to the AI managed context.
 
   Use this for finding code references, documentation strings, or text patterns
   across multiple files.
