@@ -112,17 +112,22 @@
   (t/trace!
    {:id   :dado.ai.claude/request-translation
     :data {:message-thread message-thread}}
-   (let [{:keys [model-name max-tokens]}       config
-         {:keys [system-prompt context tools]} (:metadata message-thread)
-         system-content                        (if (seq (:files context))
-                                                 (vec
-                                                  (concat
-                                                   (when system-prompt
-                                                     [{:type "text"
-                                                       :text system-prompt}])
-                                                   (->system-content (:files context))))
-                                                 ;; Just system prompt as string if no files
-                                                 system-prompt)]
+   (let [{:keys [model-name max-tokens]} config
+         {:keys [system-prompt context tools ai-managed-context]}
+         (:metadata message-thread)
+         system-content
+         (if (seq (:files context))
+           (vec
+            (concat
+             (when system-prompt
+               [{:type "text"
+                 :text system-prompt}])
+             (->system-content
+              (cond-> (:files context)
+                (seq (:files ai-managed-context))
+                (conj (:files context) (:files ai-managed-context))))))
+           ;; Just system prompt as string if no files
+           system-prompt)]
      (cond-> {:model      (or model-name default-model-name)
               :messages   (mapv to-claude-message (:messages message-thread))
               :max_tokens (or max-tokens default-max-tokens)}
