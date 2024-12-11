@@ -25,7 +25,6 @@
     (case mode
       :regex (let [p (re-pattern pattern)]
                (fn [line]
-                 (prn :line line :pattern pattern :match (re-find p line))
                  (re-find p line)))
       :exact (if case-sensitive?
                (fn literal-match [s]
@@ -138,12 +137,13 @@
                 max-matches
                 extensions]
          :as   params}
-        (merge
-         {:mode            :exact
-          :case-sensitive? false
-          :max-matches     default-max-matches
-          :extensions      [".clj" ".cljc" ".cljs" ".edn" ".md" ".txt"]}
-         params)]
+        (cond-> (merge
+                 {:mode            :exact
+                  :case-sensitive? false
+                  :max-matches     default-max-matches
+                  :extensions      [".clj" ".cljc" ".cljs" ".edn" ".md" ".txt"]}
+                 params)
+          (string? mode) (update :mode keyword))]
     (t/trace!
      {:id           :matching-file/search
       :catch->error {:rethrow? true}
@@ -176,16 +176,16 @@
    {:id ::result-content :data {:result result}}
    (let [[{:keys [matches truncated?]} error-map] result]
      {:content
-      {:type :text
-       :text (if error-map
-               (str "Error: " (pr-str error-map))
-               (str/join "\n" (into [] (comp (map :path) (map str)) matches)))}
+      [{:type :text
+        :text (if error-map
+                (str "Error: " (pr-str error-map))
+                (str/join "\n" (into [] (comp (map :path) (map str)) matches)))}]
       :is-error (boolean (seq error-map))})))
 
 (comment
-  (result-content (execute-tool! {:pattern "context-file"}))
+  (result-content (execute-tool! {:pattern "context-file" :mode "exact"}))
   (with-redefs [make-matcher (fn [& _] (throw (ex-info "errr" {})))]
-    (result-content (execute-tool! {:pattern "context-file"}))))
+    (result-content (execute-tool! {:pattern "context-file" :mode "exact"}))))
 
 (def ^:private description
   "Searches project files for exact text or regex patterns.
