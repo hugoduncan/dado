@@ -104,24 +104,23 @@
      (cond
        (nil? index)
        (do
-         (t/event! :fop/search-replace-failed
+         (t/event! :error/could-not-find-search-text
                    {:level :warn
                     :data  {:context search
                             :content content}})
-         [content {:error   :error/patch-context-mismatch
+         [content {:error   :error/could-not-find-search-text
                    :context {:op-info op-info
-                             :content content}}])
+                             :search  search}}])
 
        (and (seq search) (str/index-of post-str search))
        (do
-         (t/event! :error/patch-failed
+         (t/event! :error/search-text-not-unique
                    {:level :warn
                     :data  {:context search
                             :content content}})
-         [content {:error   :error/patch-insufficient-context
+         [content {:error   :error/search-text-not-unique
                    :context {:op-info op-info
-                             :context search
-                             :content content}}])
+                             :search  search}}])
 
        :else
        [(str (->> [(subs content 0 index) replace post-str]
@@ -269,7 +268,7 @@
     - Required: \"path\"
     - File must exist
 
-  Examples:
+  # Examples:
 
   1. Creating and deleting files:
   <example>
@@ -301,7 +300,14 @@
     {\"operation\": \"move\",
      \"path\": \"file/to/move.md\",
      \"target-path\": \"location/to/move/to.md\"}]}
-  </example>")
+  </example>
+
+  # Troubleshooting
+
+  If an edit operation errors with a could-not-find-search-text error, then
+  check that the string you provided to the \"search\" field exactly matches the
+  existing text of the document you want to edit.  Do not guess about character
+  escaping errors.")
 
 (def describe-tool
   "To change files, use the `<file-operation>` tag.
