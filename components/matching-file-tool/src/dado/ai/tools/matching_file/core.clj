@@ -174,10 +174,32 @@
                             :cause e}))))))))
 
 (def ^:private description
-  "Searches project files for content matches and returns matching files.")
+  "Searches project files for exact text or regex patterns.
+
+  Returns a list of matching files, with optional context lines around matches.
+
+  Use this for finding code references, documentation strings, or text patterns
+  across multiple files.
+
+  Supports case-sensitive search and file extension filtering.
+
+  Examples:
+
+  1. Find exact function name:
+   {:pattern \"defn process-order\"
+    :extensions [\".clj\" \".cljc\"]}
+
+  2. Find documentation with regex:
+   {:pattern \"Returns.*order\"
+    :mode :regex
+    :context-lines 3}
+
+  3. Case-sensitive class name:
+   {:pattern \"OrderProcessor\"
+    :case-sensitive? true
+    :extensions [\".clj\"]}")
 
 (defn create-agent
-  create-agent
   "Creates a refactoring agent for code modifications."
   [project-config additional-context-fn]
   {:id           :dado/matching-file
