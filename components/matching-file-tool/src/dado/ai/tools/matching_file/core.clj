@@ -11,7 +11,7 @@
    [taoensso.truss :refer [have have?]]))
 
 (def ^:private default-max-matches 20)
-(def ^:private default-context-lines 2)
+(def ^:private default-context-lines nil)
 
 (defn- normalize-pattern [mode case-sensitive? pattern]
   (if case-sensitive?
@@ -141,7 +141,6 @@
         (merge
          {:mode            :exact
           :case-sensitive? false
-          :context-lines   default-context-lines
           :max-matches     default-max-matches
           :extensions      [".clj" ".cljc" ".cljs" ".edn" ".md" ".txt"]}
          params)]
@@ -161,17 +160,32 @@
              files    (find-files extensions)
              searcher (fn [p] (search-file p matcher context-lines))
              results  (sequence (keep searcher) files)]
-         {:matches    (vec (take max-matches results))
-          :truncated? (boolean (seq (drop max-matches results)))})
+         [{:matches    (vec (take max-matches results))
+           :truncated? (boolean (seq (drop max-matches results)))}])
 
        (catch Exception e
-         (if (contains? #{:error/tool-validation
-                          :error/invalid-search-pattern}
-                        (:type (ex-data e)))
-           (throw e)
-           (throw (ex-info "File search failed"
-                           {:type  :error/file-search
-                            :cause e}))))))))
+         [{}
+          (if (contains? #{:error/tool-validation
+                           :error/invalid-search-pattern}
+                         (:type (ex-data e)))
+            {:error (ex-message e) :ex-data (ex-data e)}
+            {:error (ex-message e) :ex-data (ex-data e)})])))))
+
+(defn- result-content [result]
+  (t/trace!
+   {:id ::result-content :data {:result result}}
+   (let [[{:keys [matches truncated?]} error-map] result]
+     {:content
+      {:type :text
+       :text (if error-map
+               (str "Error: " (pr-str error-map))
+               (str/join "\n" (into [] (comp (map :path) (map str)) matches)))}
+      :is-error (boolean (seq error-map))})))
+
+(comment
+  (result-content (execute-tool! {:pattern "context-file"}))
+  (with-redefs [make-matcher (fn [& _] (throw (ex-info "errr" {})))]
+    (result-content (execute-tool! {:pattern "context-file"}))))
 
 (def ^:private description
   "Searches project files for exact text or regex patterns.
@@ -201,7 +215,7 @@
 
 (defn create-tool
   "Creates a refactoring agent for code modifications."
-  [project-config additional-context-fn]
+  []
   {:id           :dado/matching-file
    :name         "Matching File Tool"
    :description  description
@@ -221,4 +235,4 @@
     :description "Map containing matched file paths and optional context"}
    :prompt-fn    (constantly "Use this tool to search for files containing specific content.")
    :recognize-fn #(boolean (re-find #"(?i)find files?|search.*files?" %))
-   :execute-fn   execute-tool!})
+   :execute-fn   (comp result-content execute-tool!)})

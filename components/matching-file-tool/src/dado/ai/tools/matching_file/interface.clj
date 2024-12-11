@@ -5,5 +5,5 @@
 
 (defn create-tool
   "Creates a refactoring agent for code modifications."
-  [project-config additional-context-fn]
-  (core/create-tool project-config additional-context-fn))
+  []
+  (core/create-tool))
