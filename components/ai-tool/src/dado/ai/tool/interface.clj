@@ -49,3 +49,6 @@
 
 (defn tool? [x]
   (model/tool? x))
+
+(defn execution-result? [x]
+  (model/execution-result? x))

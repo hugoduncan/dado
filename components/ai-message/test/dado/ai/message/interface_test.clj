@@ -295,7 +295,10 @@
                       :created-at (java.time.Instant/now)
                       :messages   []
                       :metadata   {:model "test-model"}}
-              result (message/update-ai-managed-context thread files {})]
+              result (message/update-ai-managed-context
+                      thread
+                      {:files     files
+                       :operation :set!})]
 
           ;; Verify structure
           (let [result-files (get-in result [:metadata :ai-managed-context :files])]
@@ -326,5 +329,5 @@
              #"No such file"
              (message/update-ai-managed-context
               thread
-              ["non-existent.txt"]
-              {})))))))
+              {:files     ["non-existent.txt"]
+               :operation :set!})))))))

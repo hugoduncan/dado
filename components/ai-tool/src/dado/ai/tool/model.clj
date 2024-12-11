@@ -41,8 +41,16 @@
 (def ExecutionResult
   "Schema for tool execution results"
   [:map
-   [:result any?]
-   [:error {:optional true} map?]
+   [:context-mod [:map
+                  [:files [:vector :string]]
+                  [:operation [:enum :set! :add!]]]]
+   [:content any?]
+   [:is-error {:optional true} map?]
    [:metrics {:optional true} map?]])
 
-(def tool? (m/validator Tool))
+(def tool-validator (m/validator Tool))
+(defn tool? [x] (tool-validator x))
+
+(def execution-result-validator (m/validator ExecutionResult))
+(defn execution-result? [x]
+  (execution-result-validator x))

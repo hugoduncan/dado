@@ -165,8 +165,8 @@
    Each value in the sequence is included in the AI-managed context files.
    Returns updated message thread with new AI-managed context files.
    Throws if any file does not exist or message thread is invalid."
-  [message-thread context-files {:keys [operation] :as options}]
-  (core/update-ai-managed-context message-thread context-files options))
+  [message-thread context-mod]
+  (core/update-ai-managed-context message-thread context-mod))
 
 ;; Expose validators for use by other components
 (def message? model/message?)
