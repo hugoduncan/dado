@@ -199,7 +199,7 @@
     :case-sensitive? true
     :extensions [\".clj\"]}")
 
-(defn create-agent
+(defn create-tool
   "Creates a refactoring agent for code modifications."
   [project-config additional-context-fn]
   {:id           :dado/matching-file

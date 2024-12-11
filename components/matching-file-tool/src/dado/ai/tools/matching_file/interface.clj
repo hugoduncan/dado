@@ -3,8 +3,7 @@
    Supports exact and regex pattern matching with context lines."
   (:require [dado.ai.tools.matching-file.core :as core]))
 
-(defn create-agent
-  create-agent
+(defn create-tool
   "Creates a refactoring agent for code modifications."
   [project-config additional-context-fn]
-  (core/create-agent project-config additional-context-fn))
+  (core/create-tool project-config additional-context-fn))
