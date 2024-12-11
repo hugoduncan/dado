@@ -5,6 +5,7 @@
    [dado.ai.prompt.interface :as prompt]
    [dado.project-config.interface :as project-config]
    [dado.tools.file-operation.interface :as file-operation]
+   [dado.ai.tools.matching-file.interface :as matching-file]
    [dado.tools.reload-namespaces.core :as reload-namespaces]
    [malli.core :as m]
    [malli.error :as me]
@@ -66,4 +67,5 @@
                                   additional-context-fn)
     :process-response-fn process-response
     :ai-tools            [(file-operation/create-tool)
-                          (reload-namespaces/create-tool)]}))
+                          (reload-namespaces/create-tool)
+                          (matching-file/create-tool)]}))
