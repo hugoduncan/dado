@@ -159,6 +159,15 @@
     [message-thread tool-call-id result]
     (core/add-tool-result message-thread tool-call-id result))
 
+(defn update-ai-managed-context
+  "Updates the AI-managed context files in a message thread.
+   Takes a sequence of file paths similar.
+   Each value in the sequence is included in the AI-managed context files.
+   Returns updated message thread with new AI-managed context files.
+   Throws if any file does not exist or message thread is invalid."
+  [message-thread context-files {:keys [operation] :as options}]
+  (core/update-ai-managed-context message-thread context-files options))
+
 ;; Expose validators for use by other components
 (def message? model/message?)
 (def message-thread? model/message-thread?)

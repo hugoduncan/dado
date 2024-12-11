@@ -1,7 +1,8 @@
 (ns dado.ai.message.interface-test
   (:require [clojure.test :refer :all]
             [dado.ai.message.interface :as message]
-            [malli.generator :as mg]))
+            [malli.generator :as mg]
+            [taoensso.encore :refer [throws?]]))
 
 (deftest text-content-test
   (testing "creates text content map"
@@ -33,7 +34,7 @@
       (is (= [] (:content msg)))))
 
   (testing "creates message with name"
-    (let [msg (message/create-message :system :name "config")]
+    (let [msg (message/create-message :assistant :name "config")]
       (is (= "config" (:name msg)))
       (is (= [] (:content msg)))))
 
@@ -254,11 +255,14 @@
                     :created-at (java.time.Instant/now)
                     :messages   []
                     :metadata   {:model "test-model"}}]
-        (is (thrown? java.io.FileNotFoundException
+        (is (throws? java.io.FileNotFoundException
+                     "No such file"
                      (message/add-context-file thread "non-existent.txt")))
-        (is (thrown? java.io.FileNotFoundException
+        (is (throws? java.io.FileNotFoundException
+                     "No such file"
                      (message/add-context-file-sequence thread ["non-existent.txt"])))
-        (is (thrown? java.io.FileNotFoundException
+        (is (throws? java.io.FileNotFoundException
+                     "No such file"
                      (message/set-context-files thread [["non-existent.txt"]])))))
 
     (testing "invalid thread"
@@ -277,3 +281,50 @@
 (deftest message-thread-schema-generator-test
   (is (message/message-thread?
        (mg/generate message/message-thread-schema))))
+
+(deftest update-ai-managed-context-test
+  (testing "update-ai-managed-context with multiple sequences"
+    (let [files    (repeatedly 3 #(java.io.File/createTempFile "test" ".txt"))
+          contents ["content1" "content2" "content3"]]
+      (try
+        ;; Create test files
+        (doseq [[file content] (map vector files contents)]
+          (spit file content))
+
+        (let [thread {:id         "test"
+                      :created-at (java.time.Instant/now)
+                      :messages   []
+                      :metadata   {:model "test-model"}}
+              result (message/update-ai-managed-context thread files {})]
+
+          ;; Verify structure
+          (let [result-files (get-in result [:metadata :ai-managed-context :files])]
+            (is (= 3 (count result-files)) "Should have three files")
+
+            ;; Verify contents
+            (is (= #{"content1" "content2" "content3"}
+                   (into #{} (map :content) result-files)))
+
+            ;; Verify file names
+            (is (= (into #{} (map str) files)
+                   (into #{} (map :name) result-files))))
+
+          (is (message/message-thread? result)))
+
+        (finally
+          (doseq [file files]
+            (.delete file))))))
+
+  (testing "error handling"
+    (testing "non-existent file"
+      (let [thread {:id         "test"
+                    :created-at (java.time.Instant/now)
+                    :messages   []
+                    :metadata   {:model "test-model"}}]
+        (is (throws?
+             java.io.FileNotFoundException
+             #"No such file"
+             (message/update-ai-managed-context
+              thread
+              ["non-existent.txt"]
+              {})))))))

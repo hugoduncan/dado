@@ -168,6 +168,26 @@
                                   %)
                                calls)))))
 
+(defn update-ai-managed-context
+  "Updates the AI-managed context files in a message thread.
+   Takes a sequence of sequences of file paths similar to set-context-files.
+   Each inner sequence becomes a sequence in the AI-managed context files."
+  [message-thread context-files {:keys [operation]}]
+  {:pre [(have? model/message-thread? message-thread)
+         (have? (some-fn nil? sequential?) context-files)
+         (have? (some-fn nil? #{:set! :add!}) operation)]}
+  (t/trace!
+   {:id :message/ai-managed-context-updated}
+   (case operation
+     :add!
+     (update-in message-thread
+                [:metadata :ai-managed-context :files]
+                (fnil conj #{})
+                (mapv file-path->content-map context-files))
+     (assoc-in message-thread
+               [:metadata :ai-managed-context :files]
+               (set (mapv file-path->content-map context-files))))))
+
 (defn add-response
   "Adds a response message to the message thread"
   [message-thread response]

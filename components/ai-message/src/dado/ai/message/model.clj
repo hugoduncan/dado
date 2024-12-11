@@ -68,7 +68,12 @@
                             [:name string?]
                             [:content string?]]]]]]]
                [:tools {:optional true} [:vector tool/Tool]]
-               ]]])
+               [:ai-managed-context {:optional true}
+                [:map
+                 [:files [:set
+                          [:map
+                           [:name string?]
+                           [:content string?]]]]]]]]])
 
 (def ResponseMessage
   [:map
