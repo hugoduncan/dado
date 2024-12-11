@@ -10,8 +10,6 @@
    [dado.http.interface :as http]
    [dado.project-config.interface :as project-config]
    [dado.repl.message-loop.interface :as message-loop]
-   [dado.tools.file-operation.interface :as file-operation]
-   [dado.tools.reload-namespaces.core :as reload-namespaces]
    [hato.client :as hc]
    [taoensso.truss :refer [have]]))
 
@@ -23,8 +21,7 @@
         context-files  (volatile! [])
         message-thread (-> (message/create-message-thread (model-name-fn))
                            (message/register-tools
-                            [(file-operation/create-tool)
-                             (reload-namespaces/create-tool)]))
+                            (:ai-tools agent)))
         conversation   (conversation/create
                         agent
                         (partial

@@ -225,8 +225,8 @@
    :parameters
    [:map
     [:pattern :string]
-    [:mode {:optional true} [:enum :exact :regex]]
-    [:case-sensitive? {:optional true} :boolean]
+    [:mode {:optional true} [:enum "regex" "exact"]]
+    [:case-sensitive {:optional true} :boolean]
     [:context-lines {:optional true} :int]
     [:max-matches {:optional true} :int]
     [:extensions {:optional true} [:vector :string]]]

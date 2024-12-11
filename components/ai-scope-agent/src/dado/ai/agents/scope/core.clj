@@ -3,6 +3,7 @@
    [babashka.fs :as fs]
    [dado.ai.agent.interface :as agent]
    [dado.ai.prompt.interface :as prompt]
+   [dado.ai.tools.matching-file.interface :as matching-file]
    [dado.project-config.interface :as project-config]
    [dado.tools.file-operation.interface :as file-operation]
    [malli.core :as m]
@@ -68,4 +69,5 @@
                                   project-config
                                   additional-context-fn)
     :process-response-fn process-response
-    :ai-tools            [(file-operation/create-tool)]}))
+    :ai-tools            [(file-operation/create-tool)
+                          (matching-file/create-tool)]}))
