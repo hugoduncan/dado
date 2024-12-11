@@ -172,3 +172,31 @@
            (throw (ex-info "File search failed"
                            {:type  :error/file-search
                             :cause e}))))))))
+
+(def ^:private description
+  "Searches project files for content matches and returns matching files.")
+
+(defn create-agent
+  create-agent
+  "Creates a refactoring agent for code modifications."
+  [project-config additional-context-fn]
+  {:id           :dado/matching-file
+   :name         "Matching File Tool"
+   :description  description
+   :structured-description
+   {:claude
+    {:description "Tool for finding files containing specific content. Supports exact and regex matching."}}
+   :parameters
+   [:map
+    [:pattern :string]
+    [:mode {:optional true} [:enum :exact :regex]]
+    [:case-sensitive? {:optional true} :boolean]
+    [:context-lines {:optional true} :int]
+    [:max-matches {:optional true} :int]
+    [:extensions {:optional true} [:vector :string]]]
+   :returns
+   {:type        :map
+    :description "Map containing matched file paths and optional context"}
+   :prompt-fn    (constantly "Use this tool to search for files containing specific content.")
+   :recognize-fn #(boolean (re-find #"(?i)find files?|search.*files?" %))
+   :execute-fn   execute-tool!})
