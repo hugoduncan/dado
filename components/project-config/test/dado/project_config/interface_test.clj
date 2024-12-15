@@ -23,6 +23,10 @@
   {:directories
    {:dado/prompts "/absolute/path"}})
 
+(def valid-all-config
+  {:directories
+   {:dado/all "design"}})
+
 (deftest get-directory-test
   (testing "getting configured directory"
     (is (= "dev/ai/prompts"
@@ -33,4 +37,7 @@
            (config/get-directory valid-config :custom/path))))
 
   (testing "getting unconfigured directory"
-    (is (nil? (config/get-directory valid-config :missing/dir)))))
+    (is (nil? (config/get-directory valid-config :missing/dir))))
+
+  (testing "getting directory when :dado/all is set"
+    (is (= "design" (config/get-directory valid-all-config :dado/prompts)))))

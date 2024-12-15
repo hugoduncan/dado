@@ -91,38 +91,39 @@
                               [])
            dirty-git-files (document-retrieval/git-dirty-files)
            git-diffs       (document-retrieval/git-uncommitted-diffs)
-           context-files   (vec (set/union
-                                 (set context-files)
-                                 (set dirty-git-files)))
 
            this-namespace (some-> invoke-file-path
                                   (document-retrieval/path->namespace))
            project-config (project-config/load-config)
 
-
-           ;; TODO this would be better as context (non-file based)
-
-           extra-prompt (cond-> ""
-                          invoke-file-path
-                          (str (prompt/render-template
-                                project-config
-                                "exophoric-file"
-                                {:this-file-path invoke-file-path}))
-                          this-namespace
-                          (str (prompt/render-template
-                                project-config
-                                "exophoric-namespace"
-                                {:this-namespace this-namespace}))
-                          (not (str/blank? git-diffs))
-                          (str (prompt/render-template
-                                project-config
-                                "git-diffs"
-                                {:uncommitted-diffs git-diffs})))
-           response     (conversation-action/response!
-                         conversation-id
-                         message
-                         extra-prompt
-                         context-files)]
+           context-values (cond-> []
+                            invoke-file-path
+                            {:name    "exophoric-file"
+                             :content (prompt/render-template
+                                       project-config
+                                       "exophoric-file"
+                                       {:this-file-path invoke-file-path})}
+                            this-namespace
+                            {:name    "exophoric-namespace"
+                             :content (str (prompt/render-template
+                                            project-config
+                                            "exophoric-namespace"
+                                            {:this-namespace this-namespace}))}
+                            (not (str/blank? git-diffs))
+                            {:name    "git-diffs"
+                             :content (prompt/render-template
+                                       project-config
+                                       "git-diffs"
+                                       {:uncommitted-diffs git-diffs})})
+           context-files  (vec (set/union
+                                (set context-files)
+                                (set dirty-git-files)
+                                (set context-values)))
+           response       (conversation-action/response!
+                           conversation-id
+                           message
+                           ""
+                           context-files)]
        (response-for
         msg
         {:status   :done

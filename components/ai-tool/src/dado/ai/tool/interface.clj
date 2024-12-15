@@ -52,3 +52,6 @@
 
 (defn execution-result? [x]
   (model/execution-result? x))
+
+(defn execution-result-schema []
+  (model/execution-result-schema))

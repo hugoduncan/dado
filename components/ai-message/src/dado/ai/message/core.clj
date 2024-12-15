@@ -93,14 +93,21 @@
                                        conj
                                        file-context))))))))
 
+(def ^:private file-path?
+  (some-fn
+   string?
+   #(instance? java.nio.file.Path %)
+   #(instance? java.io.File %)))
+
 (defn- file-path->content-map
-  [file-path]
-  {:pre [(have? (some-fn
-                 string?
-                 #(instance? java.nio.file.Path %)
-                 #(instance? java.io.File %)) file-path)]}
-  {:name    (str file-path)
-   :content (slurp (fs/file file-path))})
+  [file-path-or-context-value]
+  {:pre [(have?
+          (some-fn file-path? model/context-value?)
+          file-path-or-context-value)]}
+  (if (file-path? file-path-or-context-value)
+    {:name    (str file-path-or-context-value)
+     :content (slurp (fs/file file-path-or-context-value))}
+    file-path-or-context-value))
 
 (defn add-context-file-sequence
   "Starts a new sequence in the context files and adds the file to it."

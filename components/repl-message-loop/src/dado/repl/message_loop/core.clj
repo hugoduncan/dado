@@ -36,12 +36,18 @@
       (message/update-system-prompt (prompt-fn))
       (message/set-context-files (context-files-fn))))
 
+(defn- exec-result->message [tool-call exec-result]
+  (message/tool-result-content
+   {:tool-use-id (have string? (:id tool-call))
+    :content     (:content exec-result)
+    :is-error    (:is-error exec-result)}))
+
 (defn- execute-tool-call!
   [tools tool-call]
   (t/trace!
    {:id ::tool-call :data {:tool-call tool-call}}
    (let [tool (have (tools (name (have (:tool tool-call)))))
-         {:keys [content is-error context-mod] :as result}
+         {:keys [context-mod] :as result}
          (tool/execute-tool!
           tool
           (have (:parameters tool-call)))]
@@ -50,10 +56,7 @@
          ;; Log this, but try and continue anyway
          (t/event! :tool/invalid-result {:level :warn :data {:result result}}))
        {:context-mod         context-mod
-        :tool-result-content (message/tool-result-content
-                              {:tool-use-id (have string? (:id tool-call))
-                               :content     content
-                               :is-error    is-error})}))))
+        :tool-result-content (exec-result->message tool-call result)}))))
 
 (defn- execute-tool-calls!
   [msg-thread tool-calls]
@@ -76,6 +79,36 @@
                     (keep :text)
                     vec)]
     (println "-> " text)))
+
+(defn- add-tool-results
+  [msg-thread tool-results]
+  (let [tool-result-contents (t/spy!
+                              {:id ::add-tool-results}
+                              (into [] (keep :tool-result-content) tool-results))
+        context-mods         (into [] (keep :context-mod) tool-results)
+        msg-thread           (if (seq tool-result-contents)
+                               (message/add-message
+                                msg-thread
+                                (t/trace!
+                                 {:id    ::add-tool-response-message
+                                  :level :warn
+                                  :data  {:result-contents tool-result-contents}}
+                                 (reduce
+                                  (fn [msg message-map]
+                                    (message/add-message-content msg message-map))
+                                  (message/create-message :user)
+                                  tool-result-contents)))
+                               msg-thread)
+        msg-thread           (if (seq context-mods)
+                               (reduce
+                                (fn [msg-thread context-mod]
+                                  (message/update-ai-managed-context
+                                   msg-thread
+                                   context-mod))
+                                msg-thread
+                                context-mods)
+                               msg-thread)]
+    msg-thread))
 
 (defn complete-with-tools!
   [msg-thread prompt-fn context-files-fn ai-port]
@@ -101,16 +134,15 @@
           msg-thread (message/add-response msg-thread response)
 
           ;; Extract and apply tools
-          tool-calls             (message/extract-tool-calls response)
-          results                (execute-tool-calls! msg-thread tool-calls)
-          tool-result-contents   (mapv :tool-result-content results)
+          tool-calls   (message/extract-tool-calls response)
+          tool-results (execute-tool-calls! msg-thread tool-calls)
+
           #_#_simplified-diffs   (message/extract-simplified-diffs
                                   tool-result-contents)
           #_#_fods               (message/extract-file-operation-directives
                                   tool-result-contents)
           #_#_updated-namespaces (message/extract-updated-namespaces
-                                  tool-result-contents)
-          context-mods           (into [] (keep :context-mod) results)]
+                                  tool-result-contents)]
 
       #_(when (seq simplified-diffs)
           (patch/apply-simplified-diff-patch! simplified-diffs)
@@ -125,29 +157,8 @@
           (reload-updated-namespaces! updated-namespaces))
 
       ;; Add response and continue loop
-      (if (seq results)
-        (let [msg-thread (if (seq tool-result-contents)
-                           (message/add-message
-                            msg-thread
-                            (t/trace!
-                             {:id   ::add-tool-response-message
-                              :data {:result-contents tool-result-contents}}
-                             (reduce
-                              (fn [msg message-map]
-                                (message/add-message-content msg message-map))
-                              (message/create-message :user)
-                              tool-result-contents)))
-                           msg-thread)
-              msg-thread (if (seq context-mods)
-                           (reduce
-                            (fn [msg-thread context-mod]
-                              (message/update-ai-managed-context
-                               msg-thread
-                               context-mod))
-                            msg-thread
-                            context-mods)
-                           msg-thread)]
-          (recur msg-thread))
+      (if (seq tool-results)
+        (recur (add-tool-results msg-thread tool-results))
         msg-thread))))
 
 (defn message-loop

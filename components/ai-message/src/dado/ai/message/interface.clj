@@ -173,6 +173,7 @@
 (def message-thread? model/message-thread?)
 (def response-message? model/response-message?)
 (def file-block? model/file-block?)
+(defn context-value? [x] (model/context-value? x))
 
 ;; Expose schemas for other components
 (def message-schema model/Message)
@@ -181,3 +182,4 @@
 (def response-message-schema model/ResponseMessage)
 (def file-block-schema model/FileBlock)
 (def tool-call-schema model/ToolCall)
+(defn context-value-schema [] model/ContextValue)

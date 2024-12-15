@@ -95,9 +95,16 @@
                [:block-type [:enum :text :unified-diff]]
                [:name string?]]]])
 
+(def ContextValue
+  [:map
+   [:name :string]
+   [:content :string]])
+
 ;; Create validators that will be used in pre/post conditions
 (def role? (m/validator Role))
 (def message? (m/validator Message))
 (def message-thread? (m/validator MessageThread))
 (def response-message? (m/validator ResponseMessage))
 (def file-block? (m/validator FileBlock))
+
+(def context-value? (m/validator ContextValue))

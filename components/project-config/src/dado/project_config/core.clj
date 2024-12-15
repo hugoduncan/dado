@@ -45,4 +45,6 @@
   "Gets configured directory path for given key.
    Returns path string if found, nil if not configured."
   [config dir-key]
-  (get-in config [:directories dir-key]))
+  (or
+   (get-in config [:directories :dado/all])
+   (get-in config [:directories dir-key])))

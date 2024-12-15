@@ -45,12 +45,14 @@
                   [:files [:vector :string]]
                   [:operation [:enum :set! :add!]]]]
    [:content any?]
-   [:is-error {:optional true} map?]
+   [:is-error {:optional true} :boolean]
    [:metrics {:optional true} map?]])
 
 (def tool-validator (m/validator Tool))
 (defn tool? [x] (tool-validator x))
-
 (def execution-result-validator (m/validator ExecutionResult))
 (defn execution-result? [x]
   (execution-result-validator x))
+
+(defn execution-result-schema []
+  ExecutionResult)
