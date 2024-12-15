@@ -98,23 +98,26 @@
 
            context-values (cond-> []
                             invoke-file-path
-                            {:name    "exophoric-file"
-                             :content (prompt/render-template
-                                       project-config
-                                       "exophoric-file"
-                                       {:this-file-path invoke-file-path})}
+                            (conj
+                             {:name    "exophoric-file"
+                              :content (prompt/render-template
+                                        project-config
+                                        "exophoric-file"
+                                        {:this-file-path invoke-file-path})})
                             this-namespace
-                            {:name    "exophoric-namespace"
-                             :content (str (prompt/render-template
-                                            project-config
-                                            "exophoric-namespace"
-                                            {:this-namespace this-namespace}))}
+                            (conj
+                             {:name    "exophoric-namespace"
+                              :content (str (prompt/render-template
+                                             project-config
+                                             "exophoric-namespace"
+                                             {:this-namespace this-namespace}))})
                             (not (str/blank? git-diffs))
-                            {:name    "git-diffs"
-                             :content (prompt/render-template
-                                       project-config
-                                       "git-diffs"
-                                       {:uncommitted-diffs git-diffs})})
+                            (conj
+                             {:name    "git-diffs"
+                              :content (prompt/render-template
+                                        project-config
+                                        "git-diffs"
+                                        {:uncommitted-diffs git-diffs})}))
            context-files  (vec (set/union
                                 (set context-files)
                                 (set dirty-git-files)
