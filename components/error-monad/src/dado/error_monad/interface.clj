@@ -1,7 +1,28 @@
 (ns dado.error-monad.interface
-  "Error monad interface namespace.
+  "Provides a monadic approach to error handling in Clojure.
 
-  Provides monadic error handling capabilities."
+  The Error Monad is a functional programming pattern that allows for
+  explicit, chainable error handling while maintaining clean, composable code.
+
+  Key Features:
+  - Explicit success or failure states
+  - Chainable computations with error short-circuiting
+  - Functional error propagation
+  - Encourages early validation and error detection
+
+  Usage Patterns:
+  1. Creating successful or failed computations
+  2. Chaining computations that may fail
+  3. Mapping functions over potentially failing computations
+
+  Example:
+  (do-error
+    [x (success 10)
+     y (success (inc x))]
+    (success (* x y)))
+  ; Returns a successful computation with value 110
+
+  Prefer this approach over nested try/catch or multiple conditional branches."
   (:require
    [dado.error-monad.core :as core]))
 
