@@ -90,9 +90,8 @@
                                (message/add-message
                                 msg-thread
                                 (t/trace!
-                                 {:id    ::add-tool-response-message
-                                  :level :warn
-                                  :data  {:result-contents tool-result-contents}}
+                                 {:id   ::add-tool-response-message
+                                  :data {:result-contents tool-result-contents}}
                                  (reduce
                                   (fn [msg message-map]
                                     (message/add-message-content msg message-map))
