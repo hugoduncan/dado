@@ -53,18 +53,33 @@
   (testing "do-error with successful chain"
     (is (= (em/success 6)
            (em/do-error [a (em/success 1)
-                      b (em/success (inc a))
-                      c (em/success (* b 2))]
-                     (em/success (+ c 2))))))
+                         b (em/success (inc a))
+                         c (em/success (* b 2))]
+                        (em/success (+ c 2))))))
 
   (testing "do-error fails fast on first error"
     (is (= (em/failure "boom")
            (em/do-error [a (em/success 1)
-                      b (em/failure "boom")
-                      c (em/success 3)]
-                     (em/success (+ a b c))))))
+                         b (em/failure "boom")
+                         c (em/success 3)]
+                        (em/success (+ a b c))))))
 
   (testing "do-error with empty binding vector"
     (is (= (em/success 1)
            (em/do-error []
-                     (em/success 1))))))
+                        (em/success 1)))))
+
+  (testing "do-error with multiple errors"
+    (is (= (em/failure "first error")
+           (em/do-error [a (em/failure "first error")
+                         b (em/failure "second error")
+                         c (em/success 3)]
+                        (em/success (+ a b c))))))
+
+  (testing "do-error propagates context"
+    (is (= (em/failure {:type    :validation
+                        :message "invalid input"})
+           (em/do-error [a (em/success 1)
+                         b (em/failure {:type    :validation
+                                        :message "invalid input"})]
+                        (em/success (inc a)))))))
