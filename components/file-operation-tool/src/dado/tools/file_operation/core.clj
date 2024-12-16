@@ -243,7 +243,7 @@
     - Parent directories will be created as needed
     - Will error if the file already exists.
 
-  EDIT:
+ EDIT:
     - Modifies an existing file using search and replace
     - Required: \"path\", \"search-blocks\"
     - File must exist
@@ -251,6 +251,10 @@
     - Search blocks are applied in order
     - Whitespace and indentation are extremely important in the search string
       and must match the current document contents exactly.
+    - If an edit operation errors with a could-not-find-search-text error, then
+      check that the string you provided to the \"search\" field exactly matches
+      the existing text of the document you want to edit.  Do not guess about
+      character escaping errors.
 
   MOVE:
     - Moves a file to a new location
@@ -287,13 +291,7 @@
   <example>
   {\"operations\": [{\"operation\": \"copy\", \"path\": \"file/to/copy.md\", \"target-path\": \"location/to/copy/to.md\"}, {\"operation\": \"move\", \"path\": \"file/to/move.md\", \"target-path\": \"location/to/move/to.md\"}]}
   </example>
-
-  # Troubleshooting
-
-  If an edit operation errors with a could-not-find-search-text error, then
-  check that the string you provided to the \"search\" field exactly matches the
-  existing text of the document you want to edit.  Do not guess about character
-  escaping errors.")
+")
 
 (def describe-tool
   "To change files, use the `<file-operation>` tag.
