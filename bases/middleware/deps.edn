@@ -29,8 +29,10 @@
   org.hugoduncan/dado.elisp-funs                {:local/root "../../components/elisp-funs"}
   org.hugoduncan/dado.elisp-target              {:local/root "../../components/elisp-target"}
   org.hugoduncan/dado.emacs-core                {:local/root "../../components/emacs-core"}
+  org.hugoduncan/dado.error-monad               {:local/root "../../components/error-monad"}
   org.hugoduncan/dado.implement-namespace       {:local/root "../../components/implement-namespace"}
   org.hugoduncan/dado.logging                   {:local/root "../../components/logging"}
+  org.hugoduncan/dado.matching-file-tool        {:local/root "../../components/matching-file-tool"}
   org.hugoduncan/dado.nrepl-middleware          {:local/root "../../components/nrepl-middleware"}
   org.hugoduncan/dado.operation                 {:local/root "../../components/operation"}
   org.hugoduncan/dado.patch                     {:local/root "../../components/patch"}

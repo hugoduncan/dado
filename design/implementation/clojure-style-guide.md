@@ -1,5 +1,9 @@
 # Clojure Style Guide
 
+## Line length
+
+Use a maximum line length of 80 characters.
+
 ## Naming Conventions
 
 ### Functions and Variables
@@ -56,15 +60,18 @@ Examples
 
 ### Docstrings
 - Every public function should have a docstring
+- Use the active mode rather than passive
 - Include:
-  - Concise description of purpose
+  - Single line summary if the function purpose. Be succinct and prefer
+    anglo-saxon words to latin root words.
+  - Concise description of purpose if not covered by the one line summary.
   - Parameter descriptions
   - Return value description
   - Example usage when helpful
 - Format:
 ```clojure
   (defn process-order
-    "Processes a customer order and returns updated inventory status.
+    "Process a customer order and return updated inventory status.
 
      Parameters:
        order-items - Vector of maps containing :item-id and :quantity

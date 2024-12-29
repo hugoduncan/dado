@@ -47,7 +47,7 @@
   (as-> root x
     (slurp-deps x)
     (apply-aliases x aliases)
-    (:deps x)
+    (merge (:deps x) (:extra-deps x))
     (vals x)
     (into
      #{}
