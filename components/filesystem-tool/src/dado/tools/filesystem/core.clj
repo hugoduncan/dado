@@ -3,13 +3,101 @@
   (:require
    [babashka.fs :as fs]
    [clojure.string :as str]
+   [dado.ai.tool.model :as tool]
    [dado.tools.filesystem.diff :as diff]
    [dado.tools.filesystem.glob :as glob]
    [dado.tools.filesystem.model :as model]
-   [jsonista.core :as j]))
+   [jsonista.core :as j]
+   [taoensso.truss :refer [have?]]
+   [malli.error :as me]
+   [malli.core :as m]))
 
-(def description
-  "Tool for performing filesystem operations safely within allowed directories.
+(def operation-descriptions
+  {:read-file
+   "Read the complete contents of a file from the file system.
+    - Handles various text encodings and provides detailed error messages
+    - Use this tool when you need to examine the contents of a single file
+    - Required: 'path'
+    - File must exist and be readable"
+
+   :read-multiple-files
+   "Read the contents of multiple files simultaneously.
+    - More efficient than reading files one by one when you need to analyze
+      or compare multiple files
+    - Each file's content is returned with its path as a reference
+    - Failed reads for individual files won't stop the entire operation
+    - Required: 'paths' (array)
+    - Files must exist and be readable"
+
+   :write-file
+   "Create a new file or completely overwrite an existing file with new content.
+    - Use with caution as it will overwrite existing files without warning
+    - Handles text content with proper encoding
+    - Required: 'path', 'content'
+    - Parent directories will be created as needed"
+
+   :edit-file
+   "Make line-based edits to a text file.
+    - Each edit replaces exact line sequences with new content
+    - Returns a git-style diff showing the changes made
+    - Required: 'path', 'edits' (array of {oldText, newText})
+    - Optional: 'dryRun' (boolean)
+    - File must exist"
+
+   :create-directory
+   "Create a new directory or ensure a directory exists.
+    - Can create multiple nested directories in one operation
+    - If the directory already exists, this operation will succeed silently
+    - Perfect for setting up directory structures for projects
+    - Required: 'path'"
+
+   :list-directory
+   "Get a detailed listing of all files and directories in a specified path.
+    - Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes
+    - Essential for understanding directory structure and finding specific files
+    - Required: 'path'
+    - Directory must exist"
+
+   :directory-tree
+   "Get a recursive tree view of files and directories as a JSON structure.
+    - Each entry includes 'name', 'type' (file/directory), and 'children' for directories
+    - Files have no children array, while directories always have a children array
+    - Output is formatted with 2-space indentation for readability
+    - Required: 'path'
+    - Directory must exist"
+
+   :move-file
+   "Move or rename files and directories.
+    - Can move files between directories and rename them in a single operation
+    - If the destination exists, the operation will fail
+    - Works across different directories
+    - Required: 'source', 'destination'
+    - Source must exist
+    - Destination must not exist"
+
+   :search-files
+   "Recursively search for files and directories matching a pattern.
+    - Searches through all subdirectories from the starting path
+    - The search is case-insensitive and matches partial names
+    - Returns full paths to all matching items
+    - Required: 'path', 'pattern'
+    - Optional: 'excludePatterns' (array)"
+
+   :get-file-info
+   "Retrieve detailed metadata about a file or directory.
+    - Returns comprehensive information including size, creation time, last modified time,
+      permissions, and type
+    - Perfect for understanding file characteristics without reading content
+    - Required: 'path'
+    - Path must exist"
+
+   :list-allowed-directories
+   "List all allowed directories for file operations.
+    - Shows the base directories where file operations are permitted
+    - No required parameters"})
+
+(defn- all-descritptions []
+  (str "Tool for performing filesystem operations safely within allowed directories.
 
   Supports reading, writing, editing, moving and deleting files, as well as
   directory operations like listing, creating and getting directory trees.
@@ -18,83 +106,38 @@
 
   Operations:
 
-  READ_FILE:
-    - Read the complete contents of a file from the file system
-    - Handles various text encodings and provides detailed error messages
-    - Use this tool when you need to examine the contents of a single file
-    - Required: 'path'
-    - File must exist and be readable
+"
+       (str/join "
 
-  READ_MULTIPLE_FILES:
-    - Read the contents of multiple files simultaneously
-    - More efficient than reading files one by one when you need to analyze
-      or compare multiple files
-    - Each file's content is returned with its path as a reference
-    - Failed reads for individual files won't stop the entire operation
-    - Required: 'paths' (array)
-    - Files must exist and be readable
+"
+                 (for [[op desc] operation-descriptions]
+                   (str "  " (str/upper-case (name op)) ":
+" desc)))))
 
-  WRITE_FILE:
-    - Create a new file or completely overwrite an existing file with new content
-    - Use with caution as it will overwrite existing files without warning
-    - Handles text content with proper encoding
-    - Required: 'path', 'content'
-    - Parent directories will be created as needed
+(defn- create-base-tool
+  [id name description parameters]
+  {:id           id
+   :name         name
+   :description  description
+   :structured-description
+   {:claude
+    {:description
+     "Tool for performing filesystem operations safely within allowed directories."}}
+   :parameters   parameters
+   :returns      {:type        :map
+                  :description "Operation result with success/failure and data"}
+   :prompt-fn    (constantly description)
+   :recognize-fn (constantly false)})
 
-  EDIT_FILE:
-    - Make line-based edits to a text file
-    - Each edit replaces exact line sequences with new content
-    - Returns a git-style diff showing the changes made
-    - Required: 'path', 'edits' (array of {oldText, newText})
-    - Optional: 'dryRun' (boolean)
-    - File must exist
-
-  CREATE_DIRECTORY:
-    - Create a new directory or ensure a directory exists
-    - Can create multiple nested directories in one operation
-    - If the directory already exists, this operation will succeed silently
-    - Perfect for setting up directory structures for projects
-    - Required: 'path'
-
-  LIST_DIRECTORY:
-    - Get a detailed listing of all files and directories in a specified path
-    - Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes
-    - Essential for understanding directory structure and finding specific files
-    - Required: 'path'
-    - Directory must exist
-
-  DIRECTORY_TREE:
-    - Get a recursive tree view of files and directories as a JSON structure
-    - Each entry includes 'name', 'type' (file/directory), and 'children' for directories
-    - Files have no children array, while directories always have a children array
-    - Output is formatted with 2-space indentation for readability
-    - Required: 'path'
-    - Directory must exist
-
-  MOVE_FILE:
-    - Move or rename files and directories
-    - Can move files between directories and rename them in a single operation
-    - If the destination exists, the operation will fail
-    - Works across different directories
-    - Required: 'source', 'destination'
-    - Source must exist
-    - Destination must not exist
-
-  SEARCH_FILES:
-    - Recursively search for files and directories matching a pattern
-    - Searches through all subdirectories from the starting path
-    - The search is case-insensitive and matches partial names
-    - Returns full paths to all matching items
-    - Required: 'path', 'pattern'
-    - Optional: 'excludePatterns' (array)
-
-  GET_FILE_INFO:
-    - Retrieve detailed metadata about a file or directory
-    - Returns comprehensive information including size, creation time, last modified time,
-      permissions, and type
-    - Perfect for understanding file characteristics without reading content
-    - Required: 'path'
-    - Path must exist")
+(defn- create-operation-tool
+  [operation]
+  (let [description (str (str/upper-case (name operation)) ":\n"
+                         (get operation-descriptions operation))]
+    (create-base-tool
+     (keyword "dado" (name operation))
+     (str (str/capitalize (name operation)) " Tool")
+     description
+     (get model/file-operations operation))))
 
 ;; Path validation functions
 (defn- normalize-path
@@ -303,16 +346,177 @@
                                               (.getMessage e)))}]
          :is-error true}))))
 
+
+(defn create-read-file-tool []
+  (assoc (create-operation-tool :read-file)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :read-file :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-read-multiple-files-tool []
+  (assoc (create-operation-tool :read-multiple-files)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :read-multiple-files :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-write-file-tool []
+  (assoc (create-operation-tool :write-file)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :write-file :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-edit-file-tool []
+  (assoc (create-operation-tool :edit-file)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :edit-file :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-create-directory-tool []
+  (assoc (create-operation-tool :create-directory)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :create-directory :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-list-directory-tool []
+  (assoc (create-operation-tool :list-directory)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :list-directory :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-directory-tree-tool []
+  (assoc (create-operation-tool :directory-tree)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :directory-tree :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-move-file-tool []
+  {:post [(have? tool/tool? %
+                 :data (me/humanize (m/explain tool/Tool %)))]}
+  (assoc (create-operation-tool :move-file)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :move-file :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-search-files-tool []
+  (assoc (create-operation-tool :search-files)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :search-files :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-get-file-info-tool []
+  (assoc (create-operation-tool :get-file-info)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :get-file-info :args params}
+                        {:allowed-dirs ["."]}))))
+
+(defn create-list-allowed-directories-tool []
+  (assoc (create-operation-tool :list-allowed-directories)
+         :execute-fn (fn [params]
+                       (execute-with-error-handling
+                        {:operation :list-allowed-directories :args params}
+                        {:allowed-dirs ["."]}))))
+
 (defn create-tool
   "Creates filesystem tool configuration"
   []
-  {:id           :dado/filesystem
-   :name         "Filesystem Tool"
-   :description  description
+  {:id          :dado/filesystem
+   :name        "Filesystem Tool"
+   :description description
    :structured-description
    {:claude
     {:description
-     "Tool for performing filesystem operations safely within allowed directories."}}
+     {:read-file
+      "Read the complete contents of a file from the file system.
+    - Handles various text encodings and provides detailed error messages
+    - Use this tool when you need to examine the contents of a single file
+    - Required: 'path'
+    - File must exist and be readable"
+
+      :read-multiple-files
+      "Read the contents of multiple files simultaneously.
+    - More efficient than reading files one by one when you need to analyze
+      or compare multiple files
+    - Each file's content is returned with its path as a reference
+    - Failed reads for individual files won't stop the entire operation
+    - Required: 'paths' (array)
+    - Files must exist and be readable"
+
+      :write-file
+      "Create a new file or completely overwrite an existing file with new content.
+    - Use with caution as it will overwrite existing files without warning
+    - Handles text content with proper encoding
+    - Required: 'path', 'content'
+    - Parent directories will be created as needed"
+
+      :edit-file
+      "Make line-based edits to a text file.
+    - Each edit replaces exact line sequences with new content
+    - Returns a git-style diff showing the changes made
+    - Required: 'path', 'edits' (array of {oldText, newText})
+    - Optional: 'dryRun' (boolean)
+    - File must exist"
+
+      :create-directory
+      "Create a new directory or ensure a directory exists.
+    - Can create multiple nested directories in one operation
+    - If the directory already exists, this operation will succeed silently
+    - Perfect for setting up directory structures for projects
+    - Required: 'path'"
+
+      :list-directory
+      "Get a detailed listing of all files and directories in a specified path.
+    - Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes
+    - Essential for understanding directory structure and finding specific files
+    - Required: 'path'
+    - Directory must exist"
+
+      :directory-tree
+      "Get a recursive tree view of files and directories as a JSON structure.
+    - Each entry includes 'name', 'type' (file/directory), and 'children' for directories
+    - Files have no children array, while directories always have a children array
+    - Output is formatted with 2-space indentation for readability
+    - Required: 'path'
+    - Directory must exist"
+
+      :move-file
+      "Move or rename files and directories.
+    - Can move files between directories and rename them in a single operation
+    - If the destination exists, the operation will fail
+    - Works across different directories
+    - Required: 'source', 'destination'
+    - Source must exist
+    - Destination must not exist"
+
+      :search-files
+      "Recursively search for files and directories matching a pattern.
+    - Searches through all subdirectories from the starting path
+    - The search is case-insensitive and matches partial names
+    - Returns full paths to all matching items
+    - Required: 'path', 'pattern'
+    - Optional: 'excludePatterns' (array)"
+
+      :get-file-info
+      "Retrieve detailed metadata about a file or directory.
+    - Returns comprehensive information including size, creation time, last modified time,
+      permissions, and type
+    - Perfect for understanding file characteristics without reading content
+    - Required: 'path'
+    - Path must exist"
+
+      :list-allowed-directories
+      "List all allowed directories for file operations.
+    - Shows the base directories where file operations are permitted
+    - No required parameters"}}}
    :parameters
    [:map
     [:operation [:enum :read-file :read-multiple-files :write-file

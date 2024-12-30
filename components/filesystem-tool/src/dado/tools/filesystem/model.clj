@@ -58,6 +58,19 @@
   [:map
    [:path RelativePath]])
 
+(def file-operations
+  {:read-file                ReadFileArgs
+   :read-multiple-files      ReadMultipleFilesArgs
+   :write-file               WriteFileArgs
+   :edit-file                EditFileArgs
+   :create-directory         CreateDirectoryArgs
+   :list-directory           ListDirectoryArgs
+   :directory-tree           DirectoryTreeArgs
+   :move-file                MoveFileArgs
+   :search-files             SearchFilesArgs
+   :get-file-info            GetFileInfoArgs
+   :list-allowed-directories [:map]})
+
 (def FileOperation
   [:multi {:dispatch :operation}
    [:read-file ReadFileArgs]
