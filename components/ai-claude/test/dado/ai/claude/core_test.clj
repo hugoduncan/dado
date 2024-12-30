@@ -54,23 +54,18 @@
           (is (str/includes? (:text content2) "test2.txt")))))
 
     (testing "cache control"
-      (let [files  [[{:name    "test1.txt"
-                      :content "content1"}]
-                    [{:name    "test2.txt"
-                      :content "content2"}]
-                    [{:name    "test3.txt"
-                      :content "content3"}]
-                    [{:name    "test4.txt"
-                      :content "content4"}]
-                    [{:name    "test5.txt"
-                      :content "content5"}]]
+      (let [files  [[{:name "test1.txt" :content "content1"}]
+                    [{:name "test2.txt" :content "content2"}]
+                    [{:name "test3.txt" :content "content3"}]
+                    [{:name "test4.txt" :content "content4"}]
+                    [{:name "test5.txt" :content "content5"}]]
             result (content-fn files)]
-        (is (= 5 (count result)))
+        (is (= 5 (count result)) (prn-str result))
         ;; First 4 files should have cache control
-        (doseq [content (take 4 result)]
+        (doseq [content (take 3 result)]
           (is (= "ephemeral" (get-in content [:cache_control :type]))))
         ;; Last file should not have cache control
-        (is (nil? (get-in (last result) [:cache_control])))))))
+        (is  (get-in (last result) [:cache_control]))))))
 
 (def ^:private simple-request
   (j/read-value

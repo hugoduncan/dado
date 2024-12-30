@@ -92,11 +92,14 @@
             base-content)])))))
 
 (defn- ->system-content [file-sequences]
-  (let [cached-sequences (take 4 file-sequences)
-        normal-sequences (drop 4 file-sequences)]
+  (let [cached-sequences (take 3 file-sequences)
+        remaining        (drop 3 file-sequences)
+        normal-sequences (butlast remaining)
+        last-sequences   [(last remaining)]]
     (->> (concat
           (mapcat #(file-sequence->content-maps true %) cached-sequences)
-          (mapcat #(file-sequence->content-maps false %) normal-sequences))
+          (mapcat #(file-sequence->content-maps false %) normal-sequences)
+          (mapcat #(file-sequence->content-maps true %) last-sequences))
          vec)))
 
 (defn- to-claude-tool [{:keys [id description parameters]}]
