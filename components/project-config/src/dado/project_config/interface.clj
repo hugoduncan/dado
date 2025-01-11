@@ -15,6 +15,13 @@
   ([config provider-key]
    (core/ai-provider-config config provider-key)))
 
+(defn ai-providers
+  "Return a list of configured ai providers"
+  ([]
+   (core/ai-providers))
+  ([config]
+   (core/ai-providers config)))
+
 (defn get-directory
   "Gets configured directory path for given key.
    Returns path string if found, nil if not configured."

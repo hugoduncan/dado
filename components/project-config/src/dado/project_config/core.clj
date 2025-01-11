@@ -41,6 +41,12 @@
   ([config provider-key]
    (get-in config [:ai-providers provider-key])))
 
+(defn ai-providers
+  ([]
+   (ai-providers (load-config)))
+  ([config]
+   (keys (get-in config [:ai-providers]))))
+
 (defn get-directory
   "Gets configured directory path for given key.
    Returns path string if found, nil if not configured."
