@@ -6,6 +6,10 @@ Use a maximum line length of 80 characters.
 
 ## Naming Conventions
 
+Avoid using clojure.core identifiers as field or local names.
+
+Avoid shadowing.
+
 ### Functions and Variables
 - Use complete, unabbreviated names that clearly convey purpose
 - Follow `kebab-case` naming convention
@@ -144,6 +148,10 @@ Example of reducing complexity:
     (process-premium-without-pending customer)))
 ```
 
+### Argument validation
+
+Prefer to use preconditions for argument validation.
+
 ## Data Structure Usage
 
 ### Collections
@@ -190,8 +198,9 @@ Example:
 ```clojure
   (ns my-project.core-test
     "Tests for core order processing functionality."
-    (:require [clojure.test :refer :all]
-              [my-project.core :as core]))
+    (:require
+	  [clojure.test :refer [deftest is testing]
+      [my-project.core :as core]))
 
   (deftest process-order-test
     (testing "successful order processing"

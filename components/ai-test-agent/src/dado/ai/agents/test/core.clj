@@ -7,6 +7,7 @@
    [dado.ai.tools.matching-file.interface :as matching-file]
    [dado.project-config.interface :as project-config]
    [dado.tools.file-operation.interface :as file-operation]
+   [dado.tools.filesystem.interface :as filesystem]
    [dado.tools.reload-namespaces.core :as reload-namespaces]
    [malli.core :as m]
    [malli.error :as me]
@@ -71,6 +72,12 @@
     :prompt-fn           (partial get-prompt project-config)
     :context-fn          (partial get-context project-config additional-context-fn)
     :process-response-fn process-response
-    :ai-tools            [(file-operation/create-tool)
+    :ai-tools            [#_(file-operation/create-tool)
+                          (filesystem/create-create-directory-tool)
+                          (filesystem/create-write-file-tool)
+                          (filesystem/create-move-file-tool)
+                          (filesystem/create-edit-file-tool)
+                          (filesystem/create-list-directory-tool)
+                          (filesystem/create-read-file-tool)
                           (reload-namespaces/create-tool)
                           (matching-file/create-tool)]}))

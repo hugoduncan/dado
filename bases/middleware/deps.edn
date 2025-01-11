@@ -17,6 +17,7 @@
   org.hugoduncan/dado.conversation-manager      {:local/root "../../components/conversation-manager"}
   org.hugoduncan/dado.ai-tool                   {:local/root "../../components/ai-tool"}
   org.hugoduncan/dado.ai-tool-file-operation    {:local/root "../../components/file-operation-tool"}
+  org.hugoduncan/dado.ai-tool-filesystem        {:local/root "../../components/filesystem-tool"}
   org.hugoduncan/dado.ai-tool-reload-namespaces {:local/root "../../components/reload-namespaces-tool"}
   org.hugoduncan/dado.chat-gpt                  {:local/root "../../components/chat-gpt"}
   org.hugoduncan/dado.clojure-fns               {:local/root "../../components/clojure-fns"}

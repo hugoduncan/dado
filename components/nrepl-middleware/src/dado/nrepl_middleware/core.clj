@@ -74,6 +74,7 @@
                                agent-name
                                ai-port-name)
                               conversation-id)
+           #_#_all-files    (document-retrieval/all-files ".")
            context-files    (case (keyword context-mode)
                               :all
                               (document-retrieval/all-files ".")
@@ -96,7 +97,8 @@
                                   (document-retrieval/path->namespace))
            project-config (project-config/load-config)
 
-           context-values (cond-> []
+           context-values (cond-> [#_{:name "project-files"
+                                      :context (str/join "\n" all-files)}]
                             invoke-file-path
                             (conj
                              {:name    "exophoric-file"

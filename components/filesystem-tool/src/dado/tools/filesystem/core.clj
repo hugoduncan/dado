@@ -254,8 +254,12 @@
           (throw (ex-info "Could not find exact match for edit"
                           {:old-text old-text}))
           (let [potential-match (take (count old-lines) (drop i lines))]
-            (if (every? #(= (str/trim %1) (str/trim %2))
-                        old-lines potential-match)
+            (if (every?
+                 identity
+                 (mapv
+                  #(= (str/trim %1) (str/trim %2))
+                  old-lines
+                  potential-match))
               (let [new-lines (str/split-lines new-text)
                     prefix    (take i lines)
                     suffix    (drop (+ i (count old-lines)) lines)]
@@ -431,7 +435,7 @@
   []
   {:id          :dado/filesystem
    :name        "Filesystem Tool"
-   :description description
+   :description (all-descritptions)
    :structured-description
    {:claude
     {:description
@@ -527,7 +531,7 @@
    :returns
    {:type        :map
     :description "Operation result with success/failure and data"}
-   :prompt-fn    (constantly description)
+   :prompt-fn    (constantly (all-descritptions))
    :recognize-fn (constantly false) ;; Not implemented yet
    :execute-fn   (fn [params]
                    (let [operation (if (string? params)

@@ -213,7 +213,7 @@ Return the chat buffer."
 			  (generate-new-buffer-name "*dado-chat*")
 			"*dado-chat*"))
 	 (buffer (get-buffer-create buffer-name)))
-    (switch-to-buffer buffer)
+    (pop-to-buffer buffer)
     (unless (derived-mode-p 'dado-chat-mode)
       (dado-chat-mode))
     (setq dado-chat--agent-name agent-name)
