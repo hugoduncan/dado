@@ -1,5 +1,6 @@
-(ns dado.ai.claude.interface
-  (:require [dado.ai.claude.core :as core]))
+(ns dado.ai.anthropic.interface
+  (:require
+   [dado.ai.anthropic.core :as core]))
 
 (defn default-model-name []
   core/default-model-name)

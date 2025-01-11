@@ -1,12 +1,12 @@
-(ns dado.ai.chatgpt.interface
+(ns dado.ai.openai.interface
   (:require
-   [dado.ai.chatgpt.core :as core]))
+   [dado.ai.openai.core :as core]))
 
 (defn send!
-  "Send message thread to ChatGPT AI and return response.
+  "Send message thread to an OpenAI API and return response.
 
    Parameters:
-     config - Map containing ChatGPT configuration:
+     config - Map containing OpenAI configuration:
               :model-name - Optional model name (defaults to \"llama2:3.2\")
               :api-url - Optional API URL (defaults to \"http://localhost:11434\")
 

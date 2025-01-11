@@ -1,4 +1,4 @@
-(ns dado.ai.chatgpt.model
+(ns dado.ai.openai.model
   (:require
    [malli.core :as m]
    [malli.json-schema :as mj]))

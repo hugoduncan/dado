@@ -1,14 +1,14 @@
-(ns dado.ai.chatgpt.core
+(ns dado.ai.openai.core
   (:require
-   [dado.ai.chatgpt.model :as model]
+   [clojure.string :as str]
+   [dado.ai.openai.model :as model]
    [dado.ai.message.interface :as message]
    [jsonista.core :as j]
    [malli.core :as m]
    [malli.error :as me]
    [malli.json-schema :as json-schema]
    [taoensso.telemere :as t]
-   [taoensso.truss :refer [have?]]
-   [clojure.string :as str]))
+   [taoensso.truss :refer [have?]]   ))
 
 (def default-api-url "https://api.openai.com/v1/chat/completions")
 (def default-model-name "gpt-4o-mini")

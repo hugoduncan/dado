@@ -1,13 +1,13 @@
-(ns dado.ai.claude.core
+(ns dado.ai.anthropic.core
   (:require
+   [dado.ai.anthropic.model :as model]
    [dado.ai.message.interface :as message]
    [jsonista.core :as j]
    [malli.core :as m]
    [malli.error :as me]
    [malli.json-schema :as json-schema]
    [taoensso.telemere :as t]
-   [taoensso.truss :refer [have have?]]
-   [dado.ai.claude.model :as model]))
+   [taoensso.truss :refer [have have?]]))
 
 (def ^:private default-api-url "https://api.anthropic.com/v1/messages")
 (def  default-model-name "claude-3-5-sonnet-20241022")

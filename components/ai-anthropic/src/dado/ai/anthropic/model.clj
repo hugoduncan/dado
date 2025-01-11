@@ -1,6 +1,7 @@
-(ns dado.ai.claude.model
-  (:require [malli.core :as m]
-            [dado.ai.tool.model :as tool]))
+(ns dado.ai.anthropic.model
+  (:require
+   [malli.core :as m]
+   [dado.ai.tool.model :as tool]))
 
 (def ClaudeRole
   [:enum "user" "assistant"])

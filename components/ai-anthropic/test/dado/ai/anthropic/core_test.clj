@@ -1,9 +1,9 @@
-(ns dado.ai.claude.core-test
+(ns dado.ai.anthropic.core-test
   (:require
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [dado.ai.claude.core :as core]
-   [dado.ai.claude.model :as model]
+   [dado.ai.anthropic.core :as core]
+   [dado.ai.anthropic.model :as model]
    [dado.ai.message.interface :as msg]
    [jsonista.core :as j]
    [malli.core :as m]
