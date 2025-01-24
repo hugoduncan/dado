@@ -1,4 +1,14 @@
 (ns dado.ai.openai.core
+  "Core namespace for interacting with the OpenAI API.
+
+  This namespace provides functions to send messages to the OpenAI API and handle responses.
+  It includes utilities for converting between internal message formats and OpenAI's API format.
+
+  Key Functions:
+  - send!: Sends a message thread to the OpenAI API and returns the response.
+  - convert-message: Converts internal message format to OpenAI's format.
+  - from-chatgpt-response: Converts OpenAI's response format to internal format."
+
   (:require
    [clojure.string :as str]
    [dado.ai.openai.model :as model]
@@ -49,24 +59,29 @@
              :tool-results tool-results
              :text-maps    text-maps}}
      (cond
-       (seq tool-calls)
-       {:role       (name role)
-        :content    (:text (first text-maps) "")
-        :tool_calls (mapv ->chatgpt-tool-call tool-calls)}
+       ;; Handle tool results - convert to tool response format
        (seq tool-results)
-       {:role         "tool"
-        :tool_call_id (:tool-use-id (first tool-results))
-        :content      (str/join
-                       ", "
-                       (mapv :text (:content (first tool-results))))
-        }
+       (mapv
+        (fn [result]
+          {:role         "tool"
+           :tool_call_id (:tool-use-id result)
+           :content      (if (map? (:content result))
+                           (:text (:content result))
+                           (str/join ", " (map :text (:content result))))})
+        tool-results)
+       ;; Handle tool calls - convert to function call format
+       (seq tool-calls)
+       [{:role       (name role)
+         :content    (:text (first text-maps) "")
+         :tool_calls (mapv ->chatgpt-tool-call tool-calls)}]
+       ;; Handle regular messages
        :else
-       (cond-> {:role    (name role)
-                :content []}
-         (string? content)
-         (update :content conj (message-content content))
-         (seq content)
-         (update :content into (mapv (comp  message-content :text) text-maps)))))))
+       [(cond-> {:role    (name role)
+                 :content []}
+          (string? content)
+          (update :content conj (message-content content))
+          (seq content)
+          (update :content into (mapv (comp message-content :text) text-maps)))]))))
 
 (defn- context-content [file]
   (let [{:keys [name content]} file]
@@ -105,7 +120,7 @@
                                  (mapcat
                                   #(mapv context-content %)
                                   context-files)))}])
-                  (mapv convert-message messages)))
+                  (mapcat convert-message messages)))
       :tools    (mapv to-chatgpt-tool (:tools metadata))})))
 
 (defn- convert-finish-reason [reason]
