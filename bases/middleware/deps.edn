@@ -3,7 +3,7 @@
  {
   org.hugoduncan/dado.ai-agent                  {:local/root "../../components/ai-agent"}
   org.hugoduncan/dado.ai-architect-agent        {:local/root "../../components/ai-architect-agent"}
-  org.hugoduncan/dado.ai-anthropic              {:local/root "../../components/ai-anthtopic"}
+  org.hugoduncan/dado.ai-anthropic              {:local/root "../../components/ai-anthropic"}
   org.hugoduncan/dado.ai-ollama                 {:local/root "../../components/ai-ollama"}
   org.hugoduncan/dado.ai-openai                 {:local/root "../../components/ai-openai"}
   org.hugoduncan/dado.ai-implementation-agent   {:local/root "../../components/ai-implementation-agent"}

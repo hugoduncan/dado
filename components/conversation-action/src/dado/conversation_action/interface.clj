@@ -16,10 +16,18 @@
 (defn create-conversation!
   [agent-name ai-port-name]
   (let [agent          (ai-agent/lookup agent-name)
-        ai-port-send!  (ai-port/lookup-send! ai-port-name)
-        model-name-fn  (ai-port/lookup-default-model-name ai-port-name)
+        ai-config      (project-config/ai-provider-config
+                        ai-port-name)
+        {:keys [api api-key api-url model-name]}
+        ai-config
+        _              (prn :ai-config ai-config)
+        ai-port-send!  (ai-port/lookup-send! (or
+                                              (some-> api name)
+                                              (name ai-port-name)))
+        model-name     (or model-name
+                           ((ai-port/lookup-default-model-name ai-port-name)))
         context-files  (volatile! [])
-        message-thread (-> (message/create-message-thread (model-name-fn))
+        message-thread (-> (message/create-message-thread model-name)
                            (message/register-tools
                             (:ai-tools agent)))
         conversation   (conversation/create

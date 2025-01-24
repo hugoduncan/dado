@@ -28,7 +28,10 @@
   [project-config dir-key]
   (when-let [dir (project-config/get-directory project-config dir-key)]
     (when (fs/exists? dir)
-      (mapv str (fs/list-dir dir)))))
+      (into [] (comp
+                (map str)
+                (filter fs/regular-file?))
+            (fs/list-dir dir)))))
 
 (defn- get-context
   [project-config additional-context-fn]

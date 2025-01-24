@@ -21,7 +21,8 @@
   {:type     "function"
    :id       (:id tool-call)
    :function {:name      (name (:tool tool-call))
-              :arguments (:parameters tool-call)}})
+              :arguments (j/write-value-as-string
+                          (:parameters tool-call))}})
 
 (defn- ->chatgpt-content
   [s-or-v]
@@ -50,7 +51,7 @@
      (cond
        (seq tool-calls)
        {:role       (name role)
-        :content    (:text (first text-maps))
+        :content    (:text (first text-maps) "")
         :tool_calls (mapv ->chatgpt-tool-call tool-calls)}
        (seq tool-results)
        {:role         "tool"
@@ -112,13 +113,19 @@
     "stop"           :stop
     "length"         :length
     "content_filter" :content-filter
-    "function_call"  :function-call))
+    "function_call"  :tool-call
+    "tool_calls"     :tool-call))
 
 (defn- read-chatgpt-tool-call [{:keys [id _type function]}]
   {:type       :tool-call
    :id         id
    :tool       (keyword (:name function))
-   :parameters (:arguments function)})
+   :parameters (if (string? (:arguments function))
+                 (try
+                   (j/read-value (:arguments function) j/keyword-keys-object-mapper)
+                   (catch Exception _
+                     (:arguments function)))
+                 (:arguments function))})
 
 (defn- parse-tool-call
   [s]
@@ -195,12 +202,15 @@
         url                       (or api-url default-api-url)]
     (t/trace!
      {:id :dado.ai.chatgpt/api-call}
-     (let [response (-> (http-request-fn
-                         {:url     url
-                          :method  :post
-                          :headers {"Content-Type"  "application/json"
-                                    "Authorization" (str "Bearer " api-key)}
-                          :body    (j/write-value-as-string request-body)})
+     (let [response (http-request-fn
+                     {:url     url
+                      :method  :post
+                      :headers {"Accept"        "application/json"
+                                "Content-Type"  "application/json"
+                                "Authorization" (str "Bearer " api-key)}
+                      :body    (j/write-value-as-string request-body)})
+           _        (prn :response response)
+           response (-> response
                         :body
                         (j/read-value j/keyword-keys-object-mapper))]
        (if (:error response)

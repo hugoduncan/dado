@@ -107,7 +107,10 @@
                [:index int?]
                [:message [:map
                           [:role [:enum "assistant"]]
-                          [:content string?]]]
+                          [:content [:maybe string?]]
+                          [:tool_calls {:optional true}
+                           [:vector
+                            FunctionCall]]]]
                [:finish_reason [:enum "stop" "length" "content_filter" "tool_calls"]]]]]
    [:usage [:map
             [:prompt_tokens int?]

@@ -22,7 +22,9 @@
       (response-for
        msg
        {:status   :done
-        :response (operation/op language action args ns)})
+        :response #_ (operation/op language action args ns)
+        {'ai-providers
+         (sort (into `() (map name) (project-config/ai-providers)))}})
       (catch Exception e
         (do ;; binding [*out* (java.io.OutputStreamWriter. System/out)]
           (prn e))
@@ -72,7 +74,7 @@
            conversation-id  (if (str/blank? conversation-id)
                               (conversation-action/create-conversation!
                                agent-name
-                               ai-port-name)
+                               (keyword ai-port-name))
                               conversation-id)
            #_#_all-files    (document-retrieval/all-files ".")
            context-files    (case (keyword context-mode)

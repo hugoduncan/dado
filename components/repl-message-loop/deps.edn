@@ -3,5 +3,5 @@
         com.taoensso/truss    {:mvn/version "1.12.0"}
         metosin/malli         {:mvn/version "0.13.0"}
         dado/ai.message       {:local/root "../ai-message"}
-        dado/ai.claude        {:local/root "../ai-claude"}
+        dado/ai.anthropic     {:local/root "../ai-anthropic"}
         dado/patch            {:local/root "../patch"}}}

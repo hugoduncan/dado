@@ -105,8 +105,9 @@
           (some-fn file-path? model/context-value?)
           file-path-or-context-value)]}
   (if (file-path? file-path-or-context-value)
-    {:name    (str file-path-or-context-value)
-     :content (slurp (fs/file file-path-or-context-value))}
+    (when (fs/exists? file-path-or-context-value)
+      {:name    (str file-path-or-context-value)
+       :content (slurp (fs/file file-path-or-context-value))})
     file-path-or-context-value))
 
 (defn add-context-file-sequence

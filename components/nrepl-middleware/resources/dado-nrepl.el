@@ -84,8 +84,9 @@ name."
 
 (defun dado--default-reply-handler (&optional mode)
   (lambda (reply)
+    (message "handler")
     (when reply
-      ;; (message "reply %s" reply)
+      (message "reply %s" reply)
       (nrepl-dbind-response reply (response)
 	(when response
 	  (nrepl-dbind-response response (suggestion)
@@ -106,7 +107,7 @@ name."
       (dado-chat-request
        (lambda (reply)
 	 (when reply
-	   ;; (message "reply %s" reply)
+	   (message "reply %s" reply)
 	   (nrepl-dbind-response reply (response)
 	     (when response
 	       (funcall callback response)))))

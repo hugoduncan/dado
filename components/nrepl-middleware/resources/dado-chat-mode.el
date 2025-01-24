@@ -191,6 +191,21 @@ The optional CALLBACK will be called with a list of completions."
   (use-local-map dado-chat-mode-map)
   (dado-chat--insert-prompt dado-chat-first-prompt))
 
+
+(setq all-ai-providers nil)
+
+(defun refresh-ai-providers
+    ()
+  (dado-op
+   (lambda (reply)
+     (nrepl-dbind-response reply (response)
+       (when response
+	 (nrepl-dbind-response response (ai-providers)
+	   (setq all-ai-providers ai-providers)
+	   ai-providers))))
+   "ai-providers"
+   `(dict )))
+
 ;;;###autoload
 (defun dado-chat (agent-name ai-port-name)
   "Start a new chat session with the dado-chat-mode enabled.
@@ -203,7 +218,10 @@ Return the chat buffer."
     (completing-read
      "Agent: "
      '("architect" "implementation" "refactoring" "scope" "test"))
-    (completing-read "AI Provider: " '("claude" "chatgpt" "ollama" "glhf"))))
+    (completing-read "AI Provider: "
+		     (progn
+		       (refresh-ai-providers)
+		       all-ai-providers))))
   (message "dado-chat %s %s" agent-name ai-port-name)
   (let* ((invoke-buffer-path (when-let ((buffer-file (buffer-file-name)))
 			       (file-relative-name
