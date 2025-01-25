@@ -109,19 +109,21 @@
          {:keys [messages metadata]} message-thread
          context-files               (get-in metadata [:context :files])
          supports-tools?             (:supports-tools? config true)]
-     {:model    (or model-name default-model-name)
-      :messages (vec
-                 (concat
-                  (when-let [prompt (:system-prompt metadata)]
-                    [{:role    "system"
-                      :content (vec
-                                (concat
-                                 [{:text prompt :type "text"}]
-                                 (mapcat
-                                  #(mapv context-content %)
-                                  context-files)))}])
-                  (mapcat convert-message messages)))
-      :tools    (mapv to-chatgpt-tool (:tools metadata))})))
+     (cond->
+         {:model    (or model-name default-model-name)
+          :messages (vec
+                     (concat
+                      (when-let [prompt (:system-prompt metadata)]
+                        [{:role    "system"
+                          :content (vec
+                                    (concat
+                                     [{:text prompt :type "text"}]
+                                     (mapcat
+                                      #(mapv context-content %)
+                                      context-files)))}])
+                      (mapcat convert-message messages)))}
+       supports-tools?
+       (assoc :tools (mapv to-chatgpt-tool (:tools metadata)))))))
 
 (defn- convert-finish-reason [reason]
   (case reason

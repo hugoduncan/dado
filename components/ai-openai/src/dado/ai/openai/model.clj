@@ -121,7 +121,8 @@
   [:map
    [:api-key :string]
    [:api-url {:optional true} :string]
-   [:model-name {:optional true} :string]])
+   [:model-name {:optional true} :string]
+   [:supports-tools? {:optional true} :boolean]])
 
 (def chatgpt-config? (m/validator ChatGPTConfig))
 (def completion-message? (m/validator CompletionMessage))
