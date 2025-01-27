@@ -2,6 +2,7 @@
   "Core implementation of namespace reload tool"
   (:require
    [clojure.string :as str]
+   [clojure.stacktrace :as stacktrace]
    [dado.ai.message.interface :as message]
    [jsonista.core :as j]
    [taoensso.telemere :as t]))
@@ -17,20 +18,43 @@
           (remove str/blank?)
           (map symbol))))
 
+(defn- exception->map
+  "Converts exception to a map with complete details."
+  [^Exception e]
+  (let [root-ex (if-let [cause (.getCause e)] cause e)]
+    {:message     (ex-message root-ex)
+     :data        (ex-data root-ex)
+     :stacktrace  (with-out-str (stacktrace/print-stack-trace root-ex))}))
+
+(defn- capture-output
+  "Executes a function, capturing stdout and stderr.
+   Returns [result stdout stderr]."
+  [f]
+  (let [stdout (java.io.StringWriter.)
+        stderr (java.io.StringWriter.)]
+    (binding [*out* stdout
+              *err* stderr]
+      [(f) (str stdout) (str stderr)])))
+
 (defn- reload-namespace
   "Attempts to reload a single namespace.
-   Returns [true nil] on success,
-   [false error-info] on failure."
+   Returns [true nil output] on success,
+   [false error-info output] on failure.
+   Output is a map containing :stdout and :stderr strings."
   [ns-sym]
   (t/trace!
    {:id :reload/attempt :data {:ns-sym ns-sym}}
-   (try
-     (require  ns-sym :reload)
-     (t/event! :reload/success {:data {:ns ns-sym}})
-     [true nil]
-     (catch Exception e
-       (t/event! :reload/failed {:data {:ns ns-sym :error (ex-message e)}})
-       [false {:ns ns-sym :message (ex-message e)}]))))
+   (let [[result stdout stderr]
+         (capture-output
+          #(try
+             (require ns-sym :reload)
+             (t/event! :reload/success {:data {:ns ns-sym}})
+             [true nil]
+             (catch Exception e
+               (t/event! :reload/failed {:data {:ns ns-sym :error (ex-message e)}})
+               [false (merge {:ns ns-sym}
+                           (exception->map e))])))]     
+     (conj result {:stdout stdout :stderr stderr}))))
 
 (defn reload-namespaces
   "Reloads specified namespaces.
@@ -58,13 +82,25 @@
           :errors   errors})))))
 
 (defn- format-error [error]
-  (str (:ns error) " failed to reload: " (:message error)))
+  (let [{:keys [ns message stacktrace data]} error]
+    (str ns " failed to reload: " message
+         (when stacktrace (str "\nStacktrace:\n" stacktrace))
+         (when data (str "\nException data:\n" (pr-str data))))))
+
+(defn- format-output [outputs ns-sym]
+  (when-let [{:keys [stdout stderr]} (get outputs ns-sym)]
+    (str (when (seq stdout) (str "\nStandard output:\n" stdout))
+         (when (seq stderr) (str "\nStandard error:\n" stderr)))))
 
 (defn- result-content
-  [{:keys [reloaded errors] :as +result-map}]
+  [{:keys [reloaded errors outputs] :as result-map}]
   {:content  (cond-> [{:text (str "Reloaded: " (str/join ", " reloaded))}]
                (seq errors) (conj (message/text-content
-                                   (str/join "\n" (mapv format-error errors)))))
+                                   (str/join "\n\n" (mapv format-error errors))))
+               (seq outputs) (into (for [ns-sym (into reloaded (map :ns errors))
+                                       :let [output (format-output outputs ns-sym)]
+                                       :when (seq output)]
+                                   (message/text-content output))))
    :is-error (boolean (seq errors))})
 
 (def description
