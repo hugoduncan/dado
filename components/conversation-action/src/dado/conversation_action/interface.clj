@@ -20,7 +20,6 @@
                         ai-port-name)
         {:keys [api api-key api-url model-name]}
         ai-config
-        _              (prn :ai-config ai-config)
         ai-port-send!  (ai-port/lookup-send! (or
                                               (some-> api name)
                                               (name ai-port-name)))
