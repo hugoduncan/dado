@@ -1,12 +1,15 @@
-;; Sample test namespace for integration tests
 (ns dado.ai.tools.run-test-namespace.test-ns
-  (:require [clojure.test :refer [deftest is]]))
+  (:require
+   [clojure.test :refer [deftest is testing]]))
 
-(deftest sample-passing-test
-  (is (= 4 (+ 2 2))))
+(deftest passing-test
+  (testing "pass"
+    (is (= 1 1))))
 
-(deftest sample-failing-test
-  (is (= 5 (+ 2 2))))
+(deftest failing-test
+  (testing "fail"
+    (is (= 1 2))))
 
-(deftest sample-error-test
-  (throw (Exception. "Sample error")))
+(deftest error-test
+  (testing "error"
+    (throw (ex-info "Test error" {:x 1}))))

@@ -1,6 +1,7 @@
 (ns dado.ai.tools.run-test-namespace.core
   "Core implementation of run test namespace tool."
   (:require
+   [clojure.stacktrace :as stacktrace]
    [clojure.test :as test]
    [dado.ai.tools.run-test-namespace.model :as model]
    [taoensso.telemere :as t]
@@ -12,8 +13,6 @@
    Arguments:
    - config: Map containing:
      :namespace - string naming the namespace to test
-     :async? - (optional) run asynchronously, default false
-     :timeout - (optional) timeout in ms, default 30000
 
    Returns results map matching TestResults schema."
   [{:keys [namespace] :as config}]
@@ -22,66 +21,56 @@
    {:id ::execute-tests}
    (try
      (require (symbol namespace) :reload)
-     (let [start-time (System/currentTimeMillis)
-           output-str (new java.io.StringWriter)
-           error-str  (new java.io.StringWriter)
-           results
-           (binding [test/*test-out* output-str]
-             (let [summary   (atom {:test 0 :pass 0 :fail 0 :error 0})
-                   results   (atom [])
-                   report-fn (fn [m]
-                               (case (:type m)
-                                 :begin-test-var nil
-                                 :end-test-var
-                                 (let [{:keys [test pass fail error]} @summary
-                                       status                         (cond
-                                                                        error :error
-                                                                        fail  :fail
-                                                                        :else :pass)]
-                                   (swap! results conj
-                                          {:test-var (-> m :var meta :name str)
-                                           :status   status}))
-                                 :pass           (swap! summary update :pass inc)
-                                 :fail           (swap! summary update :fail inc)
-                                 :error          (swap! summary update :error inc)
-                                 nil))]
-               (binding [test/report report-fn]
-                 (test/test-ns (symbol namespace)))
-               {:namespace    namespace
-                :summary      @summary
-                :test-results @results
-                :output       {:stdout (str output-str)
-                               :stderr (str error-str)}
-                :elapsed-ms   (- (System/currentTimeMillis) start-time)}))]
-       results)
+     (let [start-time         (System/currentTimeMillis)
+           output-str         (new java.io.StringWriter)
+           zero-summary       {:test 0 :pass 0 :fail 0 :error 0}
+           summary            (atom zero-summary)
+           results            (atom [])
+           var-results        (atom [])
+           inc-report-counter (fn inc-report-counter [k]
+                                (swap! summary update k inc))]
+       (binding [test/*test-out* output-str]
+         (binding [*err* *out*]
+           (let [report-fn
+                 (fn [m]
+                   (case (:type m)
+                     :begin-test-var
+                     (do
+                       (inc-report-counter :test)
+                       (reset! var-results []))
+                     :end-test-var
+                     (swap! results conj
+                            {:test-var (-> m :var meta :name str)
+                             :results  @var-results})
+                     :pass
+                     (inc-report-counter :pass)
+                     :fail
+                     (do
+                       (inc-report-counter :fail)
+                       (swap! var-results conj
+                              (select-keys m [:type :message :expected :actual])))
+                     :error
+                     (do
+                       (inc-report-counter :error)
+                       (swap! var-results conj
+                              (select-keys m [:type :message :expected :actual])))
+                     nil))]
+             (binding [test/report report-fn]
+               (test/test-ns (symbol namespace))))))
+       {:is-error false
+        :content  [{:namespace    namespace
+                    :summary      @summary
+                    :test-results @results
+                    :output       (str output-str)
+                    :elapsed-ms   (- (System/currentTimeMillis) start-time)}]})
      (catch Exception e
-       (throw (ex-info "Failed to execute tests"
-                       {:error/type      :error/test-execution
-                        :error/namespace namespace}
-                       e))))))
+       (t/error! e)
+       {:is-error true
+        :content  (with-out-str
+                    (stacktrace/print-cause-trace e))}))))
 
 (def prompt-template
-  "Tool for reloading Clojure namespaces.
-
-   Input should be in Updated Namespaces List format:
-   ```updated-namespaces
-   my.project.utils
-   my.project.core
-   ```
-
-   Example usage:
-   ```
-   Please reload these namespaces:
-   ```updated-namespaces
-   my.project.model
-   my.project.core
-   ```
-   ```
-
-   Note:
-   - No validation is performed on namespace names
-   - Dependencies are not automatically handled
-   - Namespaces are reloaded in the order specified")
+  "Tool for running test namespaces")
 
 (defn make-prompt
   "Returns prompt string for tool usage"
@@ -107,17 +96,5 @@
    :execute-fn   execute!})
 
 (defn create-tool
-  "Creates namespace reload tool configuration.
-   Tool reloads specified namespaces without validation or dependency handling.
-
-   Input should be in Updated Namespaces List format:
-   ```updated-namespaces
-   my.project.utils
-   my.project.core
-   ```
-
-   Returns map of reload results:
-   {:reloaded [<successfully-reloaded-ns-symbols>]
-    :errors [{:ns <failed-ns-symbol> :error <error-message>}]}"
   []
   tool)

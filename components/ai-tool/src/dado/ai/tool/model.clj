@@ -41,9 +41,9 @@
 (def ExecutionResult
   "Schema for tool execution results"
   [:map
-   [:context-mod [:map
-                  [:files [:vector :string]]
-                  [:operation [:enum :set! :add!]]]]
+   [:context-mod {:optional true} [:map
+                                   [:files [:vector :string]]
+                                   [:operation [:enum :set! :add!]]]]
    [:content any?]
    [:is-error {:optional true} :boolean]
    [:metrics {:optional true} map?]])

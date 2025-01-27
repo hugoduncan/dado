@@ -6,38 +6,39 @@
   "Valid test status values"
   [:enum :pass :fail :error])
 
-(def TestResult
-  "Schema for individual test result"
+(def VarResult
+  "Schema for test result details"
   [:map
-   [:test-var string?]
-   [:status TestStatus]
-   [:expected {:optional true} any?]
-   [:actual {:optional true} any?]
+   [:type [:enum :fail :error]]
    [:message {:optional true} string?]
-   [:type {:optional true} string?]])
+   [:expected {:optional true} any?]
+   [:actual {:optional true} any?]])
 
-(def TestSummary
-  "Schema for test execution summary"
+(def VarSummary
+  "Schema for test var summary"
   [:map
-   [:test int?]
    [:pass int?]
    [:fail int?]
    [:error int?]])
 
-(def TestOutput
-  "Schema for captured test output"
+(def TestVarResult
+  "Schema for individual test var results"
   [:map
-   [:stdout string?]
-   [:stderr string?]])
+   [:test-var string?]
+   [:summary VarSummary]
+   [:results [:vector VarResult]]])
 
 (def TestResults
   "Schema for complete test execution results"
   [:map
-   [:namespace string?]
-   [:summary TestSummary]
-   [:test-results [:vector TestResult]]
-   [:output TestOutput]
-   [:elapsed-ms int?]])
+   [:is-error :boolean]
+   [:content [:vector
+              [:map
+               [:namespace string?]
+               [:summary VarSummary]
+               [:test-results [:map-of string? TestVarResult]]
+               [:output string?]
+               [:elapsed-ms int?]]]]])
 
 (def ToolConfig
   "Schema for tool configuration"

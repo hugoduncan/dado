@@ -2,9 +2,11 @@
   "Tests for run test namespace tool interface."
   (:require
    [clojure.test :refer [deftest is testing]]
-   [malli.generator :as mg]
+   [dado.ai.tool.interface :as tool]
    [dado.ai.tools.run-test-namespace.interface :as run-test]
-   [dado.ai.tools.run-test-namespace.model :as model]))
+   [dado.ai.tools.run-test-namespace.model :as model]
+   [malli.core :as m]
+   [malli.generator :as mg]))
 
 (deftest test-tool-definition
   (testing "tool map contains required keys"
@@ -24,13 +26,20 @@
 
 (deftest test-tool-execution
   (testing "executing tests on sample namespace"
-    (let [config  {:namespace "dado.ai.tools.run-test-namespace.test-ns"}
-          results ((:execute-fn (run-test/create-tool)) config)]
-      (is (run-test/test-results? results))
-      (is (= "dado.ai.tools.run-test-namespace.test-ns"
-             (:namespace results)))
-      (let [{:keys [test pass fail error]} (:summary results)]
-        (is (= 3 test))
-        (is (= 1 pass))
-        (is (= 1 fail))
-        (is (= 1 error))))))
+    (let [params  {:namespace "dado.ai.tools.run-test-namespace.test-ns"}
+          tool    (run-test/create-tool)
+          results ((:execute-fn tool) params)]
+      (is (nil? (m/explain (tool/execution-result-schema) results)))
+      (is (false? (:is-error results)))
+      (let [result (first (:content results))]
+        (is (= "dado.ai.tools.run-test-namespace.test-ns"
+               (:namespace result)))
+        (is (nil? result))
+        (let [{:keys [pass fail error test]} (:summary result)]
+          (is (= 3 test))
+          (is (= 1 pass))
+          (is (= 1 fail))
+          (is (= 1 error)))
+        (is (vector? (:test-results result)))
+        (is (string? (:output result)))
+        (is (nat-int? (:elapsed-ms result)))))))

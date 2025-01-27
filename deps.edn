@@ -46,7 +46,8 @@
   ;; bases
   org.hugoduncan/dado.middleware                {:local/root "bases/middleware"}
   }
- :aliases {:dev {:extra-paths ["development/src"]
+ :aliases {:dev {:extra-paths ["development/src"
+                               "components/run-test-namespace/test"]
                  :extra-deps  {org.clojure/clojure {:mvn/version "1.12.0"}}}
 
 
