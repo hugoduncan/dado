@@ -1,6 +1,7 @@
 (ns dado.tools.reload-namespaces.interface
   "Interface for namespace reload tool"
-  (:require [dado.tools.reload-namespace.core :as core]))
+  (:require
+   [dado.tools.reload-namespaces.core :as core]))
 
 (defn create-tool
   "Creates namespace reload tool configuration.
