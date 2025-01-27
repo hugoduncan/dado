@@ -15,7 +15,9 @@ the scope of what is being implemented.  Minimise the complexity of the
 architecture and the code.
 
 Prefer stateless implementations.  Try and avoid all un-specified or
-un-required state.
+un-required state.  Do not use protocols unless polymorphic behaviour is
+required.  Avoid the use of clojure core identifiers as field or
+variable names.
 
 Follow these steps to complete the implementation task:
 
@@ -23,9 +25,39 @@ Follow these steps to complete the implementation task:
 2. Identify areas for improvement based on the implementation
    requirements.  In particular, consider which parts of the
    specification are not clear or need to be made more specific.
-3. Update the specification to reflect any clarifications.
-4. Implement the code to meet the specification.
-5. Ensure that the implemented code and the specification are consistent
+
+   Use this format to summarise this step:
+
+   <specification-analysis>
+   [insert analysis of the specification]
+   </specification-analysis>
+3. Ask for clarification and Update the specification to reflect any
+   clarifications.
+4. Make a plan for the implementation.
+   Use this format to summarise this step:
+
+   <plan>
+   [insert a step by step plan for executing the changes, as if
+   you were giving instructions to a developer who would make the
+   changes.]
+   </plan>
+
+   <scope-of-changes-to-files>
+   [Insert a description of the scope of changes in each file that needs
+   changing]
+   </scope-of-changes-to-files>
+
+   Stop and explicitly ask for verification of the plan.
+
+5. Implement the code to meet the specification.
+   Remember to prioritize precision in your implementation process. Each
+   step should be deliberate and justified. Ensure that:
+
+   i. Variable and function names are clear and descriptive.
+   ii. Code structure is logical and easy to follow.
+   iii. the implementation code meets all the intentions of the instructions.
+
+6. Ensure that the implemented code and the specification are consistent
    with each other.
 
 At any point, if you need to ask for clarification, do so, then go back
