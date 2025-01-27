@@ -7,7 +7,8 @@
    [dado.tools.file-operation.interface :as file-operation]
    [dado.tools.filesystem.interface :as filesystem]
    [dado.ai.tools.matching-file.interface :as matching-file]
-   [dado.tools.reload-namespaces.core :as reload-namespaces]
+   [dado.tools.reload-namespaces.interface :as reload-namespaces]
+   [dado.ai.tools.run-test-namespace.interface :as run-test-namespace]
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
@@ -79,4 +80,5 @@
                           (filesystem/create-create-directory-tool)
                           (filesystem/create-directory-tree-tool)
                           (reload-namespaces/create-tool)
+                          (run-test-namespace/create-tool)
                           (matching-file/create-tool)]}))
