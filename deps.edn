@@ -39,6 +39,7 @@
   org.hugoduncan/dado.patch                     {:local/root "components/patch"}
   org.hugoduncan/dado.project-config            {:local/root "components/project-config"}
   org.hugoduncan/dado.repl-message-loop         {:local/root "components/repl-message-loop"}
+  org.hugoduncan/dado.run-test-namespace        {:local/root "components/run-test-namespace"}
   org.hugoduncan/dado.update-extractor          {:local/root "components/update-extractor"}
   org.hugoduncan/dado.util                      {:local/root "components/util"}
   org.hugoduncan/dado.http                      {:local/root "components/http"}
