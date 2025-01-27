@@ -1,116 +1,123 @@
 (ns dado.ai.tools.run-test-namespace.core
   "Core implementation of run test namespace tool."
-  (:require [clojure.test :as test]
-            [clojure.string :as str]
-            [malli.core :as m]
-            [malli.error :as me]
-            [taoensso.telemere :as t]
-            [taoensso.truss :refer [have!]]
-            [dado.ai.tools.run-test-namespace.model :as model]))
-
-(defn- require-test-ns
-  "Load test namespace if not loaded.
-   Returns nil on success, throws on failure."
-  [ns-str]
-  (t/trace! {:id ::require-test-ns}
-    (try
-      (require (symbol ns-str) :reload)
-      nil
-      (catch Exception e
-        (throw (ex-info "Failed to load namespace"
-                       {:type :error/namespace-load
-                        :namespace ns-str
-                        :cause e}))))))
-
-(defn- test-var->result
-  "Convert test-var results to test result format."
-  [{:keys [var test-results] :as _test-ctx}]
-  (let [result (first test-results)
-        {:keys [type expected actual message]} result]
-    {:test-var (str (:name (meta var)))
-     :status (cond
-              (nil? result) :pass
-              (instance? Throwable actual) :error
-              :else :fail)
-     :expected expected
-     :actual actual
-     :message message
-     :type (some-> type str)}))
-
-(defn- run-test-var!
-  "Run a single test var and return results."
-  [test-var]
-  (let [test-ctx (test/test-var test-var)]
-    (test-var->result (assoc test-ctx :var test-var))))
-
-(defn- namespace->vars
-  "Get all test vars from namespace."
-  [ns-sym]
-  (->> (vals (ns-publics ns-sym))
-       (filter (comp :test meta))))
-
-(defn- run-ns-tests!
-  "Run all tests in namespace and return results."
-  [ns-str]
-  (let [start-time (System/currentTimeMillis)
-        ns-sym (symbol ns-str)
-        stdout-str (new java.io.StringWriter)
-        stderr-str (new java.io.StringWriter)
-        test-results (binding [*out* stdout-str
-                              *err* stderr-str]
-                      (let [test-vars (namespace->vars ns-sym)
-                            results (mapv run-test-var! test-vars)
-                            {:keys [pass fail error]}
-                            (group-by :status results)]
-                        {:namespace ns-str
-                         :summary {:test (count results)
-                                  :pass (count pass)
-                                  :fail (count fail)
-                                  :error (count error)}
-                         :test-results results
-                         :output {:stdout (str stdout-str)
-                                 :stderr (str stderr-str)}
-                         :elapsed-ms (- (System/currentTimeMillis)
-                                       start-time)}))]
-    (have! model/test-results? test-results
-           :data (me/humanize (m/explain model/TestResults test-results)))
-    test-results))
+  (:require
+   [clojure.test :as test]
+   [dado.ai.tools.run-test-namespace.model :as model]
+   [taoensso.telemere :as t]
+   [taoensso.truss :as truss]))
 
 (defn execute!
-  "Execute test namespace and return results.
-   See model/ToolConfig for config options.
-   Returns test results map.
-   Throws exceptions for invalid config or execution errors."
-  [config]
-  (have! model/tool-config? config
-         :data (me/humanize (m/explain model/ToolConfig config)))
-  
-  (t/trace! {:id ::execute-tests}
-    (let [{:keys [namespace async? timeout]} config
-          timeout (or timeout 30000)]
-      ;; Validate and load namespace
-      (require-test-ns namespace)
-      
-      (if async?
-        (let [result-future (future (run-ns-tests! namespace))]
-          (try
-            @(future (do @result-future
-                        (deref result-future timeout nil)))
-            (catch Exception e
-              (throw (ex-info "Test execution failed"
-                             {:type :error/test-execution
-                              :namespace namespace
-                              :cause e})))
-            (catch java.util.concurrent.TimeoutException _
-              (throw (ex-info "Test execution timed out"
-                             {:type :error/test-timeout
-                              :namespace namespace
-                              :timeout timeout})))))
-        ;; Synchronous execution
-        (try
-          (run-ns-tests! namespace)
-          (catch Exception e
-            (throw (ex-info "Test execution failed"
-                           {:type :error/test-execution
-                            :namespace namespace
-                            :cause e}))))))))
+  "Execute tests in a namespace and return results.
+
+   Arguments:
+   - config: Map containing:
+     :namespace - string naming the namespace to test
+     :async? - (optional) run asynchronously, default false
+     :timeout - (optional) timeout in ms, default 30000
+
+   Returns results map matching TestResults schema."
+  [{:keys [namespace] :as config}]
+  {:pre [(truss/have? model/tool-config? config)]}
+  (t/trace!
+   {:id ::execute-tests}
+   (try
+     (require (symbol namespace) :reload)
+     (let [start-time (System/currentTimeMillis)
+           output-str (new java.io.StringWriter)
+           error-str  (new java.io.StringWriter)
+           results
+           (binding [test/*test-out* output-str]
+             (let [summary   (atom {:test 0 :pass 0 :fail 0 :error 0})
+                   results   (atom [])
+                   report-fn (fn [m]
+                               (case (:type m)
+                                 :begin-test-var nil
+                                 :end-test-var
+                                 (let [{:keys [test pass fail error]} @summary
+                                       status                         (cond
+                                                                        error :error
+                                                                        fail  :fail
+                                                                        :else :pass)]
+                                   (swap! results conj
+                                          {:test-var (-> m :var meta :name str)
+                                           :status   status}))
+                                 :pass           (swap! summary update :pass inc)
+                                 :fail           (swap! summary update :fail inc)
+                                 :error          (swap! summary update :error inc)
+                                 nil))]
+               (binding [test/report report-fn]
+                 (test/test-ns (symbol namespace)))
+               {:namespace    namespace
+                :summary      @summary
+                :test-results @results
+                :output       {:stdout (str output-str)
+                               :stderr (str error-str)}
+                :elapsed-ms   (- (System/currentTimeMillis) start-time)}))]
+       results)
+     (catch Exception e
+       (throw (ex-info "Failed to execute tests"
+                       {:error/type      :error/test-execution
+                        :error/namespace namespace}
+                       e))))))
+
+(def prompt-template
+  "Tool for reloading Clojure namespaces.
+
+   Input should be in Updated Namespaces List format:
+   ```updated-namespaces
+   my.project.utils
+   my.project.core
+   ```
+
+   Example usage:
+   ```
+   Please reload these namespaces:
+   ```updated-namespaces
+   my.project.model
+   my.project.core
+   ```
+   ```
+
+   Note:
+   - No validation is performed on namespace names
+   - Dependencies are not automatically handled
+   - Namespaces are reloaded in the order specified")
+
+(defn make-prompt
+  "Returns prompt string for tool usage"
+  []
+  prompt-template)
+
+(def tool
+  "Run Test Namespace Tool definition."
+  {:id           :dado/run-test-namespace
+   :name         "Run Test Namespace Tool"
+   :description  "Executes test namespace and collects results"
+   :structured-description
+   {:claude
+    {:description "Tool for running Clojure test namespaces and collecting results."}}
+   :parameters
+   [:map
+    [:namespace string?]]
+   :returns
+   {:type        :map
+    :description "Map containing test results and output"}
+   :prompt-fn    make-prompt
+   :recognize-fn (constantly nil)
+   :execute-fn   execute!})
+
+(defn create-tool
+  "Creates namespace reload tool configuration.
+   Tool reloads specified namespaces without validation or dependency handling.
+
+   Input should be in Updated Namespaces List format:
+   ```updated-namespaces
+   my.project.utils
+   my.project.core
+   ```
+
+   Returns map of reload results:
+   {:reloaded [<successfully-reloaded-ns-symbols>]
+    :errors [{:ns <failed-ns-symbol> :error <error-message>}]}"
+  []
+  tool)

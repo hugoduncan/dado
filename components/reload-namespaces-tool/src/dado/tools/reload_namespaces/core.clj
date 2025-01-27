@@ -53,7 +53,7 @@
              (catch Exception e
                (t/event! :reload/failed {:data {:ns ns-sym :error (ex-message e)}})
                [false (merge {:ns ns-sym}
-                           (exception->map e))])))]     
+                           (exception->map e))])))]
      (conj result {:stdout stdout :stderr stderr}))))
 
 (defn reload-namespaces

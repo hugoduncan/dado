@@ -1,6 +1,6 @@
-{:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        com.taoensso/truss {:mvn/version "1.11.1"}
-        metosin/malli {:mvn/version "0.13.0"}
-        com.taoensso/telemere {:mvn/version "1.0.0-RC1"}}
+{:paths   ["src"]
+ :deps    {org.clojure/clojure   {:mvn/version "1.11.1"}
+           com.taoensso/truss    {:mvn/version "1.11.1"}
+           metosin/malli         {:mvn/version "0.13.0"}
+           com.taoensso/telemere {:mvn/version "1.0.0-RC1"}}
  :aliases {:test {:extra-paths ["test"]}}}
