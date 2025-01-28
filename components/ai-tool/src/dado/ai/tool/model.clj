@@ -1,7 +1,8 @@
 (ns dado.ai.tool.model
   "Data models for AI tools"
-  (:require [malli.core :as m]
-            [malli.error :as me]))
+  (:require
+   [malli.core :as m]
+   [malli.error :as me]))
 
 #_(def Parameter
     "Schema for tool parameter specification"
