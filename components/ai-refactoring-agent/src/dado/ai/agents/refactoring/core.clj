@@ -4,9 +4,10 @@
    [dado.ai.agent.interface :as agent]
    [dado.ai.prompt.interface :as prompt]
    [dado.project-config.interface :as project-config]
+   [dado.ai.tools.matching-file.interface :as matching-file]
+   [dado.ai.tools.git.interface :as git]
    [dado.tools.file-operation.interface :as file-operation]
    [dado.tools.filesystem.interface :as filesystem]
-   [dado.ai.tools.matching-file.interface :as matching-file]
    [dado.tools.reload-namespaces.interface :as reload-namespaces]
    [dado.ai.tools.run-test-namespace.interface :as run-test-namespace]
    [malli.core :as m]
@@ -81,4 +82,7 @@
                           (filesystem/create-directory-tree-tool)
                           (reload-namespaces/create-tool)
                           (run-test-namespace/create-tool)
+                          (git/create-tool :dado/git-status)
+                          (git/create-tool :dado/git-stage)
+                          (git/create-tool :dado/git-commit)
                           (matching-file/create-tool)]}))

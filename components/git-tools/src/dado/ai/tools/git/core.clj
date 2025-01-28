@@ -5,6 +5,7 @@
    [clojure.string :as str]
    [dado.ai.tool.model :as tool.model]
    [dado.ai.tools.git.model :as model]
+   [jsonista.core :as j]
    [malli.core :as m]
    [malli.error :as me]
    [taoensso.telemere :as t]
@@ -99,7 +100,7 @@
                              :untracked untracked
                              :ahead     ahead
                              :behind    behind}
-           execution-result {:content result}]
+           execution-result {:content (j/write-value-as-string result)}]
        (have? tool.model/execution-result? execution-result
               :data (fn [x]
                       (me/humanize (m/explain tool.model/ExecutionResult x))))
@@ -109,20 +110,20 @@
   "Stage files in git repository.
   Returns ExecutionResult containing a stage result map conforming to
   StageResponse schema."
-  [{:keys [paths force?]}
+  [{:keys [paths force]}
    & {:keys [no-validate?]}]
   (t/trace!
    {:id :git/stage-started}
    (do
      (validate-repo!)
      (when-not no-validate?
-       (have? model/stage-parameters? {:paths paths :force? force?}
+       (have? model/stage-parameters? {:paths paths :force force}
               :data (fn [x] (me/humanize (m/explain model/StageParameters x)))))
      (let [paths-to-stage   (or paths
                                 (let [{:keys [modified untracked]}
                                       (git-status! {})]
                                   (cond-> modified
-                                    force? (into untracked))))
+                                    force (into untracked))))
            staging-result   {:staged []
                              :errors []}
            staged           (reduce (fn [acc path]
@@ -135,7 +136,7 @@
                                                    :reason (-> e ex-data :error)}))))
                                     staging-result
                                     paths-to-stage)
-           execution-result {:content staged}]
+           execution-result {:content (j/write-value-as-string staged)}]
        (have? tool.model/execution-result? execution-result
               :data (fn [x]
                       (me/humanize (m/explain tool.model/ExecutionResult x))))
@@ -147,7 +148,7 @@
   "Commit staged changes.
   Returns ExecutionResult containing a commit result map conforming to
   CommitResponse schema."
-  [{:keys [message allow-empty?]}
+  [{:keys [message allow-empty]}
    & {:keys [no-validate?]}]
   (t/trace!
    {:id :git/commit-started}
@@ -155,11 +156,11 @@
      (validate-repo!)
      (when-not no-validate?
        (have? model/commit-parameters?
-              {:message message :allow-empty? allow-empty?}
+              {:message message :allow-empty allow-empty}
               :data (fn [x]
                       (me/humanize (m/explain model/CommitParameters x)))))
      (let [args                         (cond-> ["commit" "-m" message]
-                                          allow-empty? (conj "--allow-empty"))
+                                          allow-empty (conj "--allow-empty"))
            output                       (git-command args)
            hash                         (str/trim
                                          (git-command ["rev-parse" "HEAD"]))
@@ -177,7 +178,7 @@
                                 :summary {:files      files
                                           :insertions insertions
                                           :deletions  deletions}}}
-             execution-result {:content result}]
+             execution-result {:content (j/write-value-as-string result)}]
          (have? tool.model/execution-result? execution-result
                 :data (fn [x]
                         (me/humanize (m/explain tool.model/ExecutionResult x))))
@@ -188,41 +189,47 @@
 
 
 (def ^:private git-tools
-  [{:id          :dado/git-stage
-    :name        "Git Stage Tool"
-    :description "Stage modified files in git repository"
+  [{:id           :dado/git-stage
+    :name         "Git Stage Tool"
+    :description  "Stage modified files in git repository"
     :structured-description
     {:claude
      {:description "Tool for staging files in git repository."}}
-    :parameters  model/StageParameters
-    :returns     {:type :map
-                  :description
-                  "ExecutionResult containing map of staged files and errors"}
-    :execute-fn  git-stage!}
+    :prompt-fn    (constantly "")
+    :recognize-fn (constantly nil)
+    :parameters   model/StageParameters
+    :returns      {:type :map
+                   :description
+                   "ExecutionResult containing map of staged files and errors"}
+    :execute-fn   git-stage!}
 
-   {:id          :dado/git-commit
-    :name        "Git Commit Tool"
-    :description "Commit staged changes"
+   {:id           :dado/git-commit
+    :name         "Git Commit Tool"
+    :description  "Commit staged changes"
     :structured-description
     {:claude
      {:description "Tool for committing staged changes."}}
-    :parameters  model/CommitParameters
-    :returns     {:type :map
-                  :description
-                  "ExecutionResult containing map of commit result"}
-    :execute-fn  git-commit!}
+    :prompt-fn    (constantly "")
+    :recognize-fn (constantly nil)
+    :parameters   model/CommitParameters
+    :returns      {:type :map
+                   :description
+                   "ExecutionResult containing map of commit result"}
+    :execute-fn   git-commit!}
 
-   {:id          :dado/git-status
-    :name        "Git Status Tool"
-    :description "Get repository status"
+   {:id           :dado/git-status
+    :name         "Git Status Tool"
+    :description  "Get repository status"
     :structured-description
     {:claude
      {:description "Tool for getting git repository status."}}
-    :parameters  model/StatusParameters
-    :returns     {:type :map
-                  :description
-                  "ExecutionResult containing map of modified, staged, and untracked files"}
-    :execute-fn  git-status!}])
+    :prompt-fn    (constantly "")
+    :recognize-fn (constantly nil)
+    :parameters   model/StatusParameters
+    :returns      {:type :map
+                   :description
+                   "ExecutionResult containing map of modified, staged, and untracked files"}
+    :execute-fn   git-status!}])
 
 (defn create-tool
   "Create git tool for the specified tool ID.

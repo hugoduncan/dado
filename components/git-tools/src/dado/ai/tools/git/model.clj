@@ -7,14 +7,14 @@
 (def StageParameters
   [:map
    [:paths {:optional true} [:vector :string]]
-   [:force? {:optional true} [:maybe :boolean]]])
+   [:force {:optional true} [:maybe :boolean]]])
 
 (def stage-parameters? (m/validator StageParameters))
 
 (def CommitParameters
   [:map
    [:message :string]
-   [:allow-empty? {:optional true} [:maybe :boolean]]])
+   [:allow-empty {:optional true} [:maybe :boolean]]])
 
 (def commit-parameters? (m/validator CommitParameters))
 
