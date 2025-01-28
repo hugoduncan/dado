@@ -15,6 +15,8 @@
    [nrepl.transport
     Transport]))
 
+(t/set-min-level! :warn)
+
 (defn- dado-reply
   [{:keys [session ns language action args] :as msg}]
   (let [ns (if ns (symbol ns) (symbol (str (@session #'*ns*))))]
