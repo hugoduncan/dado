@@ -1,0 +1,2 @@
+{:lint-as
+ {dado.error-monad.interface/do-error clojure.core/let}}
